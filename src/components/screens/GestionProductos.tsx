@@ -8,12 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Edit2, Trash2, X, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, X, Link as LinkIcon, ExternalLink, ImageIcon } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
+import { cn } from "@/lib/utils";
+import { UploadButton } from "@/lib/uploadthing";
 
 export function GestionProductos() {
   const utils = trpc.useUtils();
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
+  const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -231,23 +234,89 @@ export function GestionProductos() {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t-2 border-border">
-                  <Label className="font-black uppercase text-xs">Imágenes Externas (URLs)</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="https://ejemplo.com/imagen.jpg" value={newUrl} onChange={e => setNewUrl(e.target.value)} className="bg-background flex-1" />
-                    <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm">
-                      <Plus className="w-5 h-5" />
-                    </Button>
+                  <div className="flex justify-between items-center mb-2">
+                    <Label className="font-black uppercase text-xs">Imágenes del Producto</Label>
+                    <UploadButton
+                      endpoint="userMedia"
+                      onClientUploadComplete={(res) => {
+                        const newFiles = res.map(r => r.url);
+                        setEditingProduct({
+                          ...editingProduct,
+                          imgUrls: [...(editingProduct.imgUrls || []), ...newFiles]
+                        });
+                        utils.user.listMedia.invalidate();
+                        utils.user.getMediaUsage.invalidate();
+                      }}
+                      onUploadError={(e) => alert(e.message)}
+                      appearance={{
+                        button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
+                        allowedContent: "hidden"
+                      }}
+                      content={{ button: "Subir Imagen" }}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    {editingProduct.imgUrls.map((url: string, index: number) => (
-                      <div key={index} className="flex items-center gap-2 bg-muted p-2 rounded-lg border border-border overflow-hidden">
-                        <LinkIcon className="w-4 h-4 shrink-0 text-muted-foreground" />
-                        <span className="text-[10px] font-bold truncate flex-1">{url}</span>
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => removeUrl(index)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                  {/* Selected Images */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {editingProduct.imgUrls && editingProduct.imgUrls.map((url: string, index: number) => (
+                      <div key={index} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
+                        <img src={url} alt="producto" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeUrl(index)}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
                       </div>
                     ))}
+                    {(!editingProduct.imgUrls || editingProduct.imgUrls.length === 0) && (
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold w-full text-center py-4 border-2 border-dashed rounded-lg bg-muted/20">
+                        Sin imágenes. Sube una o selecciona de tu galería.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Media Gallery Selector */}
+                  <div className="space-y-2">
+                    <Label className="font-black uppercase text-[10px] text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
+                    <div className="flex gap-2 overflow-x-auto pb-2 min-h-[4rem]">
+                      {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
+                        const isSelected = editingProduct.imgUrls?.includes(m.url);
+                        return (
+                          <div 
+                            key={m.id} 
+                            className={cn(
+                              "relative w-16 h-16 shrink-0 rounded-lg border-2 overflow-hidden cursor-pointer transition-all",
+                              isSelected ? "border-primary opacity-50 cursor-not-allowed" : "border-border hover:border-primary"
+                            )}
+                            onClick={() => {
+                              if (!isSelected) {
+                                setEditingProduct({
+                                  ...editingProduct,
+                                  imgUrls: [...(editingProduct.imgUrls || []), m.url]
+                                });
+                              }
+                            }}
+                          >
+                            <img src={m.url} alt={m.name} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                      {(!mediaList || mediaList.filter(m => m.type === "IMAGE").length === 0) && (
+                        <div className="flex items-center justify-center w-full text-[9px] font-bold text-muted-foreground uppercase opacity-50">
+                          Tu galería está vacía
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* External Link (Fallback) */}
+                  <div className="flex gap-2 mt-4">
+                    <Input placeholder="O pega un link externo..." value={newUrl} onChange={e => setNewUrl(e.target.value)} className="bg-background flex-1 text-[10px]" />
+                    <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm h-10 px-4">
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 

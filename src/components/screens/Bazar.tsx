@@ -14,9 +14,10 @@ import {
   Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
   Palette, Home as HomeIcon, Sparkles, GraduationCap, 
   Presentation, Music, Ticket, Leaf, ChevronLeft, ChevronRight,
-  ShoppingBag
+  ShoppingBag, Trash2
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
@@ -51,6 +52,7 @@ function formatRegion(region: string) {
 export function Bazar() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
+  const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [region, setRegion] = useState("Todas");
@@ -111,6 +113,26 @@ export function Bazar() {
         ? prev.categories.filter(c => c !== cat)
         : [...prev.categories, cat]
     }));
+  };
+
+  const removeUrl = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      imgUrls: prev.imgUrls.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addUrl = () => {
+    const urlInput = document.getElementById("external-url-input") as HTMLInputElement;
+    const val = urlInput.value;
+    if (!val) return;
+    try {
+      new URL(val);
+      setFormData(prev => ({ ...prev, imgUrls: [...prev.imgUrls, val] }));
+      urlInput.value = "";
+    } catch (e) {
+      alert("URL inválida");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -385,51 +407,84 @@ export function Bazar() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs ml-1">Imagen (Uploadthing)</Label>
-                  <div className="neo-card bg-background p-4 border-dashed border-2 flex justify-center">
+                <div className="space-y-4 pt-4 border-t-2 border-border">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label className="font-black uppercase text-xs">Imágenes del Producto</Label>
                     <UploadButton
-                      endpoint="productImage"
+                      endpoint="userMedia"
                       onClientUploadComplete={(res) => {
-                        setFormData({...formData, imageUrl: res[0].url});
-                        alert("Imagen subida con éxito");
+                        const newFiles = res.map(r => r.url);
+                        setFormData(prev => ({
+                          ...prev,
+                          imgUrls: [...prev.imgUrls, ...newFiles]
+                        }));
+                        utils.user.listMedia.invalidate();
+                        utils.user.getMediaUsage.invalidate();
                       }}
-                      onUploadError={(error: Error) => {
-                        alert(`ERROR! ${error.message}`);
-                      }}
+                      onUploadError={(e) => alert(e.message)}
                       appearance={{
-                        button: "neo-btn bg-primary text-primary-foreground uppercase font-black text-xs px-6 h-10 shadow-neo-sm active:shadow-none translate-y-0 active:translate-y-0.5 active:translate-x-0.5",
-                        allowedContent: "text-[10px] font-bold uppercase mt-2 text-muted-foreground"
+                        button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
+                        allowedContent: "hidden"
                       }}
+                      content={{ button: "Subir Imagen" }}
                     />
                   </div>
-                  {formData.imageUrl && <p className="text-[10px] text-primary font-black uppercase text-center mt-2">✅ Imagen cargada correctamente</p>}
-                </div>
 
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs">O URL de Imagen Externa</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="https://..." 
-                      className="bg-background"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const val = (e.target as HTMLInputElement).value;
-                          if (val) {
-                            setFormData({...formData, imgUrls: [...formData.imgUrls, val]});
-                            (e.target as HTMLInputElement).value = "";
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {formData.imgUrls.map((url, i) => (
-                      <Badge key={i} variant="outline" className="text-[8px] max-w-[100px] truncate">
-                        {url} <X className="w-2 h-2 ml-1 cursor-pointer" onClick={() => setFormData({...formData, imgUrls: formData.imgUrls.filter((_, idx) => idx !== i)})} />
-                      </Badge>
+                      <div key={i} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
+                        <img src={url} alt="producto" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeUrl(i)}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
                     ))}
+                    {formData.imgUrls.length === 0 && (
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold w-full text-center py-4 border-2 border-dashed rounded-lg bg-muted/20">
+                        Sin imágenes seleccionadas.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-black uppercase text-[10px] text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
+                    <div className="flex gap-2 overflow-x-auto pb-2 min-h-[4rem]">
+                      {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
+                        const isSelected = formData.imgUrls.includes(m.url);
+                        return (
+                          <div 
+                            key={m.id} 
+                            className={cn(
+                              "relative w-16 h-16 shrink-0 rounded-lg border-2 overflow-hidden cursor-pointer transition-all",
+                              isSelected ? "border-primary opacity-50 cursor-not-allowed" : "border-border hover:border-primary"
+                            )}
+                            onClick={() => {
+                              if (!isSelected) {
+                                setFormData(prev => ({ ...prev, imgUrls: [...prev.imgUrls, m.url] }));
+                              }
+                            }}
+                          >
+                            <img src={m.url} alt={m.name} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                      {(!mediaList || mediaList.filter(m => m.type === "IMAGE").length === 0) && (
+                        <div className="flex items-center justify-center w-full text-[9px] font-bold text-muted-foreground uppercase opacity-50">
+                          Tu galería está vacía
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Input id="external-url-input" placeholder="O pega un link externo..." className="bg-background flex-1 text-[10px]" />
+                    <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm h-10 px-4">
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
