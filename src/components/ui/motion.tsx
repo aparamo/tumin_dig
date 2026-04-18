@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +17,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function StaggerContainer({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+export function StaggerContainer({ 
+  children, 
+  delay = 0,
+  className
+}: { 
+  children: React.ReactNode; 
+  delay?: number;
+  className?: string;
+}) {
   return (
     <motion.div
       initial="hidden"
@@ -32,20 +40,21 @@ export function StaggerContainer({ children, delay = 0 }: { children: React.Reac
           },
         },
       }}
-      className="flex flex-col gap-3"
+      className={cn("flex flex-col gap-3", className)}
     >
       {children}
     </motion.div>
   );
 }
 
-export function StaggerItem({ children }: { children: React.ReactNode }) {
+export function StaggerItem({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <motion.div
       variants={{
         hidden: { opacity: 0, x: -10 },
         show: { opacity: 1, x: 0 },
       }}
+      className={className}
     >
       {children}
     </motion.div>

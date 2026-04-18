@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 
 const SHEETS_DIR = path.resolve(process.cwd(), "../sheets");
 
-const parseCSV = (fileName: string) => {
+const parseCSV = (fileName: string): any[] => {
   const filePath = path.join(SHEETS_DIR, fileName);
   if (!fs.existsSync(filePath)) {
     console.warn(`⚠️ Archivo no encontrado: ${filePath}`);

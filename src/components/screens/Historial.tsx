@@ -14,7 +14,7 @@ export function Historial() {
   if (!session?.user) return null;
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 p-4 max-w-4xl mx-auto w-full pb-10">
       <h1 className="text-3xl font-black uppercase tracking-tighter">Historial</h1>
 
       <StaggerContainer>

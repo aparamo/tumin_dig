@@ -35,7 +35,7 @@ export function Perfil() {
   if (!session?.user) return null;
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto w-full pb-10">
       <h1 className="text-3xl font-black uppercase tracking-tighter">Mi Perfil</h1>
 
       <Card className="bg-secondary/10 border-secondary border-dashed">

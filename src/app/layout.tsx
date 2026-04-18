@@ -4,6 +4,7 @@ import "./globals.css";
 import { TRPCReactProvider } from "@/lib/trpc/react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-heading",
@@ -40,7 +41,9 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
             </ThemeProvider>
           </TRPCReactProvider>
         </SessionProvider>

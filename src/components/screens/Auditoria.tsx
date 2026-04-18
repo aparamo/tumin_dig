@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle } from "lucide-react";
+import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle, Flame, Bug, Star } from "lucide-react";
 
 export function Auditoria() {
   const utils = trpc.useUtils();
@@ -25,86 +25,119 @@ export function Auditoria() {
     onError: (error) => alert(error.message),
   });
 
-  if (isLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-slate-400" /></div>;
+  if (isLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
 
   return (
-    <div className="flex flex-col gap-8 p-4 pb-12">
-      <h1 className="text-2xl font-bold text-red-700 flex items-center gap-2">
-        <ShieldAlert className="w-6 h-6" /> Auditoría Regional
-      </h1>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-bold text-orange-600">🔥 Top 10 Bonos Duplicadores</h2>
-        <Card className="shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Socio</TableHead>
-                <TableHead className="text-right">Acumulado</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {report?.topDuplicators.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium text-xs">{u.name}<br/><span className="text-[10px] text-slate-400">{u.id}</span></TableCell>
-                  <TableCell className="text-right font-bold text-orange-500">{u.duplicatorBonus} Ŧ</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => freezeMutation.mutate({ userId: u.id, status: "CONGELADO" })}>
-                      <UserMinus className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-bold text-purple-600">🦠 Cuentas de Solo Minado</h2>
-        <div className="space-y-3">
-          {report?.parasites.map((p: any) => (
-            <Card key={p.id} className="border-l-4 border-l-purple-400">
-              <CardContent className="p-4 flex justify-between items-center text-xs">
-                <div>
-                  <div className="font-bold">{p.name} ({p.id})</div>
-                  <div className="text-purple-600">Minado: {p.total_mined} Ŧ → Envía todo a: {p.primary_receiver_name}</div>
-                </div>
-                <Button variant="destructive" size="sm" onClick={() => freezeMutation.mutate({ userId: p.id, status: "CONGELADO" })}>
-                  Congelar
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-          {report?.parasites.length === 0 && <p className="text-sm text-slate-400 text-center py-4 italic">No se detectan anomalías.</p>}
+    <div className="flex flex-col gap-8 p-4 pb-20 max-w-5xl mx-auto w-full">
+      <div className="flex items-center gap-3">
+        <div className="bg-destructive p-3 rounded-xl border-2 border-border shadow-neo-sm">
+          <ShieldAlert className="w-8 h-8 text-destructive-foreground" />
         </div>
-      </section>
+        <h1 className="text-4xl font-black uppercase tracking-tighter">Auditoría Regional</h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-2">
+            <Flame className="w-5 h-5 text-secondary" />
+            <h2 className="text-xl font-black uppercase tracking-tight">Top Duplicadores</h2>
+          </div>
+          <Card className="overflow-hidden border-2 border-border shadow-neo">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-b-2 border-border">
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Socio</TableHead>
+                  <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Acumulado</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {report?.topDuplicators.map((u) => (
+                  <TableRow key={u.id} className="border-b-2 border-border/10">
+                    <TableCell className="font-bold py-4">
+                      <div className="text-sm uppercase tracking-tight">{u.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{u.id}</div>
+                    </TableCell>
+                    <TableCell className="text-right font-black text-secondary text-lg tabular-nums">
+                      {u.duplicatorBonus} Ŧ
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive hover:bg-destructive/10" 
+                        onClick={() => freezeMutation.mutate({ userId: u.id, status: "CONGELADO" })}
+                      >
+                        <UserMinus className="w-5 h-5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 px-2">
+            <Bug className="w-5 h-5 text-accent" />
+            <h2 className="text-xl font-black uppercase tracking-tight">Anomalías Detectadas</h2>
+          </div>
+          <div className="flex flex-col gap-4">
+            {report?.parasites.map((p: any) => (
+              <Card key={p.id} className="border-l-8 border-l-accent shadow-neo-sm">
+                <CardContent className="p-4 flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="font-black uppercase text-sm">{p.name}</div>
+                    <div className="text-[10px] text-muted-foreground font-bold">
+                      Minado: <span className="text-accent">{p.total_mined} Ŧ</span> → Receptor: {p.primary_receiver_name}
+                    </div>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={() => freezeMutation.mutate({ userId: p.id, status: "CONGELADO" })} className="font-black uppercase text-[10px] h-8 shadow-neo-sm">
+                    Congelar
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            {report?.parasites.length === 0 && (
+              <div className="neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-xs tracking-widest">
+                No se detectan anomalías graves.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-blue-600">🛍️ Control de Calidad Bazar</h2>
-        <Card className="shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2 px-2">
+          <Star className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-black uppercase tracking-tight">Calidad del Bazar</h2>
+        </div>
+        <Card className="overflow-hidden border-2 border-border shadow-neo">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Producto</TableHead>
-                <TableHead className="text-right">⭐</TableHead>
+            <TableHeader className="bg-muted/50">
+              <TableRow className="border-b-2 border-border">
+                <TableHead className="font-black uppercase text-[10px] tracking-widest">Producto</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Socio</TableHead>
+                <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Rating</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {report?.productQuality.map((p) => (
-                <TableRow key={p.productId}>
-                  <TableCell className="text-xs">
-                    <div className="font-bold">{p.productName}</div>
-                    <div className="text-[10px] text-slate-400">Socio: {p.sellerName}</div>
+                <TableRow key={p.productId} className="border-b-2 border-border/10">
+                  <TableCell className="font-bold py-4">
+                    <div className="text-sm uppercase tracking-tight">{p.productName}</div>
                   </TableCell>
-                  <TableCell className="text-right text-yellow-500 font-bold">
-                    {p.avgRating ? p.avgRating.toFixed(1) : "N/A"}
+                  <TableCell className="text-right font-bold text-xs uppercase text-muted-foreground">
+                    {p.sellerName}
+                  </TableCell>
+                  <TableCell className="text-right text-primary font-black text-lg">
+                    {p.avgRating ? p.avgRating.toFixed(1) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="text-slate-400">
-                      <Trash2 className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="text-muted-foreground">
+                      <Trash2 className="w-5 h-5" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -114,17 +147,18 @@ export function Auditoria() {
         </Card>
       </section>
 
-      <div className="pt-6 border-t">
+      <div className="pt-10">
         <Button 
-          className="w-full h-14 bg-green-600 hover:bg-green-700 text-lg font-bold shadow-lg"
+          variant="default"
+          className="w-full h-16 text-xl"
           onClick={() => claimReward.mutate()}
           disabled={claimReward.isPending}
         >
-          {claimReward.isPending ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 w-5 h-5" />}
-          Validar Auditoría (Cobrar 30 Ŧ)
+          {claimReward.isPending ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-3 w-6 h-6" />}
+          Finalizar Auditoría Mensual (+30 Ŧ)
         </Button>
-        <p className="text-[10px] text-slate-400 text-center mt-2 italic">
-          Confirmo que he revisado las anomalías de este mes en mi región.
+        <p className="text-[10px] text-muted-foreground text-center mt-3 font-bold uppercase tracking-widest">
+          Al validar, confirmas la revisión manual de los indicadores regionales.
         </p>
       </div>
     </div>

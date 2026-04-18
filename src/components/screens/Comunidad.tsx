@@ -39,9 +39,13 @@ export function Comunidad() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-2xl font-bold text-slate-800">Comunidad</h1>
-      <p className="text-sm text-slate-500">Convierte tu labor comunitaria en Túmin</p>
+    <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto w-full pb-10">
+      <div className="space-y-1">
+        <h1 className="text-4xl font-black uppercase tracking-tighter text-foreground">Comunidad</h1>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+          Convierte tu labor comunitaria en Túmin
+        </p>
+      </div>
 
       <Card className="shadow-md border-purple-100">
         <CardHeader>

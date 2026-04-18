@@ -56,7 +56,7 @@ export function Pagar() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto w-full">
       <Card>
         <CardHeader>
           <CardTitle>Enviar Túmin</CardTitle>

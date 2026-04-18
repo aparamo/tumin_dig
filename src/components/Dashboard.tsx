@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence, motion } from "motion/react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function Dashboard() {
   const { currentScreen, setCurrentScreen, isSidebarOpen, setSidebarOpen } = useStore();
@@ -49,163 +50,226 @@ export function Dashboard() {
   ];
 
   const coordinatorItems = [
-    { id: "coordinacion", label: "Validar Trabajos", icon: Settings, color: "text-orange-500" },
-    { id: "gestion-roles", label: "Gestionar Roles", icon: Users, color: "text-purple-500" },
-    { id: "auditoria", label: "Panel de Auditoría", icon: ShieldAlert, color: "text-red-500" },
+    { id: "coordinacion", label: "Validar", icon: Settings, color: "text-orange-500" },
+    { id: "gestion-roles", label: "Roles", icon: Users, color: "text-purple-500" },
+    { id: "auditoria", label: "Auditoría", icon: ShieldAlert, color: "text-red-500" },
   ];
 
-  return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-card border-b-4 border-border flex items-center justify-between px-4 z-50">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSidebarOpen(true)}
-            className="neo-btn bg-background"
-          >
-            <Menu className="w-6 h-6" />
-          </Button>
-          <h1 className="text-2xl font-black tracking-tight text-foreground uppercase">Túmin</h1>
-        </div>
-        <ThemeToggle />
-      </header>
+  const NavItem = ({ item, isMobile = false }: { item: typeof menuItems[0], isMobile?: boolean }) => {
+    const isActive = currentScreen === item.id;
+    
+    if (isMobile) {
+      return (
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
+            isActive ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
+          )}
+          onClick={() => setCurrentScreen(item.id as any)}
+        >
+          <item.icon className="w-6 h-6" />
+          <span className="text-[10px] font-bold uppercase">{item.label}</span>
+        </Button>
+      );
+    }
 
-      {/* Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-72 bg-card border-r-4 border-border z-[70] transition-transform duration-300 transform p-6",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex justify-between items-center mb-10">
-          <h2 className="text-xl font-black uppercase">Menú</h2>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSidebarOpen(false)}
-            className="neo-btn bg-background"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        <nav className="flex flex-col gap-3">
-          {menuItems.map((item) => (
-            <Button 
-              key={item.id}
-              variant="ghost" 
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
               className={cn(
-                "justify-start gap-3 h-12 text-lg neo-btn bg-background hover:bg-accent",
-                currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
+                "w-12 h-12 rounded-xl transition-all border-2 border-transparent",
+                isActive
+                  ? "bg-primary text-primary-foreground border-border shadow-neo-sm scale-110"
+                  : "text-muted-foreground hover:bg-muted"
               )}
-              onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
+              onClick={() => setCurrentScreen(item.id as any)}
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
+              <item.icon className="w-6 h-6" />
             </Button>
-          ))}
+          }
+        />
+        <TooltipContent
+          side="right"
+          className="neo-card bg-card border-2 font-black uppercase text-xs text-foreground"
+        >
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Desktop Sidebar (Permanent Mini) */}
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-6 z-50 gap-8">
+        <div className="w-12 h-12 bg-primary border-2 border-border shadow-neo-sm rounded-xl flex items-center justify-center font-black text-xl text-primary-foreground">
+          T
+        </div>
+        
+        <nav className="flex flex-col gap-4">
+          {menuItems.map((item) => (
+            <NavItem key={item.id} item={item} />
+          ))}
+          
           {isCoordinator && (
             <>
-              <div className="h-1 bg-border my-4" />
+              <div className="h-1 w-8 bg-border my-2" />
               {coordinatorItems.map((item) => (
-                <Button 
-                  key={item.id}
-                  variant="ghost" 
-                  className={cn(
-                    "justify-start gap-3 h-12 text-lg neo-btn bg-background hover:bg-accent",
-                    currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
-                  )}
-                  onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </Button>
+                <NavItem key={item.id} item={item} />
               ))}
             </>
           )}
-
-          <div className="h-1 bg-border my-4" />
-          <Button 
-            variant="ghost" 
-            className="justify-start gap-3 h-12 text-lg neo-btn bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={() => signOut()}
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar Sesión
-          </Button>
         </nav>
+
+        <div className="mt-auto flex flex-col gap-4">
+          <ThemeToggle />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-12 h-12 rounded-xl text-destructive hover:bg-destructive/10 border-2 border-transparent"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="w-6 h-6" />
+                </Button>
+              }
+            />
+            <TooltipContent side="right" className="neo-card bg-destructive text-destructive-foreground border-2 font-black uppercase text-xs">
+              Salir
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="mt-16 mb-24 flex-1 overflow-x-hidden p-4">
-        <AnimatePresence mode="wait">
-          <PageTransition key={currentScreen}>
-            {renderScreen()}
-          </PageTransition>
-        </AnimatePresence>
-      </main>
+      <div className="flex flex-col flex-1 md:ml-20">
+        {/* Header */}
+        <header className="fixed top-0 left-0 right-0 md:left-20 h-16 bg-card border-b-4 border-border flex items-center justify-between px-4 z-40">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden neo-btn bg-background"
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+            <h1 className="text-2xl font-black tracking-tight text-foreground uppercase">
+              {menuItems.find(i => i.id === currentScreen)?.label || "Túmin"}
+            </h1>
+          </div>
+          <div className="md:hidden">
+            <ThemeToggle />
+          </div>
+        </header>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-card border-t-4 border-border flex justify-around items-center px-4 z-50">
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
-            currentScreen === "inicio" ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
+              onClick={() => setSidebarOpen(false)}
+            />
           )}
-          onClick={() => setCurrentScreen("inicio")}
-        >
-          <Home className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase">Inicio</span>
-        </Button>
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
-            currentScreen === "pagar" ? "bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
-          )}
-          onClick={() => setCurrentScreen("pagar")}
-        >
-          <Send className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase">Pagar</span>
-        </Button>
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
-            currentScreen === "historial" ? "bg-accent text-accent-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
-          )}
-          onClick={() => setCurrentScreen("historial")}
-        >
-          <History className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase">Historial</span>
-        </Button>
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
-            currentScreen === "perfil" ? "bg-muted text-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
-          )}
-          onClick={() => setCurrentScreen("perfil")}
-        >
-          <User className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase">Perfil</span>
-        </Button>
-      </nav>
+        </AnimatePresence>
+
+        {/* Mobile Sidebar (Slide-out) */}
+        <aside className={cn(
+          "md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card border-r-4 border-border z-[70] transition-transform duration-300 transform p-6",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-xl font-black uppercase">Menú Completo</h2>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(false)}
+              className="neo-btn bg-background"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <nav className="flex flex-col gap-3">
+            {menuItems.map((item) => (
+              <Button 
+                key={item.id}
+                variant="ghost" 
+                className={cn(
+                  "justify-start gap-3 h-12 text-lg neo-btn bg-background",
+                  currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
+                )}
+                onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.label}
+              </Button>
+            ))}
+
+            {isCoordinator && (
+              <>
+                <div className="h-1 bg-border my-4" />
+                {coordinatorItems.map((item) => (
+                  <Button 
+                    key={item.id}
+                    variant="ghost" 
+                    className={cn(
+                      "justify-start gap-3 h-12 text-lg neo-btn bg-background",
+                      currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
+                    )}
+                    onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </Button>
+                ))}
+              </>
+            )}
+            
+            <div className="h-1 bg-border my-4" />
+            <Button 
+              variant="ghost" 
+              className="justify-start gap-3 h-12 text-lg neo-btn bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => signOut()}
+            >
+              <LogOut className="w-5 h-5" />
+              Cerrar Sesión
+            </Button>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="mt-16 mb-24 md:mb-0 flex-1 overflow-x-hidden p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <AnimatePresence mode="wait">
+              <PageTransition key={currentScreen}>
+                {renderScreen()}
+              </PageTransition>
+            </AnimatePresence>
+          </div>
+        </main>
+
+        {/* Mobile Bottom Nav */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-card border-t-4 border-border flex justify-around items-center px-4 z-50">
+          <NavItem isMobile item={menuItems[0]} /> {/* Inicio */}
+          <NavItem isMobile item={itemWithId(menuItems, "pagar")} />
+          <NavItem isMobile item={itemWithId(menuItems, "bazar")} />
+          <NavItem isMobile item={itemWithId(menuItems, "perfil")} />
+        </nav>
+      </div>
     </div>
   );
+}
+
+function itemWithId(items: any[], id: string) {
+  return items.find(i => i.id === id) || items[0];
 }

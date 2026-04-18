@@ -13,7 +13,6 @@ import { Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X } from "luc
 import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
-import { cn } from "@/lib/utils";
 
 export function Bazar() {
   const { setCurrentScreen } = useStore();
@@ -88,45 +87,45 @@ export function Bazar() {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+      <div className="flex flex-col md:flex-row gap-4 items-end">
+        <div className="flex-1 w-full relative">
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 mb-1 block">Buscar</Label>
+          <Search className="absolute left-4 bottom-3 w-5 h-5 text-muted-foreground" />
           <Input 
-            placeholder="Buscar..." 
-            className="pl-12 bg-card h-14 text-lg border-2"
+            placeholder="Productos..." 
+            className="pl-12 bg-card h-12 border-2"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex-1 space-y-2">
-            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Categoría</Label>
-            <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-              <SelectTrigger className="h-12 bg-card border-2">
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-2">
-                <SelectItem value="Todas">Todas</SelectItem>
-                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1 space-y-2">
-            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Región</Label>
-            <Select value={region} onValueChange={(val) => val && setRegion(val)}>
-              <SelectTrigger className="h-12 bg-card border-2">
-                <SelectValue placeholder="Región" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-2">
-                {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="w-full md:w-48 space-y-1">
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Categoría</Label>
+          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
+            <SelectTrigger className="h-12 bg-card border-2">
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-2">
+              <SelectItem value="Todas">Todas</SelectItem>
+              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-full md:w-48 space-y-1">
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Región</Label>
+          <Select value={region} onValueChange={(val) => val && setRegion(val)}>
+            <SelectTrigger className="h-12 bg-card border-2">
+              <SelectValue placeholder="Región" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-2">
+              {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <StaggerContainer>
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading ? (
           <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
         ) : productsData && productsData.length > 0 ? (
@@ -153,7 +152,7 @@ export function Bazar() {
 
                     <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground mb-6">
                       <div className="bg-muted px-2 py-1 rounded border-border border">
-                        SOCIO: {item.seller.name}
+                        {item.seller.name}
                       </div>
                       {item.avgRating > 0 && (
                         <span className="flex items-center text-accent font-black bg-accent/10 px-2 py-1 rounded border border-accent/20">
@@ -163,12 +162,24 @@ export function Bazar() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1 h-12 border-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 h-12 border-2"
+                        onClick={() => {
+                          const sellerPhone = item.seller.phone;
+                          if (!sellerPhone) {
+                            alert("Este socio no tiene un teléfono registrado.");
+                            return;
+                          }
+                          const phone = sellerPhone.replace(/\D/g, "");
+                          window.open(`https://wa.me/${phone.startsWith("52") ? phone : "52" + phone}?text=Hola%20${encodeURIComponent(item.seller.name)},%20me%20interesa%20tu%20producto:%20${encodeURIComponent(item.product.name)}`, "_blank");
+                        }}
+                      >
                         <MessageCircle className="w-5 h-5 mr-2" /> WA
                       </Button>
                       <Button 
                         variant="default"
-                        className="flex-[2] h-12"
+                        className="flex-2 h-12"
                         onClick={() => setCurrentScreen("pagar")}
                       >
                         <ShoppingCart className="w-5 h-5 mr-2" /> Comprar
@@ -187,7 +198,7 @@ export function Bazar() {
       </StaggerContainer>
 
       {isFormOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-auto py-10">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-100 flex items-center justify-center p-4 overflow-auto py-10">
           <Card className="w-full max-w-md shadow-2xl relative">
             <Button 
               variant="ghost" 

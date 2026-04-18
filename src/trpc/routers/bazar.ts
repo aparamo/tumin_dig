@@ -33,6 +33,7 @@ export const bazarRouter = createTRPCRouter({
             id: users.id,
             name: users.name,
             region: users.region,
+            phone: users.phone,
           },
           avgRating: sql<number>`COALESCE((SELECT AVG(${ratings.stars}) FROM ${ratings} WHERE ${ratings.sellerId} = ${products.sellerId}), 0)`.mapWith(Number),
         })
