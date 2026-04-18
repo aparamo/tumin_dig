@@ -33,65 +33,65 @@
 }
 
 :root {
-  --background: #fdfbf7;
-  --foreground: #1a1a1a;
+  --background: #ecfdf5; /* Verde clarito pastel (Emerald 50) */
+  --foreground: #064e3b; /* Emerald 950 */
   
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #064e3b;
   
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
+  --popover-foreground: #064e3b;
   
-  --primary: #ff9f66;
-  --primary-foreground: #1a1a1a;
+  --primary: #10b981; /* Emerald 500 */
+  --primary-foreground: #ffffff;
   
-  --secondary: #a8e6cf;
-  --secondary-foreground: #1a1a1a;
+  --secondary: #f59e0b; /* Amber 500 */
+  --secondary-foreground: #ffffff;
   
-  --muted: #f3f4f6;
-  --muted-foreground: #666666;
+  --muted: #f0fdf4;
+  --muted-foreground: #065f46;
   
-  --accent: #ffd3b6;
-  --accent-foreground: #1a1a1a;
+  --accent: #fbbf24; /* Amber 400 */
+  --accent-foreground: #000000;
   
-  --destructive: #ff6b6b;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
-  --border: #1a1a1a;
-  --input: #1a1a1a;
-  --ring: #ff9f66;
+  --border: #064e3b;
+  --input: #064e3b;
+  --ring: #10b981;
   
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: #1a1a1a;
-  --foreground: #f3f4f6;
+  --background: #1c1917; /* Stone 900 */
+  --foreground: #fafaf9; /* Stone 50 */
   
-  --card: #262626;
-  --card-foreground: #f3f4f6;
+  --card: #292524; /* Stone 800 */
+  --card-foreground: #fafaf9;
   
-  --popover: #262626;
-  --popover-foreground: #f3f4f6;
+  --popover: #292524;
+  --popover-foreground: #fafaf9;
   
-  --primary: #ff9f66;
-  --primary-foreground: #1a1a1a;
+  --primary: #10b981; 
+  --primary-foreground: #ffffff;
   
-  --secondary: #a8e6cf;
-  --secondary-foreground: #1a1a1a;
+  --secondary: #fbbf24; 
+  --secondary-foreground: #1c1917;
   
-  --muted: #333333;
-  --muted-foreground: #a1a1aa;
+  --muted: #44403c; /* Stone 700 */
+  --muted-foreground: #d6d3d1; /* Stone 300 */
   
-  --accent: #ff8c42;
-  --accent-foreground: #1a1a1a;
+  --accent: #f59e0b;
+  --accent-foreground: #ffffff;
   
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
-  --border: #f3f4f6;
-  --input: #f3f4f6;
-  --ring: #ff9f66;
+  --border: #fafaf9; /* Stone 50 */
+  --input: #fafaf9;
+  --ring: #10b981;
 }
 
 @layer base {
@@ -99,13 +99,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
   html {
     @apply font-sans;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-bold;
+  /* Forzamos colores de texto en dark mode */
+  h1, h2, h3, h4, h5, h6, p, span, label, div {
+    @apply text-foreground;
   }
 }
 
@@ -115,7 +116,7 @@
   }
   
   .neo-btn {
-    @apply border-2 border-border shadow-neo rounded-lg font-bold transition-all active:shadow-none active:translate-x-1 active:translate-y-1;
+    @apply border-2 border-border shadow-neo rounded-lg font-black transition-all active:shadow-none active:translate-x-1 active:translate-y-1;
   }
 
   .neo-input {

@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
+import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
+import { cn } from "@/lib/utils";
 
 export function Bazar() {
   const { setCurrentScreen } = useStore();
@@ -74,47 +76,49 @@ export function Bazar() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-2xl font-bold text-slate-800">Bazar Comunitario</h1>
-      
-      <Button 
-        onClick={() => setIsFormOpen(true)}
-        className="bg-blue-500 hover:bg-blue-600 font-bold"
-      >
-        <Plus className="w-4 h-4 mr-2" /> Vender algo nuevo
-      </Button>
+    <div className="flex flex-col gap-8 p-4 pb-12">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-black uppercase tracking-tighter">Bazar</h1>
+        <Button 
+          onClick={() => setIsFormOpen(true)}
+          variant="secondary"
+          className="h-12 shadow-neo-sm"
+        >
+          <Plus className="w-5 h-5 mr-1" /> Vender
+        </Button>
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input 
-            placeholder="Buscar productos o servicios..." 
-            className="pl-10"
+            placeholder="Buscar..." 
+            className="pl-12 bg-card h-14 text-lg border-2"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-<div className="flex gap-2">
-  <div className="flex-1">
-    <Label className="text-[10px] uppercase text-slate-400 font-bold mb-1 block">Categoría</Label>
-    <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-      <SelectTrigger className="text-xs h-9">
-        <SelectValue placeholder="Categoría" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="Todas">Todas</SelectItem>
-        {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-      </SelectContent>
-    </Select>
-  </div>
-  <div className="flex-1">
-    <Label className="text-[10px] uppercase text-slate-400 font-bold mb-1 block">Región</Label>
-    <Select value={region} onValueChange={(val) => val && setRegion(val)}>
-      <SelectTrigger className="text-xs h-9">
-...
+
+        <div className="flex gap-4">
+          <div className="flex-1 space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Categoría</Label>
+            <Select value={category} onValueChange={(val) => val && setCategory(val)}>
+              <SelectTrigger className="h-12 bg-card border-2">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-2">
+                <SelectItem value="Todas">Todas</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Región</Label>
+            <Select value={region} onValueChange={(val) => val && setRegion(val)}>
+              <SelectTrigger className="h-12 bg-card border-2">
                 <SelectValue placeholder="Región" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-card border-2">
                 {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -122,69 +126,88 @@ export function Bazar() {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <StaggerContainer>
         {isLoading ? (
-          <div className="flex justify-center p-8"><Loader2 className="animate-spin text-slate-400" /></div>
+          <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
         ) : productsData && productsData.length > 0 ? (
           productsData.map((item) => (
-            <Card key={item.product.id} className="overflow-hidden border-slate-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-slate-800">{item.product.name}</h3>
-                  <Badge variant="secondary" className="bg-slate-100 text-[10px]">
-                    {item.product.region}
-                  </Badge>
-                </div>
-                
-                <div className="text-orange-500 font-bold text-xl mb-1">
-                  $ {item.product.priceMxn} MXN + {item.product.priceTumin} Ŧ
-                </div>
-                <div className="text-[10px] text-slate-400 mb-3">
-                  (Total: $ {(item.product.priceMxn + item.product.priceTumin).toFixed(2)})
-                </div>
+            <StaggerItem key={item.product.id}>
+              <Card className="group overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-black text-2xl text-foreground uppercase tracking-tight leading-none">{item.product.name}</h3>
+                      <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
+                        {item.product.region}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-3xl font-black text-primary tracking-tighter">
+                        $ {item.product.priceMxn} <span className="text-sm uppercase text-muted-foreground font-bold">MXN</span>
+                      </span>
+                      <span className="text-3xl font-black text-secondary tracking-tighter">
+                        + {item.product.priceTumin} <span className="text-sm uppercase text-muted-foreground font-bold">Ŧ</span>
+                      </span>
+                    </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
-                  <span className="font-bold">Socio: {item.seller.name}</span>
-                  {item.avgRating > 0 && (
-                    <span className="flex items-center text-yellow-500 font-bold">
-                      <Star className="w-3 h-3 fill-current mr-0.5" /> {item.avgRating.toFixed(1)}
-                    </span>
-                  )}
-                </div>
+                    <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground mb-6">
+                      <div className="bg-muted px-2 py-1 rounded border-border border">
+                        SOCIO: {item.seller.name}
+                      </div>
+                      {item.avgRating > 0 && (
+                        <span className="flex items-center text-accent font-black bg-accent/10 px-2 py-1 rounded border border-accent/20">
+                          <Star className="w-3 h-3 fill-current mr-1" /> {item.avgRating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 h-10">
-                    <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="flex-[1.5] bg-orange-500 hover:bg-orange-600 h-10 font-bold"
-                    onClick={() => setCurrentScreen("pagar")}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" /> Comprar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="flex-1 h-12 border-2">
+                        <MessageCircle className="w-5 h-5 mr-2" /> WA
+                      </Button>
+                      <Button 
+                        variant="default"
+                        className="flex-[2] h-12"
+                        onClick={() => setCurrentScreen("pagar")}
+                      >
+                        <ShoppingCart className="w-5 h-5 mr-2" /> Comprar
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </StaggerItem>
           ))
         ) : (
-          <div className="text-center text-slate-400 py-8">No hay productos que coincidan.</div>
+          <div className="neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm tracking-widest">
+            No hay productos disponibles.
+          </div>
         )}
-      </div>
+      </StaggerContainer>
 
       {isFormOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 overflow-auto py-10">
-          <Card className="w-full max-w-md shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Publicar Producto</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setIsFormOpen(false)}><X/></Button>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-auto py-10">
+          <Card className="w-full max-w-md shadow-2xl relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-4 top-4 neo-btn bg-background h-10 w-10" 
+              onClick={() => setIsFormOpen(false)}
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <CardHeader>
+              <CardTitle className="text-3xl">Vender</CardTitle>
+              <CardDescription className="font-bold uppercase text-[10px]">Publica tu producto o servicio</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Nombre del Producto/Servicio</Label>
+                  <Label className="font-black uppercase text-xs">Nombre del Producto</Label>
                   <Input 
-                    placeholder="Ej. Jabón Artesanal de Miel" 
+                    placeholder="Ej. Jabón Artesanal" 
+                    className="bg-background"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
@@ -193,18 +216,20 @@ export function Bazar() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Precio Pesos ($)</Label>
+                    <Label className="font-black uppercase text-xs">Precio Pesos ($)</Label>
                     <Input 
                       type="number" 
+                      className="bg-background font-black"
                       value={formData.priceMxn}
                       onChange={(e) => setFormData({...formData, priceMxn: parseFloat(e.target.value)})}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Precio Túmin (Ŧ)</Label>
+                    <Label className="font-black uppercase text-xs">Precio Túmin (Ŧ)</Label>
                     <Input 
                       type="number" 
+                      className="bg-background font-black"
                       value={formData.priceTumin}
                       onChange={(e) => setFormData({...formData, priceTumin: parseFloat(e.target.value)})}
                       required
@@ -213,43 +238,51 @@ export function Bazar() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Categorías</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-md border text-[10px]">
+                  <Label className="font-black uppercase text-xs">Categoría</Label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-muted/30 rounded-lg border-2 border-border scrollbar-hide">
                     {categories.map(c => (
-                      <div key={c} className="flex items-center gap-2">
+                      <div key={c} className="flex items-center gap-3 py-1">
                         <Checkbox 
                           id={c} 
                           checked={formData.categories.includes(c)}
                           onCheckedChange={() => handleCategoryToggle(c)}
+                          className="h-5 w-5 border-2"
                         />
-                        <label htmlFor={c}>{c}</label>
+                        <label htmlFor={c} className="text-[10px] font-black uppercase cursor-pointer">{c}</label>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Imagen (Opcional)</Label>
-                  <UploadButton
-                    endpoint="productImage"
-                    onClientUploadComplete={(res) => {
-                      setFormData({...formData, imageUrl: res[0].url});
-                      alert("Imagen subida con éxito");
-                    }}
-                    onUploadError={(error: Error) => {
-                      alert(`ERROR! ${error.message}`);
-                    }}
-                  />
-                  {formData.imageUrl && <p className="text-[10px] text-green-600">✅ Imagen cargada</p>}
+                  <Label className="font-black uppercase text-xs ml-1">Imagen</Label>
+                  <div className="neo-card bg-background p-4 border-dashed border-2 flex justify-center">
+                    <UploadButton
+                      endpoint="productImage"
+                      onClientUploadComplete={(res) => {
+                        setFormData({...formData, imageUrl: res[0].url});
+                        alert("Imagen subida con éxito");
+                      }}
+                      onUploadError={(error: Error) => {
+                        alert(`ERROR! ${error.message}`);
+                      }}
+                      appearance={{
+                        button: "neo-btn bg-primary text-primary-foreground uppercase font-black text-xs px-6 h-10 shadow-neo-sm active:shadow-none translate-y-0 active:translate-y-0.5 active:translate-x-0.5",
+                        allowedContent: "text-[10px] font-bold uppercase mt-2 text-muted-foreground"
+                      }}
+                    />
+                  </div>
+                  {formData.imageUrl && <p className="text-[10px] text-primary font-black uppercase text-center mt-2">✅ Imagen cargada correctamente</p>}
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-blue-600 hover:bg-blue-700 h-12 font-bold"
+                  variant="default"
+                  className="w-full h-14 text-lg"
                   disabled={createProduct.isPending}
                 >
-                  {createProduct.isPending ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  Publicar en el Bazar
+                  {createProduct.isPending ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
+                  Publicar
                 </Button>
               </form>
             </CardContent>

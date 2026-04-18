@@ -55,65 +55,68 @@ function RegisterForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-xl border-blue-100">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4 py-12">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-blue-600">Crear Cuenta</CardTitle>
+          <CardTitle className="text-3xl font-black text-primary uppercase tracking-tighter">Crear Cuenta</CardTitle>
           {isReferralValid ? (
-            <div className="mt-2 flex items-center justify-center gap-2 bg-blue-50 text-blue-700 p-2 rounded-md text-sm">
+            <div className="mt-4 flex items-center justify-center gap-2 bg-secondary text-secondary-foreground p-3 rounded-lg border-2 border-border font-bold text-xs uppercase tracking-wider">
               <CheckCircle2 className="w-4 h-4" />
               Invitación detectada
             </div>
           ) : (
-            <div className="mt-2 flex items-center justify-center gap-2 bg-red-50 text-red-700 p-2 rounded-md text-sm">
+            <div className="mt-4 flex items-center justify-center gap-2 bg-destructive/10 text-destructive p-3 rounded-lg border-2 border-destructive/20 font-bold text-xs uppercase tracking-wider">
               <AlertCircle className="w-4 h-4" />
               Red cerrada: Necesitas invitación
             </div>
           )}
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre Completo</Label>
+              <Label htmlFor="name" className="font-black uppercase text-xs">Nombre Completo</Label>
               <Input 
                 id="name" 
                 placeholder="Tu nombre" 
+                className="bg-background"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 required 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono (WhatsApp)</Label>
+              <Label htmlFor="phone" className="font-black uppercase text-xs">Teléfono (WhatsApp)</Label>
               <Input 
                 id="phone" 
                 type="tel" 
                 placeholder="10 dígitos" 
+                className="bg-background"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 required 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico (Opcional)</Label>
+              <Label htmlFor="email" className="font-black uppercase text-xs">Correo Electrónico (Opcional)</Label>
               <Input 
                 id="email" 
                 type="email" 
                 placeholder="correo@ejemplo.com" 
+                className="bg-background"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
             </div>
             <div className="space-y-2">
-              <Label>Región</Label>
+              <Label className="font-black uppercase text-xs">Región</Label>
               <Select 
                 value={formData.region} 
                 onValueChange={(val) => val && setFormData({...formData, region: val})}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background border-2 border-border h-10 font-medium">
                   <SelectValue placeholder="Selecciona una región" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-2 border-border">
                   <SelectItem value="Veracruz">Veracruz</SelectItem>
                   <SelectItem value="Chiapas">Chiapas</SelectItem>
                   <SelectItem value="Oaxaca">Oaxaca</SelectItem>
@@ -124,31 +127,32 @@ function RegisterForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nip">Crea un NIP (4 números)</Label>
+              <Label htmlFor="nip" className="font-black uppercase text-xs">Crea un NIP (4 números)</Label>
               <Input 
                 id="nip" 
                 type="password" 
                 maxLength={4} 
                 placeholder="****" 
-                className="text-center tracking-widest"
+                className="text-center tracking-widest bg-background"
                 value={formData.nip}
                 onChange={(e) => setFormData({...formData, nip: e.target.value})}
                 required 
               />
             </div>
             
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {error && <p className="text-sm text-destructive font-bold text-center uppercase text-xs">{error}</p>}
 
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12"
+              variant="default"
+              className="w-full h-14 text-lg mt-4"
               disabled={registerMutation.isPending || !isReferralValid}
             >
               {registerMutation.isPending ? "Registrando..." : "Registrarme"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <Link href="/login" className="text-slate-500 hover:text-slate-700 text-sm underline">
+          <div className="mt-8 text-center">
+            <Link href="/login" className="text-foreground/60 font-bold hover:text-foreground text-xs uppercase tracking-widest underline underline-offset-4">
               Cancelar y volver
             </Link>
           </div>

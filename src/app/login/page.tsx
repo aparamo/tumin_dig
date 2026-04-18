@@ -41,49 +41,51 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-xl border-orange-100">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-orange-500">Túmin</CardTitle>
-          <CardDescription>Bienvenido a tu economía viva</CardDescription>
+          <CardTitle className="text-4xl font-black text-primary uppercase tracking-tighter">Túmin</CardTitle>
+          <CardDescription className="text-foreground/70 font-bold uppercase text-xs tracking-widest mt-2">Bienvenido a tu economía viva</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="identifier">Correo o Teléfono</Label>
+              <Label htmlFor="identifier" className="font-black uppercase text-xs">Correo o Teléfono</Label>
               <Input 
                 id="identifier" 
-                placeholder="Ej. 9611234567 o correo@..." 
+                placeholder="Ej. 9611234567" 
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
+                className="bg-background"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nip">NIP de Seguridad</Label>
+              <Label htmlFor="nip" className="font-black uppercase text-xs">NIP de Seguridad</Label>
               <Input 
                 id="nip" 
                 type="password" 
                 placeholder="****" 
                 maxLength={4} 
-                className="text-center tracking-[1em] text-xl"
+                className="text-center tracking-[1em] text-xl bg-background"
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {error && <p className="text-sm text-destructive font-bold text-center uppercase text-xs">{error}</p>}
             <Button 
               type="submit" 
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12"
+              variant="default"
+              className="w-full h-14 text-lg"
               disabled={isLoading}
             >
               {isLoading ? "Verificando..." : "Entrar"}
             </Button>
           </form>
-          <div className="mt-6 text-center text-sm text-slate-500">
+          <div className="mt-8 text-center text-sm font-medium">
             ¿No tienes cuenta?{" "}
-            <Link href="/register" className="text-blue-500 font-bold hover:underline">
+            <Link href="/register" className="text-accent font-black hover:underline uppercase tracking-tight">
               Regístrate aquí
             </Link>
           </div>
