@@ -1,8 +1,8 @@
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, userRoleEnum } from "../../db/schema";
-import { eq, or } from "drizzle-orm";
+import { users, userRoleEnum, media } from "../../db/schema";
+import { eq, or, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 
@@ -14,7 +14,7 @@ export const userRouter = createTRPCRouter({
         phone: z.string().min(10),
         email: z.string().email().optional().or(z.literal("")),
         region: z.string().min(2),
-        nip: z.string().min(4),
+        nip: z.string().min(4).max(6),
         referrerId: z.string().optional(),
       })
     )
@@ -96,14 +96,69 @@ export const userRouter = createTRPCRouter({
     return ctx.session.user;
   }),
 
+  fullMe: protectedProcedure.query(async ({ ctx }) => {
+    const [user] = await db.select().from(users).where(eq(users.id, ctx.session.user.id)).limit(1);
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    return user;
+  }),
+
+  updateProfile: protectedProcedure
+    .input(z.object({
+      name: z.string().min(2).optional(),
+      email: z.string().email().optional(),
+      phone: z.string().min(10).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await db.update(users).set(input).where(eq(users.id, ctx.session.user.id));
+      return { success: true };
+    }),
+
   updateNip: protectedProcedure
-    .input(z.object({ nip: z.string().length(4) }))
+    .input(z.object({ nip: z.string().min(4).max(6) }))
     .mutation(async ({ ctx, input }) => {
       const hashedNip = await bcrypt.hash(input.nip, 10);
       await db
         .update(users)
         .set({ nip: hashedNip })
         .where(eq(users.id, ctx.session.user.id));
+      return { success: true };
+    }),
+
+  getMediaUsage: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const [user] = await db.select({ tier: users.accountTier }).from(users).where(eq(users.id, userId)).limit(1);
+    const [usage] = await db.select({ total: sql<number>`sum(${media.sizeBytes})` }).from(media).where(eq(media.userId, userId));
+    
+    return {
+      tier: user?.tier || "NORMAL",
+      usedBytes: Number(usage?.total || 0),
+    };
+  }),
+
+  listMedia: protectedProcedure.query(async ({ ctx }) => {
+    return await db.select().from(media).where(eq(media.userId, ctx.session.user.id)).orderBy(sql`${media.createdAt} DESC`);
+  }),
+
+  deleteMedia: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.delete(media).where(and(eq(media.id, input.id), eq(media.userId, ctx.session.user.id)));
+      return { success: true };
+    }),
+
+  addExternalLink: protectedProcedure
+    .input(z.object({
+      url: z.string().url(),
+      name: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await db.insert(media).values({
+        userId: ctx.session.user.id,
+        url: input.url,
+        name: input.name,
+        type: "LINK",
+        sizeBytes: 0,
+      });
       return { success: true };
     }),
 

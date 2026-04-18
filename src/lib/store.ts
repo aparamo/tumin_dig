@@ -10,7 +10,8 @@ export type Screen =
   | "historial"
   | "auditoria"
   | "gestion-roles"
-  | "gestion-productos";
+  | "gestion-productos"
+  | "medios";
 
 interface AppState {
   currentScreen: Screen;

@@ -29,7 +29,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Credenciales incorrectas");
+        setError(result.error === "CredentialsSignin" ? "Credenciales incorrectas" : result.error);
       } else {
         router.push("/");
       }
@@ -66,12 +66,13 @@ export default function LoginPage() {
                 id="nip" 
                 type="password" 
                 placeholder="****" 
-                maxLength={4} 
-                className="text-center tracking-[1em] text-xl bg-background"
+                maxLength={6} 
+                className="text-center tracking-[0.5em] text-xl bg-background"
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
                 required
               />
+              <p className="text-[9px] text-muted-foreground font-bold uppercase text-center">4 a 6 caracteres alfanuméricos</p>
             </div>
             {error && <p className="text-sm text-destructive font-bold text-center uppercase text-xs">{error}</p>}
             <Button 

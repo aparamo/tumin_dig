@@ -55,12 +55,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user) return null;
 
+        // Security check: Lockout
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new Error(`Cuenta bloqueada temporalmente hasta ${user.lockedUntil.toLocaleString()}.`);
+        }
+
         const isNipValid = await bcrypt.compare(
           credentials.nip as string,
           user.nip
         );
 
-        if (!isNipValid) return null;
+        if (!isNipValid) {
+          const attempts = user.failedLoginAttempts + 1;
+          if (attempts >= 5) {
+            const lockoutTime = new Date(Date.now() + 15 * 60000); // 15 mins
+            await db.update(users)
+              .set({ failedLoginAttempts: attempts, lockedUntil: lockoutTime })
+              .where(eq(users.id, user.id));
+            throw new Error("Demasiados intentos. Cuenta bloqueada por 15 minutos.");
+          } else {
+            await db.update(users)
+              .set({ failedLoginAttempts: attempts })
+              .where(eq(users.id, user.id));
+            throw new Error(`NIP incorrecto. Intento ${attempts} de 5.`);
+          }
+        }
+
+        // Reset on success
+        if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+          await db.update(users)
+            .set({ failedLoginAttempts: 0, lockedUntil: null })
+            .where(eq(users.id, user.id));
+        }
 
         return {
           id: user.id,

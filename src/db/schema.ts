@@ -19,6 +19,13 @@ export const userRoleEnum = pgEnum("user_role", [
 
 export const userStatusEnum = pgEnum("user_status", ["ACTIVO", "CONGELADO"]);
 
+export const accountTierEnum = pgEnum("account_tier", [
+  "NORMAL",
+  "PAGO",
+  "PATROCINADOR",
+  "FINANCIADOR",
+]);
+
 export const transactionTypeEnum = pgEnum("transaction_type", [
   "TRANSFERENCIA",
   "BONO",
@@ -44,6 +51,10 @@ export const users = pgTable("TUMIN_users", {
   role: userRoleEnum("role").default("SOCIO").notNull(),
   referrerId: text("referrer_id"), // Self-reference
   status: userStatusEnum("status").default("ACTIVO").notNull(),
+  accountTier: accountTierEnum("account_tier").default("NORMAL").notNull(),
+  avatarUrl: text("avatar_url"),
+  failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until"),
   duplicatorBonus: doublePrecision("duplicator_bonus").default(0).notNull(),
   firstSaleOk: boolean("first_sale_ok").default(false).notNull(),
   productOk: boolean("product_ok").default(false).notNull(),
@@ -65,6 +76,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   votedRatings: many(ratings, { relationName: "voter" }),
   receivedRatings: many(ratings, { relationName: "seller" }),
   miningHistory: many(dailyMining),
+  media: many(media),
 }));
 
 export const transactions = pgTable("TUMIN_transactions", {
@@ -167,6 +179,25 @@ export const dailyMining = pgTable("TUMIN_daily_mining", {
 export const dailyMiningRelations = relations(dailyMining, ({ one }) => ({
   user: one(users, {
     fields: [dailyMining.userId],
+    references: [users.id],
+  }),
+}));
+
+export const mediaTypeEnum = pgEnum("media_type", ["IMAGE", "VIDEO", "LINK"]);
+
+export const media = pgTable("TUMIN_media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  url: text("url").notNull(),
+  name: text("name").notNull(),
+  sizeBytes: integer("size_bytes").default(0).notNull(),
+  type: mediaTypeEnum("type").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const mediaRelations = relations(media, ({ one }) => ({
+  user: one(users, {
+    fields: [media.userId],
     references: [users.id],
   }),
 }));

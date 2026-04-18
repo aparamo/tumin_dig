@@ -11,8 +11,9 @@ import { Coordinacion } from "./screens/Coordinacion";
 import { Auditoria } from "./screens/Auditoria";
 import { GestionRoles } from "./screens/GestionRoles";
 import { GestionProductos } from "./screens/GestionProductos";
+import { GestorMedios } from "./screens/GestorMedios";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut, PackageSearch, type LucideIcon } from "lucide-react";
+import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut, PackageSearch, type LucideIcon, FolderOpen } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
@@ -95,6 +96,7 @@ export function Dashboard() {
       case "auditoria": return <Auditoria />;
       case "gestion-roles": return <GestionRoles />;
       case "gestion-productos": return <GestionProductos />;
+      case "medios": return <GestorMedios />;
       default: return <div className="p-4">Pantalla en construcción: {currentScreen}</div>;
     }
   };
@@ -104,6 +106,7 @@ export function Dashboard() {
     { id: "pagar", label: "Pagar", icon: Send },
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
     { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
+    { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "comunidad", label: "Comunidad", icon: Users },
     { id: "perfil", label: "Mi Perfil", icon: User },
     { id: "historial", label: "Historial", icon: History },
@@ -188,7 +191,7 @@ export function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-60" 
               onClick={() => setSidebarOpen(false)}
             />
           )}
@@ -196,7 +199,7 @@ export function Dashboard() {
 
         {/* Mobile Sidebar (Slide-out) */}
         <aside className={cn(
-          "md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card border-r-4 border-border z-[70] transition-transform duration-300 transform p-6",
+          "md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card border-r-2 border-border z-70 transition-transform duration-300 transform p-6 overflow-y-auto",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}>
           <div className="flex justify-between items-center mb-10">
@@ -217,7 +220,7 @@ export function Dashboard() {
                 key={item.id}
                 variant="ghost" 
                 className={cn(
-                  "justify-start gap-3 h-12 text-lg neo-btn bg-background",
+                  "justify-start gap-3 h-12 text-lg neo-btn bg-background shadow-neo-sm/40",
                   currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
                 )}
                 onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
