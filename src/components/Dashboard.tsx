@@ -1,6 +1,6 @@
 "use client";
 
-import { useStore } from "@/lib/store";
+import { useStore, type Screen } from "@/lib/store";
 import { Inicio } from "./screens/Inicio";
 import { Pagar } from "./screens/Pagar";
 import { Bazar } from "./screens/Bazar";
@@ -10,17 +10,75 @@ import { Historial } from "./screens/Historial";
 import { Coordinacion } from "./screens/Coordinacion";
 import { Auditoria } from "./screens/Auditoria";
 import { GestionRoles } from "./screens/GestionRoles";
+import { GestionProductos } from "./screens/GestionProductos";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut } from "lucide-react";
+import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut, PackageSearch, type LucideIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import Image from "next/image";
+
+interface MenuItem {
+  id: Screen;
+  label: string;
+  icon: LucideIcon;
+  color?: string;
+}
+
+const NavItem = ({ item, isMobile = false }: { item: MenuItem, isMobile?: boolean }) => {
+  const { currentScreen, setCurrentScreen } = useStore();
+  const isActive = currentScreen === item.id;
+  
+  if (isMobile) {
+    return (
+      <Button 
+        variant="ghost" 
+        className={cn(
+          "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
+          isActive ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
+        )}
+        onClick={() => setCurrentScreen(item.id)}
+      >
+        <item.icon className="w-6 h-6" />
+        <span className="text-[10px] font-bold uppercase">{item.label}</span>
+      </Button>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-xl transition-all border-2 border-transparent",
+              isActive
+                ? "bg-primary text-primary-foreground border-border shadow-neo-sm scale-110"
+                : "text-muted-foreground hover:bg-muted"
+            )}
+            onClick={() => setCurrentScreen(item.id)}
+          >
+            <item.icon className="w-6 h-6" />
+          </Button>
+        }
+      />
+      <TooltipContent
+        side="right"
+        className="neo-card bg-card border-2 font-black uppercase text-xs text-foreground"
+      >
+        {item.label}
+      </TooltipContent>
+    </Tooltip>
+  );
+};
 
 export function Dashboard() {
-  const { currentScreen, setCurrentScreen, isSidebarOpen, setSidebarOpen } = useStore();
+  const { currentScreen, setCurrentScreen, setSidebarOpen, isSidebarOpen } = useStore();
   const { data: session } = useSession();
 
   const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL";
@@ -36,79 +94,33 @@ export function Dashboard() {
       case "coordinacion": return <Coordinacion />;
       case "auditoria": return <Auditoria />;
       case "gestion-roles": return <GestionRoles />;
+      case "gestion-productos": return <GestionProductos />;
       default: return <div className="p-4">Pantalla en construcción: {currentScreen}</div>;
     }
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: "inicio", label: "Inicio", icon: Home },
     { id: "pagar", label: "Pagar", icon: Send },
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
+    { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
     { id: "comunidad", label: "Comunidad", icon: Users },
     { id: "perfil", label: "Mi Perfil", icon: User },
     { id: "historial", label: "Historial", icon: History },
   ];
 
-  const coordinatorItems = [
+  const coordinatorItems: MenuItem[] = [
     { id: "coordinacion", label: "Validar", icon: Settings, color: "text-orange-500" },
     { id: "gestion-roles", label: "Roles", icon: Users, color: "text-purple-500" },
     { id: "auditoria", label: "Auditoría", icon: ShieldAlert, color: "text-red-500" },
   ];
 
-  const NavItem = ({ item, isMobile = false }: { item: typeof menuItems[0], isMobile?: boolean }) => {
-    const isActive = currentScreen === item.id;
-    
-    if (isMobile) {
-      return (
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
-            isActive ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
-          )}
-          onClick={() => setCurrentScreen(item.id as any)}
-        >
-          <item.icon className="w-6 h-6" />
-          <span className="text-[10px] font-bold uppercase">{item.label}</span>
-        </Button>
-      );
-    }
-
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-xl transition-all border-2 border-transparent",
-                isActive
-                  ? "bg-primary text-primary-foreground border-border shadow-neo-sm scale-110"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-              onClick={() => setCurrentScreen(item.id as any)}
-            >
-              <item.icon className="w-6 h-6" />
-            </Button>
-          }
-        />
-        <TooltipContent
-          side="right"
-          className="neo-card bg-card border-2 font-black uppercase text-xs text-foreground"
-        >
-          {item.label}
-        </TooltipContent>
-      </Tooltip>
-    );
-  };
-
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar (Permanent Mini) */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-6 z-50 gap-8">
-        <div className="w-12 h-12 bg-primary border-2 border-border shadow-neo-sm rounded-xl flex items-center justify-center font-black text-xl text-primary-foreground">
-          T
+        <div className="w-12 h-12 bg-emerald-700 border border-border shadow-neo-sm rounded-full flex items-center justify-center font-black text-xl text-secondary-foreground">
+          <Image src="/logo_trans_sm.png" alt="Túmin Digital" width={32} height={32} />
         </div>
         
         <nav className="flex flex-col gap-4">
@@ -188,7 +200,7 @@ export function Dashboard() {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}>
           <div className="flex justify-between items-center mb-10">
-            <h2 className="text-xl font-black uppercase">Menú Completo</h2>
+            <h2 className="text-xl font-black uppercase">Menú</h2>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -208,7 +220,7 @@ export function Dashboard() {
                   "justify-start gap-3 h-12 text-lg neo-btn bg-background",
                   currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
                 )}
-                onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
+                onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
               >
                 <item.icon className="w-5 h-5" />
                 {item.label}
@@ -226,7 +238,7 @@ export function Dashboard() {
                       "justify-start gap-3 h-12 text-lg neo-btn bg-background",
                       currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
                     )}
-                    onClick={() => { setCurrentScreen(item.id as any); setSidebarOpen(false); }}
+                    onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
                   >
                     <item.icon className="w-5 h-5" />
                     {item.label}
@@ -270,6 +282,6 @@ export function Dashboard() {
   );
 }
 
-function itemWithId(items: any[], id: string) {
+function itemWithId(items: MenuItem[], id: Screen) {
   return items.find(i => i.id === id) || items[0];
 }

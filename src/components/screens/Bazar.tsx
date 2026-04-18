@@ -9,10 +9,44 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X } from "lucide-react";
+import { 
+  Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X, 
+  Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
+  Palette, Home as HomeIcon, Sparkles, GraduationCap, 
+  Presentation, Music, Ticket, Leaf, ChevronLeft, ChevronRight,
+  ShoppingBag
+} from "lucide-react";
 import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
+
+const CATEGORY_ICONS: Record<string, any> = {
+  "Alimentos": Utensils,
+  "Bebidas": Coffee,
+  "Ropa": Shirt,
+  "Artesanías": Hammer,
+  "Salud y Bienestar": HeartPulse,
+  "Servicios Profesionales": Briefcase,
+  "Arte": Palette,
+  "Hogar": HomeIcon,
+  "Cuidado Personal": Sparkles,
+  "Educación": GraduationCap,
+  "Talleres": Presentation,
+  "Cultura": Music,
+  "Entretenimiento": Ticket,
+  "Agroecología y Jardinería": Leaf
+};
+
+function formatRegion(region: string) {
+  if (region === "Estado de México") return "EdoMex";
+  if (region === "Ciudad de México") return "CDMX";
+  if (region === "Veracruz") return "Ver";
+  if (region === "Oaxaca") return "Oax";
+  if (region === "Chiapas") return "Chps";
+  if (region === "Hidalgo") return "Hgo";
+  if (region === "Morelos") return "Mor";
+  return region;
+}
 
 export function Bazar() {
   const { setCurrentScreen } = useStore();
@@ -20,6 +54,7 @@ export function Bazar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [region, setRegion] = useState("Todas");
+  const [sortBy, setSortBy] = useState<"recientes" | "menor_precio" | "mayor_precio">("recientes");
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Form State
@@ -29,20 +64,34 @@ export function Bazar() {
     priceTumin: 0,
     categories: [] as string[],
     imageUrl: "",
+    imgUrls: [] as string[],
   });
 
-  const { data: productsData, isLoading } = trpc.bazar.getProducts.useQuery({
+  const { 
+    data: productsData, 
+    isLoading, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = trpc.bazar.getProducts.useInfiniteQuery({
     name: searchTerm || undefined,
     category: category === "Todas" ? undefined : category,
     region: region === "Todas" ? undefined : region,
+    sortBy,
+    limit: 12,
+  }, {
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialCursor: 0,
   });
+
+  const allProducts = productsData?.pages.flatMap(page => page.items) || [];
 
   const createProduct = trpc.bazar.createProduct.useMutation({
     onSuccess: () => {
       alert("¡Producto publicado correctamente!");
       setIsFormOpen(false);
       utils.bazar.getProducts.invalidate();
-      setFormData({ name: "", priceMxn: 0, priceTumin: 0, categories: [], imageUrl: "" });
+      setFormData({ name: "", priceMxn: 0, priceTumin: 0, categories: [], imageUrl: "", imgUrls: [] });
     },
     onError: (error) => alert(error.message),
   });
@@ -123,35 +172,87 @@ export function Bazar() {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="w-full md:w-48 space-y-1">
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Ordenar Por</Label>
+          <Select value={sortBy} onValueChange={(val) => val && setSortBy(val as any)}>
+            <SelectTrigger className="h-12 bg-card border-2">
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-2">
+              <SelectItem value="recientes">Más Recientes</SelectItem>
+              <SelectItem value="menor_precio">Menor Precio</SelectItem>
+              <SelectItem value="mayor_precio">Mayor Precio</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading ? (
-          <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
-        ) : productsData && productsData.length > 0 ? (
-          productsData.map((item) => (
+          <div className="flex justify-center p-12 col-span-full"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
+        ) : allProducts.length > 0 ? (
+          allProducts.map((item) => (
             <StaggerItem key={item.product.id}>
               <Card className="group overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-black text-2xl text-foreground uppercase tracking-tight leading-none">{item.product.name}</h3>
+                  {/* Image Container */}
+                  <div className="aspect-square bg-muted relative overflow-hidden border-b-2 border-border">
+                    {item.product.imgUrls && item.product.imgUrls.length > 0 ? (
+                      <img 
+                        src={item.product.imgUrls[0]} 
+                        alt={item.product.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/favicon.ico"; // Fallback
+                        }}
+                      />
+                    ) : item.product.imageUrl ? (
+                      <img 
+                        src={item.product.imageUrl} 
+                        alt={item.product.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                        <ShoppingBag className="w-16 h-16" />
+                      </div>
+                    )}
+                    
+                    <div className="absolute top-3 right-3 flex flex-col gap-2">
                       <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
-                        {item.product.region}
+                        {formatRegion(item.product.region)}
                       </Badge>
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 flex gap-1">
+                      {item.product.categories.slice(0, 2).map(cat => {
+                        const Icon = CATEGORY_ICONS[cat] || Sparkles;
+                        return (
+                          <div key={cat} className="bg-background/90 backdrop-blur-sm p-1.5 rounded-lg border border-border shadow-sm" title={cat}>
+                            <Icon className="w-4 h-4 text-primary" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="mb-3">
+                      <h3 className="font-black text-lg text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-[3rem]">{item.product.name}</h3>
                     </div>
                     
                     <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-3xl font-black text-primary tracking-tighter">
-                        $ {item.product.priceMxn} <span className="text-sm uppercase text-muted-foreground font-bold">MXN</span>
+                      <span className="text-2xl font-black text-primary tracking-tighter">
+                        $ {item.product.priceMxn} <span className="text-[10px] uppercase text-muted-foreground font-bold">MXN</span>
                       </span>
-                      <span className="text-3xl font-black text-secondary tracking-tighter">
-                        + {item.product.priceTumin} <span className="text-sm uppercase text-muted-foreground font-bold">Ŧ</span>
+                      <span className="text-2xl font-black text-secondary tracking-tighter">
+                        + {item.product.priceTumin} <span className="text-[10px] uppercase text-muted-foreground font-bold">Ŧ</span>
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted-foreground mb-6">
-                      <div className="bg-muted px-2 py-1 rounded border-border border">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-6">
+                      <div className="bg-muted px-2 py-1 rounded border-border border max-w-[100px] truncate">
                         {item.seller.name}
                       </div>
                       {item.avgRating > 0 && (
@@ -191,11 +292,30 @@ export function Bazar() {
             </StaggerItem>
           ))
         ) : (
-          <div className="neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm tracking-widest">
+          <div className="neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm tracking-widest col-span-full">
             No hay productos disponibles.
           </div>
         )}
       </StaggerContainer>
+
+      {hasNextPage && (
+        <div className="flex justify-center mt-8">
+          <Button
+            variant="outline"
+            className="border-2 shadow-neo-sm font-black uppercase h-12 px-8"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="animate-spin mr-2 w-5 h-5" /> Cargando...
+              </>
+            ) : (
+              "Cargar más productos"
+            )}
+          </Button>
+        </div>
+      )}
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-100 flex items-center justify-center p-4 overflow-auto py-10">
@@ -266,7 +386,7 @@ export function Bazar() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs ml-1">Imagen</Label>
+                  <Label className="font-black uppercase text-xs ml-1">Imagen (Uploadthing)</Label>
                   <div className="neo-card bg-background p-4 border-dashed border-2 flex justify-center">
                     <UploadButton
                       endpoint="productImage"
@@ -284,6 +404,33 @@ export function Bazar() {
                     />
                   </div>
                   {formData.imageUrl && <p className="text-[10px] text-primary font-black uppercase text-center mt-2">✅ Imagen cargada correctamente</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-black uppercase text-xs">O URL de Imagen Externa</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="https://..." 
+                      className="bg-background"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = (e.target as HTMLInputElement).value;
+                          if (val) {
+                            setFormData({...formData, imgUrls: [...formData.imgUrls, val]});
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.imgUrls.map((url, i) => (
+                      <Badge key={i} variant="outline" className="text-[8px] max-w-[100px] truncate">
+                        {url} <X className="w-2 h-2 ml-1 cursor-pointer" onClick={() => setFormData({...formData, imgUrls: formData.imgUrls.filter((_, idx) => idx !== i)})} />
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
 
                 <Button 

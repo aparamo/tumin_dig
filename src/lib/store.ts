@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type Screen = 
+export type Screen = 
   | "inicio" 
   | "pagar" 
   | "bazar" 
@@ -9,7 +9,8 @@ type Screen =
   | "perfil" 
   | "historial"
   | "auditoria"
-  | "gestion-roles";
+  | "gestion-roles"
+  | "gestion-productos";
 
 interface AppState {
   currentScreen: Screen;

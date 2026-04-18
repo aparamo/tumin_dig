@@ -100,6 +100,7 @@ export const products = pgTable("TUMIN_products", {
   region: text("region").notNull(),
   status: productStatusEnum("status").default("ACTIVO").notNull(),
   imageUrl: text("image_url"),
+  imgUrls: jsonb("img_urls").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

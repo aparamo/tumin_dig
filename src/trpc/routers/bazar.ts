@@ -12,19 +12,38 @@ export const bazarRouter = createTRPCRouter({
         name: z.string().optional(),
         category: z.string().optional(),
         region: z.string().optional(),
+        sortBy: z.enum(["recientes", "menor_precio", "mayor_precio"]).default("recientes"),
+        limit: z.number().min(1).max(50).default(12),
+        cursor: z.number().nullish(), // offset
       })
     )
-    .query(async ({ input }) => {
-      const { name, category, region } = input;
+    .query(async ({ ctx, input }) => {
+      const { name, category, region, sortBy, limit, cursor } = input;
+      const offset = cursor ?? 0;
+      const userRegion = ctx.session?.user?.region;
 
       const conditions = [];
       if (name) conditions.push(ilike(products.name, `%${name}%`));
       if (category) {
-          // categories is jsonb string[]
           conditions.push(sql`${products.categories} @> ${JSON.stringify([category])}::jsonb`);
       }
-      if (region) conditions.push(eq(products.region, region));
+      if (region && region !== "Todas") conditions.push(eq(products.region, region));
       conditions.push(eq(products.status, "ACTIVO"));
+
+      const orderBys = [];
+      
+      // Proximity priority (user region first)
+      if (userRegion) {
+        orderBys.push(sql`CASE WHEN ${products.region} = ${userRegion} THEN 0 ELSE 1 END ASC`);
+      }
+
+      if (sortBy === "recientes") {
+        orderBys.push(sql`${products.createdAt} DESC`);
+      } else if (sortBy === "menor_precio") {
+        orderBys.push(sql`${products.priceMxn} + ${products.priceTumin} ASC`);
+      } else if (sortBy === "mayor_precio") {
+        orderBys.push(sql`${products.priceMxn} + ${products.priceTumin} DESC`);
+      }
 
       const results = await db
         .select({
@@ -39,10 +58,31 @@ export const bazarRouter = createTRPCRouter({
         })
         .from(products)
         .innerJoin(users, eq(products.sellerId, users.id))
-        .where(and(...conditions));
+        .where(and(...conditions))
+        .orderBy(...orderBys)
+        .limit(limit + 1)
+        .offset(offset);
 
-      return results;
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (results.length > limit) {
+        results.pop(); // remove the extra item
+        nextCursor = offset + limit;
+      }
+
+      return {
+        items: results,
+        nextCursor,
+      };
     }),
+
+  getMyProducts: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.sellerId, userId))
+      .orderBy(sql`${products.createdAt} DESC`);
+  }),
 
   createProduct: protectedProcedure
     .input(
@@ -52,6 +92,7 @@ export const bazarRouter = createTRPCRouter({
         priceTumin: z.number().min(0),
         categories: z.array(z.string()),
         imageUrl: z.string().optional(),
+        imgUrls: z.array(z.string().url()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -69,11 +110,11 @@ export const bazarRouter = createTRPCRouter({
             categories: input.categories,
             region: userRegion,
             imageUrl: input.imageUrl,
+            imgUrls: input.imgUrls || [],
             status: "ACTIVO",
           })
           .returning();
 
-        // Update user productOk status
         await tx
           .update(users)
           .set({ productOk: true })
@@ -81,6 +122,61 @@ export const bazarRouter = createTRPCRouter({
 
         return newProduct;
       });
+    }),
+
+  updateProduct: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(3),
+        priceMxn: z.number().min(0),
+        priceTumin: z.number().min(0),
+        categories: z.array(z.string()),
+        imgUrls: z.array(z.string().url()),
+        status: z.enum(["ACTIVO", "INACTIVO"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
+        .limit(1);
+
+      if (!product) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
+      }
+
+      const [updated] = await db
+        .update(products)
+        .set({
+          name: input.name,
+          priceMxn: input.priceMxn,
+          priceTumin: input.priceTumin,
+          categories: input.categories,
+          imgUrls: input.imgUrls,
+          status: input.status,
+        })
+        .where(eq(products.id, input.id))
+        .returning();
+
+      return updated;
+    }),
+
+  deleteProduct: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const [deleted] = await db
+        .delete(products)
+        .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
+        .returning();
+      
+      if (!deleted) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
+      }
+      return deleted;
     }),
 
   updateProductStatus: protectedProcedure
