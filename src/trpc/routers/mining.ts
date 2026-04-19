@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "../../lib/trpc/server";
 import { db } from "../../db";
-import { users, transactions, dailyMining } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { users, transactions, dailyMining, products } from "../../db/schema";
+import { eq, desc, and, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const miningRouter = createTRPCRouter({
@@ -12,24 +12,32 @@ export const miningRouter = createTRPCRouter({
     if (!user) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
     }
-    if (!user.productOk) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Debes tener un producto activo para minar" });
+
+    // Direct check: User must have at least one ACTIVE product in Bazar
+    const [productCount] = await db
+      .select({ val: count() })
+      .from(products)
+      .where(and(
+        eq(products.sellerId, userId),
+        eq(products.status, "ACTIVO")
+      ));
+
+    if (productCount.val === 0) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar." });
     }
 
     return await db.transaction(async (tx) => {
       // Ensure SYSTEM user exists
-      const [systemUser] = await tx.select().from(users).where(eq(users.id, "SYSTEM")).limit(1);
-      if (!systemUser) {
-         await tx.insert(users).values({
-           id: "SYSTEM",
-           name: "Sistema Tumin",
-           phone: "0000000000",
-           nip: "SYSTEM", 
-           region: "SYSTEM",
-           status: "ACTIVO",
-           role: "COORDINADOR",
-         });
-      }
+      await tx.insert(users).values({
+        id: "SYSTEM",
+        name: "Sistema Tumin",
+        phone: "SYSTEM_PHONE", // Explicit string to avoid numeric parsing issues
+        nip: "SYSTEM_NIP", 
+        region: "SISTEMA",
+        status: "ACTIVO",
+        role: "COORDINADOR",
+        accountTier: "NORMAL",
+      }).onConflictDoNothing({ target: users.id });
 
       // Get last mining record
       const [lastMining] = await tx

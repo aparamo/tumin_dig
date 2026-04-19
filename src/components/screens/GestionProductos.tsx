@@ -13,11 +13,21 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 
+type ProductForm = {
+  id?: string;
+  name: string;
+  priceMxn: number;
+  priceTumin: number;
+  categories: string[];
+  imgUrls: string[];
+  status: "ACTIVO" | "INACTIVO";
+};
+
 export function GestionProductos() {
   const utils = trpc.useUtils();
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
   const { data: mediaList } = trpc.user.listMedia.useQuery();
-  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductForm | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newUrl, setNewUrl] = useState("");
@@ -54,7 +64,7 @@ export function GestionProductos() {
     "Talleres", "Cultura", "Entretenimiento", "Agroecología y Jardinería"
   ];
 
-  const handleEdit = (product: any) => {
+  const handleEdit = (product: ProductForm) => {
     setIsCreating(false);
     setEditingProduct({
       ...product,
@@ -78,15 +88,19 @@ export function GestionProductos() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingProduct) return;
     if (isCreating) {
       createMutation.mutate(editingProduct);
     } else {
-      updateMutation.mutate(editingProduct);
+      updateMutation.mutate({
+        ...editingProduct,
+        id: editingProduct.id!
+      });
     }
   };
 
   const addUrl = () => {
-    if (!newUrl) return;
+    if (!newUrl || !editingProduct) return;
     try {
       new URL(newUrl); // simple validation
       setEditingProduct({
@@ -100,13 +114,15 @@ export function GestionProductos() {
   };
 
   const removeUrl = (index: number) => {
+    if (!editingProduct) return;
     setEditingProduct({
       ...editingProduct,
-      imgUrls: editingProduct.imgUrls.filter((_: any, i: number) => i !== index)
+      imgUrls: editingProduct.imgUrls.filter((_, i) => i !== index)
     });
   };
 
   const toggleCategory = (cat: string) => {
+    if (!editingProduct) return;
     const current = editingProduct.categories || [];
     setEditingProduct({
       ...editingProduct,
@@ -163,7 +179,7 @@ export function GestionProductos() {
 
                   {p.imgUrls && p.imgUrls.length > 0 && (
                     <div className="text-[10px] font-bold text-primary uppercase flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" /> {p.imgUrls.length} imágenes externas
+                      <ExternalLink className="w-3 h-3" /> {p.imgUrls.length} imágenes
                     </div>
                   )}
                 </CardContent>
@@ -208,7 +224,14 @@ export function GestionProductos() {
                     </div>
                     <div className="space-y-2">
                       <Label className="font-black uppercase text-xs">Estado</Label>
-                      <Select value={editingProduct.status} onValueChange={v => setEditingProduct({...editingProduct, status: v})}>
+                      <Select 
+                        value={editingProduct.status} 
+                        onValueChange={(v) => {
+                          if (v === "ACTIVO" || v === "INACTIVO") {
+                            setEditingProduct(prev => prev ? { ...prev, status: v } : null);
+                          }
+                        }}
+                      >
                         <SelectTrigger className="bg-background font-black uppercase text-xs h-10 border-2">
                           <SelectValue />
                         </SelectTrigger>
