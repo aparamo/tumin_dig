@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +15,14 @@ import {
   Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
   Palette, Home as HomeIcon, Sparkles, GraduationCap, 
   Presentation, Music, Ticket, Leaf, ChevronLeft, ChevronRight,
-  ShoppingBag, Trash2
+  ShoppingBag, Trash2, type LucideIcon
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Alimentos": Utensils,
   "Bebidas": Coffee,
   "Ropa": Shirt,
@@ -197,7 +198,14 @@ export function Bazar() {
 
         <div className="w-full md:w-48 space-y-1">
           <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Ordenar Por</Label>
-          <Select value={sortBy} onValueChange={(val) => val && setSortBy(val as any)}>
+          <Select 
+            value={sortBy} 
+            onValueChange={(val) => {
+              if (val === "recientes" || val === "menor_precio" || val === "mayor_precio") {
+                setSortBy(val);
+              }
+            }}
+          >
             <SelectTrigger className="h-12 bg-card border-2">
               <SelectValue placeholder="Ordenar" />
             </SelectTrigger>
@@ -221,19 +229,18 @@ export function Bazar() {
                   {/* Image Container */}
                   <div className="aspect-square bg-muted relative overflow-hidden border-b-2 border-border">
                     {item.product.imgUrls && item.product.imgUrls.length > 0 ? (
-                      <img 
+                      <Image 
                         src={item.product.imgUrls[0]} 
                         alt={item.product.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/favicon.ico"; // Fallback
-                        }}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : item.product.imageUrl ? (
-                      <img 
+                      <Image 
                         src={item.product.imageUrl} 
                         alt={item.product.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
@@ -422,18 +429,21 @@ export function Bazar() {
                         utils.user.getMediaUsage.invalidate();
                       }}
                       onUploadError={(e) => alert(e.message)}
+                      content={{
+                        button: "Subir Imagen",
+                        allowedContent: "Imágenes permitidas"
+                      }}
                       appearance={{
                         button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
                         allowedContent: "hidden"
                       }}
-                      content={{ button: "Subir Imagen" }}
                     />
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {formData.imgUrls.map((url, i) => (
                       <div key={i} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
-                        <img src={url} alt="producto" className="w-full h-full object-cover" />
+                        <Image src={url} alt="producto" fill className="object-cover" />
                         <button 
                           type="button" 
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -468,7 +478,7 @@ export function Bazar() {
                               }
                             }}
                           >
-                            <img src={m.url} alt={m.name} className="w-full h-full object-cover" />
+                            <Image src={m.url} alt={m.name} fill className="object-cover" />
                           </div>
                         );
                       })}

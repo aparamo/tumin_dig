@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +111,13 @@ export function GestorMedios() {
                     utils.user.getMediaUsage.invalidate();
                   }}
                   onUploadError={(e) => alert(e.message)}
+                  content={{
+                    button({ ready }) {
+                      if (ready) return "Seleccionar Archivo";
+                      return "Cargando...";
+                    },
+                    allowedContent: "Imágenes y videos permitidos",
+                  }}
                   appearance={{
                     button: "neo-btn bg-primary text-primary-foreground font-black uppercase text-xs h-12 px-6",
                     allowedContent: "text-[9px] font-bold uppercase text-muted-foreground mt-2"
@@ -158,7 +166,7 @@ export function GestorMedios() {
                   <Card className="neo-card border-2 overflow-hidden h-full flex flex-col">
                     <div className="aspect-video bg-muted relative group">
                       {m.type === "IMAGE" ? (
-                        <img src={m.url} alt={m.name} className="w-full h-full object-cover" />
+                        <Image src={m.url} alt={m.name} fill className="object-cover" />
                       ) : m.type === "VIDEO" ? (
                         <div className="w-full h-full flex items-center justify-center bg-black">
                           <Video className="w-12 h-12 text-white/50" />

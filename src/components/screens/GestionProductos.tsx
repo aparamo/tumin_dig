@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,24 +272,27 @@ export function GestionProductos() {
                         utils.user.getMediaUsage.invalidate();
                       }}
                       onUploadError={(e) => alert(e.message)}
+                      content={{
+                        button: "Subir Imagen",
+                        allowedContent: "Imágenes permitidas"
+                      }}
                       appearance={{
                         button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
                         allowedContent: "hidden"
                       }}
-                      content={{ button: "Subir Imagen" }}
                     />
                   </div>
 
-                  {/* Selected Images */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     {editingProduct.imgUrls && editingProduct.imgUrls.map((url: string, index: number) => (
                       <div key={index} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
-                        <img src={url} alt="producto" className="w-full h-full object-cover" />
+                        <Image src={url} alt="producto" fill className="object-cover" />
                         <button 
                           type="button" 
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => removeUrl(index)}
                         >
+                  ...
                           <Trash2 className="w-4 h-4 text-white" />
                         </button>
                       </div>
@@ -322,7 +326,7 @@ export function GestionProductos() {
                               }
                             }}
                           >
-                            <img src={m.url} alt={m.name} className="w-full h-full object-cover" />
+                            <Image src={m.url} alt={m.name} fill className="object-cover" />
                           </div>
                         );
                       })}

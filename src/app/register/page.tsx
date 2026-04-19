@@ -49,8 +49,9 @@ function RegisterForm() {
       await registerMutation.mutateAsync(formData);
       alert("¡Cuenta creada con éxito!");
       router.push("/login");
-    } catch (err: any) {
-      setError(err.message || "Error al registrarse");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al registrarse";
+      setError(message);
     }
   };
 

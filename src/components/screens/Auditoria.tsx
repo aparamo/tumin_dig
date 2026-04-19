@@ -6,6 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle, Flame, Bug, Star } from "lucide-react";
 
+interface ParasiteRow {
+  id: string;
+  name: string;
+  total_mined: number;
+  grand_total_sent: number;
+  primary_receiver_id: string;
+  primary_receiver_name: string;
+}
+
 export function Auditoria() {
   const utils = trpc.useUtils();
   const { data: report, isLoading } = trpc.audit.getAuditReport.useQuery();
@@ -84,7 +93,7 @@ export function Auditoria() {
             <h2 className="text-xl font-black uppercase tracking-tight">Anomalías Detectadas</h2>
           </div>
           <div className="flex flex-col gap-4">
-            {report?.parasites.map((p: any) => (
+            {report?.parasites.map((p: ParasiteRow) => (
               <Card key={p.id} className="border-l-8 border-l-accent shadow-neo-sm">
                 <CardContent className="p-4 flex justify-between items-center">
                   <div className="space-y-1">

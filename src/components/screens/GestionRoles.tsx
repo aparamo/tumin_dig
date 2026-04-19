@@ -43,7 +43,11 @@ export function GestionRoles() {
                 
                 <Select 
                   defaultValue={user.role} 
-                  onValueChange={(val: any) => updateRole.mutate({ userId: user.id, role: val })}
+                  onValueChange={(val) => {
+                    if (val === "SOCIO" || val === "COORDINADOR_LOCAL" || val === "COORDINADOR") {
+                      updateRole.mutate({ userId: user.id, role: val });
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-[140px] h-9 text-xs">
                     <SelectValue />

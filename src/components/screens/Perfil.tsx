@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,7 +79,7 @@ export function Perfil() {
           <Card className="neo-card border-2 overflow-hidden">
             <div className="aspect-square bg-muted relative group">
               {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-primary/10">
                   <User className="w-24 h-24 text-primary/30" />
@@ -90,6 +91,9 @@ export function Perfil() {
                   onClientUploadComplete={() => {
                     alert("Foto de perfil actualizada");
                     utils.user.fullMe.invalidate();
+                  }}
+                  content={{
+                    button: "Cambiar Foto"
                   }}
                   appearance={{
                     button: "neo-btn bg-white text-black font-black uppercase text-[10px] h-8 px-4",
