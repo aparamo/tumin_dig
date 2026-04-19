@@ -286,7 +286,7 @@ export function GestionProductos() {
                   <div className="flex flex-wrap gap-2 mb-4">
                     {editingProduct.imgUrls && editingProduct.imgUrls.map((url: string, index: number) => (
                       <div key={index} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
-                        <Image src={url} alt="producto" fill className="object-cover" />
+                        <Image src={url} alt="producto" fill sizes="64px" className="object-cover" />
                         <button 
                           type="button" 
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -326,7 +326,7 @@ export function GestionProductos() {
                               }
                             }}
                           >
-                            <Image src={m.url} alt={m.name} fill className="object-cover" />
+                            <Image src={m.url} alt={m.name} fill sizes="64px" className="object-cover" />
                           </div>
                         );
                       })}

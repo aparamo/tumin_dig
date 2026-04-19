@@ -79,7 +79,7 @@ export function Perfil() {
           <Card className="neo-card border-2 overflow-hidden">
             <div className="aspect-square bg-muted relative group">
               {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+                <Image src={user.avatarUrl} alt={user.name} fill sizes="(max-width: 768px) 100vw, 320px" className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-primary/10">
                   <User className="w-24 h-24 text-primary/30" />

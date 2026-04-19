@@ -233,6 +233,7 @@ export function Bazar() {
                         src={item.product.imgUrls[0]} 
                         alt={item.product.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : item.product.imageUrl ? (
@@ -240,6 +241,7 @@ export function Bazar() {
                         src={item.product.imageUrl} 
                         alt={item.product.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
@@ -443,7 +445,7 @@ export function Bazar() {
                   <div className="flex flex-wrap gap-2 mb-4">
                     {formData.imgUrls.map((url, i) => (
                       <div key={i} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
-                        <Image src={url} alt="producto" fill className="object-cover" />
+                        <Image src={url} alt="producto" fill sizes="64px" className="object-cover" />
                         <button 
                           type="button" 
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -478,7 +480,7 @@ export function Bazar() {
                               }
                             }}
                           >
-                            <Image src={m.url} alt={m.name} fill className="object-cover" />
+                            <Image src={m.url} alt={m.name} fill sizes="64px" className="object-cover" />
                           </div>
                         );
                       })}

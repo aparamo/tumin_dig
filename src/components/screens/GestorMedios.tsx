@@ -166,7 +166,7 @@ export function GestorMedios() {
                   <Card className="neo-card border-2 overflow-hidden h-full flex flex-col">
                     <div className="aspect-video bg-muted relative group">
                       {m.type === "IMAGE" ? (
-                        <Image src={m.url} alt={m.name} fill className="object-cover" />
+                        <Image src={m.url} alt={m.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                       ) : m.type === "VIDEO" ? (
                         <div className="w-full h-full flex items-center justify-center bg-black">
                           <Video className="w-12 h-12 text-white/50" />
