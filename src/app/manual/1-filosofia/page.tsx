@@ -22,7 +22,7 @@ export default function FilosofiaPage() {
         </p>
 
         <div className="bg-primary/5 p-8 rounded-2xl border border-primary/10 space-y-4">
-          <h3 className="text-lg font-black uppercase tracking-widest text-primary">¿Qué pasa con los billetes de papel?</h3>
+          <h3 className="text-lg font-black uppercase tracking-widest text-primary">¿Qué pasa con los Túmin físicos?</h3>
           <ul className="space-y-3">
             <li className="flex gap-3 text-sm font-bold uppercase tracking-tight text-foreground/70">
               <span className="text-primary">●</span>
@@ -49,12 +49,12 @@ export default function FilosofiaPage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 border rounded-xl bg-background/50 space-y-2">
-            <h4 className="font-black uppercase text-xs tracking-widest text-primary">Cooperación</h4>
-            <p className="text-sm text-foreground/70 leading-relaxed">Dejamos de ser rivales para ser vecinos que se apoyan. Si a tu negocio le va bien, a toda la red le va bien.</p>
+            <h4 className="font-black uppercase text-md tracking-widest text-primary">Cooperación</h4>
+            <p className="text-base text-foreground/70 leading-relaxed">Dejamos de ser rivales para ser vecinos que se apoyan. Si a tu negocio le va bien, a toda la red le va bien.</p>
           </div>
           <div className="p-6 border rounded-xl bg-background/50 space-y-2">
-            <h4 className="font-black uppercase text-xs tracking-widest text-primary">Sin Intereses</h4>
-            <p className="text-sm text-foreground/70 leading-relaxed">El Túmin nace del valor de tu propio trabajo, no de deudas bancarias asfixiantes.</p>
+            <h4 className="font-black uppercase text-md tracking-widest text-primary">Sin Intereses</h4>
+            <p className="text-base text-foreground/70 leading-relaxed">El Túmin nace del valor de tu propio trabajo, no de deudas bancarias asfixiantes.</p>
           </div>
         </div>
       </section>
@@ -67,22 +67,22 @@ export default function FilosofiaPage() {
           <div className="flex gap-4 items-start">
             <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0">1</div>
             <div>
-              <h4 className="font-black uppercase text-sm tracking-tight mb-1">Sin Deuda</h4>
-              <p className="text-sm text-foreground/70">Nace de la riqueza real que ya existe en ti y en tu comunidad.</p>
+              <h4 className="font-black uppercase text-md tracking-tight mb-1">Sin Deuda</h4>
+              <p className="text-base text-foreground/70">Nace de la riqueza real que ya existe en ti y en tu comunidad.</p>
             </div>
           </div>
           <div className="flex gap-4 items-start">
             <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0">2</div>
             <div>
-              <h4 className="font-black uppercase text-sm tracking-tight mb-1">Sin Intereses</h4>
-              <p className="text-sm text-foreground/70">1 Túmin hoy valdrá 1 Túmin en diez años. El dinero deja de ser un muro para ser un puente.</p>
+              <h4 className="font-black uppercase text-md tracking-tight mb-1">Sin Intereses</h4>
+              <p className="text-base text-foreground/70">1 Túmin hoy valdrá 1 Túmin en diez años. El dinero deja de ser un muro para ser un puente.</p>
             </div>
           </div>
           <div className="flex gap-4 items-start">
             <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0">3</div>
             <div>
-              <h4 className="font-black uppercase text-sm tracking-tight mb-1">Sin Especulación</h4>
-              <p className="text-sm text-foreground/70">No es una apuesta financiera; es estrictamente una herramienta de intercambio.</p>
+              <h4 className="font-black uppercase text-md tracking-tight mb-1">Sin Especulación</h4>
+              <p className="text-base text-foreground/70">No es una apuesta financiera; es estrictamente una herramienta de intercambio.</p>
             </div>
           </div>
         </div>
@@ -92,15 +92,15 @@ export default function FilosofiaPage() {
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
           El Valor del Túmin
         </h2>
-        <div className="bg-primary/60 text-primary-foreground p-8 rounded-2xl space-y-6">
+        <div className="bg-primary/20 text-primary-foreground p-8 rounded-2xl space-y-6">
           <div className="space-y-2">
             <h3 className="text-xl font-black uppercase tracking-tighter">1 Túmin = 1 Peso (o moneda local)</h3>
-            <p className="text-sm opacity-80 leading-relaxed">Un puente práctico para facilitar el comercio diario sin matemáticas complicadas.</p>
+            <p className="text-base opacity-80 leading-relaxed">Un puente práctico para facilitar el comercio diario sin matemáticas complicadas.</p>
           </div>
           <div className="h-px bg-background/20" />
           <div className="space-y-2">
             <h3 className="text-xl font-black uppercase tracking-tighter">1 Túmin = 1 Minuto de labor comunitaria</h3>
-            <p className="text-sm opacity-80 leading-relaxed">Reconocemos que tu tiempo es sagrado. 60 minutos de cualquier labor digna equivalen a 60 Túmin.</p>
+            <p className="text-base opacity-80 leading-relaxed">Reconocemos que tu tiempo es sagrado. 60 minutos de cualquier labor digna equivalen a 60 Túmin.</p>
           </div>
         </div>
       </section>

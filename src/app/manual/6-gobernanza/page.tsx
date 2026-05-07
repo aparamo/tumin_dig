@@ -21,11 +21,11 @@ export default function GobernanzaPage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="p-6 bg-background/50 border-2 border-primary/10">
-            <h4 className="font-black uppercase text-xs tracking-widest text-primary mb-2">Sin Jefes</h4>
+            <h4 className="font-black uppercase text-md tracking-widest text-primary mb-2">Sin Jefes</h4>
             <p className="text-sm text-foreground/70">Las decisiones se toman por consenso entre vecinos y compañeros.</p>
           </Card>
           <Card className="p-6 bg-background/50 border-2 border-primary/10">
-            <h4 className="font-black uppercase text-xs tracking-widest text-primary mb-2">Autonomía</h4>
+            <h4 className="font-black uppercase text-md tracking-widest text-primary mb-2">Autonomía</h4>
             <p className="text-sm text-foreground/70">Tu comunidad decide cómo organizar sus propios bazares y ferias.</p>
           </Card>
         </div>
@@ -42,18 +42,18 @@ export default function GobernanzaPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2 text-center">
               <UserPlus className="w-8 h-8 text-primary mx-auto" />
-              <h5 className="font-black uppercase text-[10px] tracking-widest">Activación</h5>
-              <p className="text-[10px] text-foreground/60 leading-relaxed">Valida a nuevos socios reales y honestos.</p>
+              <h5 className="font-black uppercase text-sm tracking-widest">Activación</h5>
+              <p className="text-sm text-foreground/60 leading-relaxed">Valida a nuevos socios reales y honestos.</p>
             </div>
             <div className="space-y-2 text-center">
               <MapPin className="w-8 h-8 text-primary mx-auto" />
-              <h5 className="font-black uppercase text-[10px] tracking-widest">Soporte Regional</h5>
-              <p className="text-[10px] text-foreground/60 leading-relaxed">Ayuda con dudas técnicas y gestión del Bazar.</p>
+              <h5 className="font-black uppercase text-sm tracking-widest">Soporte Regional</h5>
+              <p className="text-sm text-foreground/60 leading-relaxed">Ayuda con dudas técnicas y gestión del Bazar.</p>
             </div>
             <div className="space-y-2 text-center">
               <Users className="w-8 h-8 text-primary mx-auto" />
-              <h5 className="font-black uppercase text-[10px] tracking-widest">Mediación</h5>
-              <p className="text-[10px] text-foreground/60 leading-relaxed">Resuelve malentendidos basados en la ética de la red.</p>
+              <h5 className="font-black uppercase text-sm tracking-widest">Mediación</h5>
+              <p className="text-sm text-foreground/60 leading-relaxed">Resuelve malentendidos basados en la ética de la red.</p>
             </div>
           </div>
         </div>
@@ -71,7 +71,7 @@ export default function GobernanzaPage() {
           <p className="text-sm opacity-80 leading-relaxed font-medium">
             Son espacios físicos (negocios de socios) donde lo digital se vuelve abrazo y comercio real.
           </p>
-          <ul className="space-y-2 text-xs font-bold uppercase tracking-widest opacity-70">
+          <ul className="space-y-2 text-sm font-bold uppercase tracking-widest opacity-70">
             <li>● Centros de formación y talleres</li>
             <li>● Puntos de entrega y bazar permanente</li>
             <li>● Sede operativa del Bantúmin regional</li>

@@ -23,15 +23,15 @@ export default function SeguridadPage() {
           <div className="flex gap-4 p-4 border rounded-xl bg-background/50">
             <Fingerprint className="w-6 h-6 text-primary shrink-0" />
             <div className="space-y-1">
-              <h4 className="font-black uppercase text-xs tracking-widest">Identidad por Cercanía</h4>
-              <p className="text-[11px] text-foreground/70">Tu Bantúmin valida que seas una persona real con un producto tangible.</p>
+              <h4 className="font-black uppercase text-md tracking-widest">Identidad por Cercanía</h4>
+              <p className="text-sm text-foreground/70">Tu Bantúmin valida que seas una persona real con un producto tangible.</p>
             </div>
           </div>
           <div className="flex gap-4 p-4 border rounded-xl bg-background/50">
             <Eye className="w-6 h-6 text-primary shrink-0" />
             <div className="space-y-1">
-              <h4 className="font-black uppercase text-xs tracking-widest">Ledger Transparente</h4>
-              <p className="text-[11px] text-foreground/70">El flujo de la moneda es rastreable por los coordinadores para evitar inflación artificial.</p>
+              <h4 className="font-black uppercase text-md tracking-widest">Ledger Transparente</h4>
+              <p className="text-sm text-foreground/70">El flujo de la moneda es rastreable por los coordinadores para evitar inflación artificial.</p>
             </div>
           </div>
         </div>
@@ -46,11 +46,11 @@ export default function SeguridadPage() {
         </p>
         <div className="space-y-4">
           <Card className="p-6 border-l-4 border-l-destructive">
-            <h4 className="font-black uppercase text-xs tracking-widest text-destructive mb-2">Transacciones Circulares</h4>
+            <h4 className="font-black uppercase text-md tracking-widest text-destructive mb-2">Transacciones Circulares</h4>
             <p className="text-sm text-foreground/70">Detección de bucles de pago para evitar el &quot;lavado de bonos&quot; sin intercambio real.</p>
           </Card>
           <Card className="p-6 border-l-4 border-l-destructive">
-            <h4 className="font-black uppercase text-xs tracking-widest text-destructive mb-2">Cuentas Espejo</h4>
+            <h4 className="font-black uppercase text-md tracking-widest text-destructive mb-2">Cuentas Espejo</h4>
             <p className="text-sm text-foreground/70">Previene que una misma persona cree múltiples cuentas para cobrar bonos de bienvenida.</p>
           </Card>
         </div>

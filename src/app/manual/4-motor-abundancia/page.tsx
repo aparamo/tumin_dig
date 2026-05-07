@@ -52,7 +52,7 @@ export default function MotorAbundanciaPage() {
             </TableBody>
           </Table>
         </div>
-        <p className="text-xs text-destructive font-bold uppercase tracking-widest text-center italic">
+        <p className="text-md text-destructive font-bold uppercase tracking-widest text-center italic">
           ⚠️ Si olvidas minar un solo día, la racha vuelve a 1.
         </p>
       </section>
@@ -64,12 +64,12 @@ export default function MotorAbundanciaPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 border rounded-xl space-y-3">
             <Gift className="w-6 h-6 text-primary" />
-            <h4 className="font-black uppercase text-xs tracking-widest">Bono de Activación</h4>
+            <h4 className="font-black uppercase text-md tracking-widest">Bono de Activación</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">Recibe <strong>25 Ŧ</strong> automáticamente al publicar tu primer producto en el Bazar.</p>
           </div>
           <div className="p-6 border rounded-xl space-y-3">
             <TrendingUp className="w-6 h-6 text-primary" />
-            <h4 className="font-black uppercase text-xs tracking-widest">Anuncio Gratis</h4>
+            <h4 className="font-black uppercase text-md tracking-widest">Anuncio Gratis</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">Derecho a <strong>1 mes de anuncio GRATIS</strong> en el banner principal para darte a conocer.</p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function MotorAbundanciaPage() {
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
           El Duplicador de Ventas
         </h2>
-        <div className="bg-primary text-primary-foreground p-8 rounded-2xl space-y-4">
+        <div className="bg-primary/20 text-primary-foreground p-8 rounded-2xl space-y-4">
           <div className="flex items-center gap-4">
             <Zap className="w-10 h-10 text-primary shrink-0" />
             <h3 className="text-3xl font-black uppercase tracking-tighter">¡Tus ventas valen el doble!</h3>
@@ -106,7 +106,7 @@ export default function MotorAbundanciaPage() {
           <p className="text-sm text-foreground/70 leading-relaxed">
             Invita a otros a la red y recibe el <strong>5% de sus primeras 3 ventas</strong>. El sistema genera este premio adicional sin quitarle nada a tu invitado.
           </p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary italic">
+          <p className="text-md font-black uppercase tracking-widest text-primary italic">
             &quot;Hagamos que la abundancia sea contagiosa.&quot;
           </p>
         </div>
