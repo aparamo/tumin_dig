@@ -19,10 +19,10 @@ import { UploadButton } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
 
 const TIER_BADGES = {
-  NORMAL: { label: "Socio Gratuito", color: "bg-slate-500", icon: User },
-  PAGO: { label: "Socio de Pago", color: "bg-blue-600", icon: Zap },
-  PATROCINADOR: { label: "Patrocinador", color: "bg-purple-600", icon: Star },
-  FINANCIADOR: { label: "Financiador", color: "bg-amber-600", icon: ShieldCheck },
+  NORMAL: { label: "Socix", color: "bg-slate-500", icon: User },
+  PAGO: { label: "Socix de Pago", color: "bg-blue-600", icon: Zap },
+  PATROCINADOR: { label: "Patrocinadorx", color: "bg-purple-600", icon: Star },
+  FINANCIADOR: { label: "Financiadorx", color: "bg-amber-600", icon: ShieldCheck },
 };
 
 export function Perfil() {

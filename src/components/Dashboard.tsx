@@ -21,7 +21,7 @@ import { PageTransition } from "./ui/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface MenuItem {
   id: Screen;
@@ -38,9 +38,10 @@ const NavItem = ({ item, isMobile = false, compact = false }: { item: MenuItem, 
     return (
       <Button 
         variant="ghost" 
+        size="icon"
         className={cn(
-          "flex flex-col gap-0.5 h-12 flex-1 rounded-xl transition-all",
-          isActive ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
+          "flex flex-col gap-0.5 h-8 w-8 flex-1 rounded-xl transition-all",
+          isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}
         onClick={() => setCurrentScreen(item.id)}
       >
@@ -62,7 +63,7 @@ const NavItem = ({ item, isMobile = false, compact = false }: { item: MenuItem, 
               "rounded-xl transition-all border-2 border-transparent",
               compact ? "w-10 h-10" : "w-12 h-12",
               isActive
-                ? "bg-primary text-primary-foreground border-border shadow-neo-sm scale-110"
+                ? "bg-primary text-primary-foreground scale-110"
                 : "text-muted-foreground hover:bg-muted"
             )}
             onClick={() => setCurrentScreen(item.id)}
@@ -85,6 +86,22 @@ export function Dashboard() {
   const { currentScreen, setCurrentScreen, setSidebarOpen, isSidebarOpen } = useStore();
   const { data: session } = useSession();
   const [isCoordMenuOpen, setIsCoordMenuOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (isCoordMenuOpen) {
+      // Small timeout to allow the motion animation to start and calculate height
+      const timer = setTimeout(() => {
+        if (navRef.current) {
+          navRef.current.scrollTo({
+            top: navRef.current.scrollHeight,
+            behavior: "smooth"
+          });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isCoordMenuOpen]);
 
   const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL" || session?.user?.role === "COORDINADOR_GENERAL";
 
@@ -130,7 +147,8 @@ export function Dashboard() {
           <Image src="/logo_trans_sm.png" alt="Túmin Digital" width={32} height={32} />
         </div>
         
-        <nav className="flex flex-col gap-3 overflow-y-auto w-full items-center px-2 py-2 flex-1 scrollbar-hide">
+        <nav ref={navRef} className="flex flex-col gap-3 overflow-y-auto w-full items-center px-2 py-2 flex-1 scrollbar-hide">
+
           {menuItems.map((item) => (
             <NavItem key={item.id} item={item} />
           ))}
