@@ -100,6 +100,9 @@ export const bazarRouter = createTRPCRouter({
       const userRegion = ctx.session.user.region;
 
       return await db.transaction(async (tx) => {
+        // 0. Row-level lock the user
+        await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
+
         const [userBefore] = await tx
           .select({ productOk: users.productOk })
           .from(users)

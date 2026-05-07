@@ -200,6 +200,28 @@ export const auditRouter = createTRPCRouter({
     }
 
     return await db.transaction(async (tx) => {
+       // 0. Row-level lock the user
+       await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
+
+       // Re-verify after lock to prevent race conditions
+       const [alreadyClaimedPostLock] = await tx
+         .select()
+         .from(transactions)
+         .where(
+           and(
+             eq(transactions.toId, userId),
+             eq(transactions.type, "BONO"),
+             eq(transactions.concept, "Recompensa de Auditoría Mensual"),
+             gte(transactions.createdAt, firstDayOfMonth),
+             lt(transactions.createdAt, lastDayOfMonth)
+           )
+         )
+         .limit(1);
+       
+       if (alreadyClaimedPostLock) {
+         throw new TRPCError({ code: "BAD_REQUEST", message: "Ya has reclamado tu recompensa este mes" });
+       }
+
        // Ensure SYSTEM user exists
        const [systemUser] = await tx.select().from(users).where(eq(users.id, "SYSTEM")).limit(1);
        if (!systemUser) {

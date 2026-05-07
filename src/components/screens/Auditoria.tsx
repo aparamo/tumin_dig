@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,6 +18,8 @@ interface ParasiteRow {
 
 export function Auditoria() {
   const utils = trpc.useUtils();
+  const isClaimingRef = useRef(false);
+  const [, setUpdate] = useState(0);
   const { data: report, isLoading } = trpc.audit.getAuditReport.useQuery();
 
   const freezeMutation = trpc.audit.freezeUser.useMutation({
@@ -32,7 +35,18 @@ export function Auditoria() {
       utils.wallet.getBalance.invalidate();
     },
     onError: (error) => alert(error.message),
+    onSettled: () => {
+      isClaimingRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
+
+  const handleClaimReward = () => {
+    if (isClaimingRef.current || claimReward.isPending) return;
+    isClaimingRef.current = true;
+    setUpdate(v => v + 1);
+    claimReward.mutate();
+  };
 
   if (isLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
 
@@ -224,10 +238,10 @@ export function Auditoria() {
         <Button 
           variant="default"
           className="w-full h-16 text-xl"
-          onClick={() => claimReward.mutate()}
-          disabled={claimReward.isPending}
+          onClick={handleClaimReward}
+          disabled={isClaimingRef.current || claimReward.isPending}
         >
-          {claimReward.isPending ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-3 w-6 h-6" />}
+          {(isClaimingRef.current || claimReward.isPending) ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-3 w-6 h-6" />}
           Finalizar Auditoría Mensual (+30 Ŧ)
         </Button>
         <p className="text-[10px] text-muted-foreground text-center mt-3 font-bold uppercase tracking-widest">

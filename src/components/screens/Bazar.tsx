@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,8 @@ function formatRegion(region: string) {
 export function Bazar() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
+  const isSubmittingRef = useRef(false);
+  const [, setUpdate] = useState(0);
   const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
@@ -97,6 +99,10 @@ export function Bazar() {
       setFormData({ name: "", priceMxn: 0, priceTumin: 0, categories: [], imageUrl: "", imgUrls: [] });
     },
     onError: (error) => alert(error.message),
+    onSettled: () => {
+      isSubmittingRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
 
   const categories = [
@@ -138,11 +144,16 @@ export function Bazar() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
+
     const total = formData.priceMxn + formData.priceTumin;
     if (formData.priceTumin < total * 0.1) {
       alert("El precio en Túmin debe ser al menos el 10% del total.");
       return;
     }
+
+    isSubmittingRef.current = true;
+    setUpdate(v => v + 1);
     createProduct.mutate(formData);
   };
 
@@ -504,9 +515,9 @@ export function Bazar() {
                   type="submit" 
                   variant="default"
                   className="w-full h-14 text-lg"
-                  disabled={createProduct.isPending}
+                  disabled={isSubmittingRef.current || createProduct.isPending}
                 >
-                  {createProduct.isPending ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
+                  {(isSubmittingRef.current || createProduct.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
                   Publicar
                 </Button>
               </form>

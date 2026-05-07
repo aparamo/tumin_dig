@@ -1,37 +1,40 @@
 import { createTRPCRouter, protectedProcedure } from "../../lib/trpc/server";
 import { db } from "../../db";
 import { users, transactions, dailyMining, products } from "../../db/schema";
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const miningRouter = createTRPCRouter({
   claimMining: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
-    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (!user) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
-    }
-
-    // Direct check: User must have at least one ACTIVE product in Bazar
-    const [productCount] = await db
-      .select({ val: count() })
-      .from(products)
-      .where(and(
-        eq(products.sellerId, userId),
-        eq(products.status, "ACTIVO")
-      ));
-
-    if (productCount.val === 0) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar." });
-    }
-
     return await db.transaction(async (tx) => {
+      // 0. Row-level lock the user to prevent concurrent claims
+      await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
+
+      const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+      }
+
+      // Direct check: User must have at least one ACTIVE product in Bazar
+      const [productCount] = await tx
+        .select({ val: count() })
+        .from(products)
+        .where(and(
+          eq(products.sellerId, userId),
+          eq(products.status, "ACTIVO")
+        ));
+
+      if (productCount.val === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar." });
+      }
+
       // Ensure SYSTEM user exists
       await tx.insert(users).values({
         id: "SYSTEM",
         name: "Sistema Tumin",
-        phone: "SYSTEM_PHONE", // Explicit string to avoid numeric parsing issues
+        phone: "SYSTEM_PHONE",
         nip: "SYSTEM_NIP", 
         region: "SISTEMA",
         status: "ACTIVO",

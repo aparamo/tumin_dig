@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ type ProductForm = {
 
 export function GestionProductos() {
   const utils = trpc.useUtils();
+  const isSubmittingRef = useRef(false);
+  const [, setUpdate] = useState(0);
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
   const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [editingProduct, setEditingProduct] = useState<ProductForm | null>(null);
@@ -40,6 +42,10 @@ export function GestionProductos() {
       utils.bazar.getMyProducts.invalidate();
     },
     onError: (e) => alert(e.message),
+    onSettled: () => {
+      isSubmittingRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
 
   const updateMutation = trpc.bazar.updateProduct.useMutation({
@@ -49,6 +55,10 @@ export function GestionProductos() {
       utils.bazar.getMyProducts.invalidate();
     },
     onError: (e) => alert(e.message),
+    onSettled: () => {
+      isSubmittingRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
 
   const deleteMutation = trpc.bazar.deleteProduct.useMutation({
@@ -89,7 +99,11 @@ export function GestionProductos() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct) return;
+    if (isSubmittingRef.current || !editingProduct) return;
+
+    isSubmittingRef.current = true;
+    setUpdate(v => v + 1);
+
     if (isCreating) {
       createMutation.mutate(editingProduct);
     } else {
@@ -347,8 +361,8 @@ export function GestionProductos() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-lg uppercase font-black tracking-widest" disabled={updateMutation.isPending || createMutation.isPending}>
-                  {updateMutation.isPending || createMutation.isPending ? (
+                <Button type="submit" className="w-full h-12 text-lg uppercase font-black tracking-widest" disabled={isSubmittingRef.current || updateMutation.isPending || createMutation.isPending}>
+                  {isSubmittingRef.current || updateMutation.isPending || createMutation.isPending ? (
                     <Loader2 className="animate-spin" />
                   ) : isCreating ? (
                     "Publicar Producto"

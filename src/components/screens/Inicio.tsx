@@ -10,13 +10,16 @@ import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRef, useState } from "react";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
   const { data: session } = useSession();
   const utils = trpc.useUtils();
+  const isMiningRef = useRef(false);
+  const [, setUpdate] = useState(0); // For forcing re-render if needed, though isPending handles it
 
-  const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL";
+  const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL" || session?.user?.role === "COORDINADOR_GENERAL";
   
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = trpc.wallet.getBalance.useQuery();
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
@@ -31,7 +34,18 @@ export function Inicio() {
     onError: (error) => {
       alert(error.message);
     },
+    onSettled: () => {
+      isMiningRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
+
+  const handleMining = () => {
+    if (isMiningRef.current || claimMining.isPending) return;
+    isMiningRef.current = true;
+    setUpdate(v => v + 1);
+    claimMining.mutate();
+  };
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
@@ -83,10 +97,10 @@ export function Inicio() {
               <Button 
                 variant="secondary"
                 className="w-full h-12"
-                onClick={() => claimMining.mutate()}
-                disabled={claimMining.isPending}
+                onClick={handleMining}
+                disabled={isMiningRef.current || claimMining.isPending}
               >
-                <Pickaxe className="w-5 h-5 mr-2" /> {claimMining.isPending ? "Minando..." : "Minar"}
+                <Pickaxe className="w-5 h-5 mr-2" /> {(isMiningRef.current || claimMining.isPending) ? "Minando..." : "Minar"}
               </Button>
             </div>
           </CardContent>

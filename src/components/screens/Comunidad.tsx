@@ -42,7 +42,7 @@ export function Comunidad() {
     <div className="flex flex-col gap-8 p-4 max-w-2xl mx-auto w-full pb-10">
       <div className="space-y-1">
         <h1 className="text-4xl font-black uppercase tracking-tighter text-foreground">Comunidad</h1>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+        <p className="text-base font-bold text-muted-foreground uppercase tracking-widest">
           Convierte tu labor comunitaria en Túmin
         </p>
       </div>
@@ -96,7 +96,7 @@ export function Comunidad() {
       
       <div className="bg-slate-100 p-4 rounded-lg border border-slate-200">
         <h4 className="font-bold text-sm text-slate-700 mb-2">Reglas de la labor comunitaria</h4>
-        <ul className="text-xs text-slate-500 space-y-2 list-disc pl-4">
+        <ul className="text-base text-slate-500 space-y-2 list-disc pl-4">
           <li>El pago es proporcional al tiempo dedicado (1 Ŧ por minuto).</li>
           <li>La labor debe beneficiar a la comunidad o a otros socios.</li>
           <li>Un coordinador de tu misma región debe validar la veracidad del trabajo.</li>

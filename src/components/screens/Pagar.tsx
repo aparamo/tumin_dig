@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 export function Pagar() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
+  const isSendingRef = useRef(false);
+  const [, setUpdate] = useState(0);
   
   const [recipientInput, setRecipientInput] = useState("");
   const [recipient, setRecipient] = useState<{ id: string; name: string } | null>(null);
@@ -42,12 +44,18 @@ export function Pagar() {
     onError: (error) => {
       alert(error.message);
     },
+    onSettled: () => {
+      isSendingRef.current = false;
+      setUpdate(v => v + 1);
+    }
   });
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipient || !amount || !concept) return;
+    if (isSendingRef.current || !recipient || !amount || !concept) return;
     
+    isSendingRef.current = true;
+    setUpdate(v => v + 1);
     sendTumin.mutate({
       toId: recipient.id,
       amount: parseFloat(amount),
@@ -109,9 +117,9 @@ export function Pagar() {
               type="submit" 
               variant="default"
               className="w-full h-14 text-lg"
-              disabled={!recipient || sendTumin.isPending}
+              disabled={isSendingRef.current || !recipient || sendTumin.isPending}
             >
-              {sendTumin.isPending ? <Loader2 className="animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+              {(isSendingRef.current || sendTumin.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
               Transferir
             </Button>
           </form>

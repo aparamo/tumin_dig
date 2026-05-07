@@ -49,6 +49,11 @@ export const walletRouter = createTRPCRouter({
       }
 
       return await db.transaction(async (tx) => {
+        // 0. Row-level lock users in a consistent alphabetical order to prevent deadlocks
+        const [lockId1, lockId2] = [meId, input.toId].sort();
+        await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${lockId1} FOR UPDATE`);
+        await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${lockId2} FOR UPDATE`);
+
         // Ensure SYSTEM user exists
         const [systemUser] = await tx.select().from(users).where(eq(users.id, "SYSTEM")).limit(1);
         if (!systemUser) {
