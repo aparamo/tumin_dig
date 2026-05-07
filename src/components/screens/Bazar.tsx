@@ -296,7 +296,7 @@ export function Bazar() {
                     <div className="flex gap-3">
                       <Button 
                         variant="outline" 
-                        className="flex-1 h-12 border-2"
+                        className="flex-1 h-12 border shadow-neo-sm"
                         onClick={() => {
                           const sellerPhone = item.seller.phone;
                           if (!sellerPhone) {
@@ -311,7 +311,7 @@ export function Bazar() {
                       </Button>
                       <Button 
                         variant="default"
-                        className="flex-2 h-12"
+                        className="flex-2 h-12 shadow-neo-sm"
                         onClick={() => setCurrentScreen("pagar")}
                       >
                         <ShoppingCart className="w-5 h-5 mr-2" /> Comprar

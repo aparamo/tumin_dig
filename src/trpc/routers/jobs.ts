@@ -31,36 +31,38 @@ export const jobsRouter = createTRPCRouter({
       return newJob;
     }),
 
-  getPendingJobs: protectedProcedure.query(async ({ ctx }) => {
-    const userRole = ctx.session.user.role;
-    const userRegion = ctx.session.user.region;
-    const userId = ctx.session.user.id;
+  getPendingJobs: protectedProcedure
+    .input(z.object({ region: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role;
+      const userId = ctx.session.user.id;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
 
-    if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden ver trabajos pendientes" });
-    }
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden ver trabajos pendientes" });
+      }
 
-    const pendingJobs = await db
-      .select({
-        job: jobs,
-        requester: {
-          id: users.id,
-          name: users.name,
-          region: users.region,
-        },
-      })
-      .from(jobs)
-      .innerJoin(users, eq(jobs.requesterId, users.id))
-      .where(
-        and(
-          eq(jobs.status, "PENDIENTE"),
-          eq(users.region, userRegion),
-          ne(jobs.requesterId, userId)
-        )
+      const targetRegion = isGlobal ? (input?.region && input.region !== "Todas" ? input.region : null) : ctx.session.user.region;
+
+      const condition = and(
+        eq(jobs.status, "PENDIENTE"),
+        targetRegion ? eq(users.region, targetRegion) : undefined,
+        ne(jobs.requesterId, userId)
       );
 
-    return pendingJobs;
-  }),
+      return await db
+        .select({
+          job: jobs,
+          requester: {
+            id: users.id,
+            name: users.name,
+            region: users.region,
+          },
+        })
+        .from(jobs)
+        .innerJoin(users, eq(jobs.requesterId, users.id))
+        .where(condition);
+    }),
 
   verifyJob: protectedProcedure
     .input(
@@ -73,8 +75,9 @@ export const jobsRouter = createTRPCRouter({
       const verifierId = ctx.session.user.id;
       const userRole = ctx.session.user.role;
       const userRegion = ctx.session.user.region;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
 
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden verificar trabajos" });
       }
 
@@ -93,14 +96,14 @@ export const jobsRouter = createTRPCRouter({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Este trabajo ya ha sido verificado" });
         }
 
-        // Check if requester is in the same region as verifier
+        // Check if requester is in the same region as verifier (or if verifier is global)
         const [requester] = await tx
           .select()
           .from(users)
           .where(eq(users.id, job.requesterId))
           .limit(1);
 
-        if (!requester || requester.region !== userRegion) {
+        if (!requester || (!isGlobal && requester.region !== userRegion)) {
            throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes verificar trabajos de tu región" });
         }
 

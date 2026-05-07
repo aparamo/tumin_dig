@@ -15,9 +15,12 @@ export const userRoleEnum = pgEnum("user_role", [
   "SOCIO",
   "COORDINADOR_LOCAL",
   "COORDINADOR",
+  "COORDINADOR_GENERAL",
 ]);
 
 export const userStatusEnum = pgEnum("user_status", ["ACTIVO", "CONGELADO"]);
+
+export const adStatusEnum = pgEnum("ad_status", ["PENDIENTE", "ACTIVO", "INACTIVO"]);
 
 export const accountTierEnum = pgEnum("account_tier", [
   "NORMAL",
@@ -58,6 +61,7 @@ export const users = pgTable("TUMIN_users", {
   duplicatorBonus: doublePrecision("duplicator_bonus").default(0).notNull(),
   firstSaleOk: boolean("first_sale_ok").default(false).notNull(),
   productOk: boolean("product_ok").default(false).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -77,6 +81,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   receivedRatings: many(ratings, { relationName: "seller" }),
   miningHistory: many(dailyMining),
   media: many(media),
+  ads: many(ads),
 }));
 
 export const transactions = pgTable("TUMIN_transactions", {
@@ -198,6 +203,22 @@ export const media = pgTable("TUMIN_media", {
 export const mediaRelations = relations(media, ({ one }) => ({
   user: one(users, {
     fields: [media.userId],
+    references: [users.id],
+  }),
+}));
+
+export const ads = pgTable("TUMIN_ads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  imageUrl: text("image_url").notNull(),
+  status: adStatusEnum("status").default("PENDIENTE").notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const adsRelations = relations(ads, ({ one }) => ({
+  user: one(users, {
+    fields: [ads.userId],
     references: [users.id],
   }),
 }));

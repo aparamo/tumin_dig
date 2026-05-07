@@ -13,7 +13,7 @@ import { GestionRoles } from "./screens/GestionRoles";
 import { GestionProductos } from "./screens/GestionProductos";
 import { GestorMedios } from "./screens/GestorMedios";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut, PackageSearch, type LucideIcon, FolderOpen } from "lucide-react";
+import { Menu, X, Home, Send, ShoppingBag, Users, User, History, ShieldAlert, Settings, LogOut, PackageSearch, type LucideIcon, FolderOpen, ChevronDown, ShieldCheck } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
@@ -21,6 +21,7 @@ import { PageTransition } from "./ui/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Image from "next/image";
+import { useState } from "react";
 
 interface MenuItem {
   id: Screen;
@@ -29,7 +30,7 @@ interface MenuItem {
   color?: string;
 }
 
-const NavItem = ({ item, isMobile = false }: { item: MenuItem, isMobile?: boolean }) => {
+const NavItem = ({ item, isMobile = false, compact = false }: { item: MenuItem, isMobile?: boolean, compact?: boolean }) => {
   const { currentScreen, setCurrentScreen } = useStore();
   const isActive = currentScreen === item.id;
   
@@ -38,13 +39,13 @@ const NavItem = ({ item, isMobile = false }: { item: MenuItem, isMobile?: boolea
       <Button 
         variant="ghost" 
         className={cn(
-          "flex flex-col gap-1 h-14 flex-1 rounded-xl transition-all",
+          "flex flex-col gap-0.5 h-12 flex-1 rounded-xl transition-all",
           isActive ? "bg-primary text-primary-foreground border-2 border-border shadow-neo-sm" : "text-muted-foreground"
         )}
         onClick={() => setCurrentScreen(item.id)}
       >
-        <item.icon className="w-6 h-6" />
-        <span className="text-[10px] font-bold uppercase">{item.label}</span>
+        <item.icon className="w-5 h-5" />
+        <span className="text-[8px] font-bold uppercase">{item.label}</span>
       </Button>
     );
   }
@@ -52,21 +53,23 @@ const NavItem = ({ item, isMobile = false }: { item: MenuItem, isMobile?: boolea
   return (
     <Tooltip>
       <TooltipTrigger
-        render={
+        render={(props) => (
           <Button
+            {...props}
             variant="ghost"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-xl transition-all border-2 border-transparent",
+              "rounded-xl transition-all border-2 border-transparent",
+              compact ? "w-10 h-10" : "w-12 h-12",
               isActive
                 ? "bg-primary text-primary-foreground border-border shadow-neo-sm scale-110"
                 : "text-muted-foreground hover:bg-muted"
             )}
             onClick={() => setCurrentScreen(item.id)}
           >
-            <item.icon className="w-6 h-6" />
+            <item.icon className={cn(compact ? "w-5 h-5" : "w-6 h-6")} />
           </Button>
-        }
+        )}
       />
       <TooltipContent
         side="right"
@@ -81,8 +84,9 @@ const NavItem = ({ item, isMobile = false }: { item: MenuItem, isMobile?: boolea
 export function Dashboard() {
   const { currentScreen, setCurrentScreen, setSidebarOpen, isSidebarOpen } = useStore();
   const { data: session } = useSession();
+  const [isCoordMenuOpen, setIsCoordMenuOpen] = useState(false);
 
-  const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL";
+  const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL" || session?.user?.role === "COORDINADOR_GENERAL";
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -121,32 +125,66 @@ export function Dashboard() {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar (Permanent Mini) */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-6 z-50 gap-8">
-        <div className="w-12 h-12 bg-emerald-700 border border-border shadow-neo-sm rounded-full flex items-center justify-center font-black text-xl text-secondary-foreground">
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-4 z-50 overflow-hidden">
+        <div className="w-12 h-12 bg-emerald-700 border-2 border-border shadow-neo-sm rounded-full flex items-center justify-center font-black text-xl text-secondary-foreground mb-6 shrink-0">
           <Image src="/logo_trans_sm.png" alt="Túmin Digital" width={32} height={32} />
         </div>
         
-        <nav className="flex flex-col gap-4">
+        <nav className="flex flex-col gap-3 overflow-y-auto w-full items-center px-2 py-2 flex-1 scrollbar-hide">
           {menuItems.map((item) => (
             <NavItem key={item.id} item={item} />
           ))}
           
           {isCoordinator && (
-            <>
-              <div className="h-1 w-8 bg-border my-2" />
-              {coordinatorItems.map((item) => (
-                <NavItem key={item.id} item={item} />
-              ))}
-            </>
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="h-0.5 w-8 bg-border my-1 shrink-0" />
+              <Tooltip>
+                <TooltipTrigger
+                  render={(props) => (
+                    <Button
+                      {...props}
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "w-12 h-12 rounded-xl transition-all border-2 border-transparent bg-muted/30",
+                        isCoordMenuOpen && "bg-primary/10 border-primary/20"
+                      )}
+                      onClick={() => setIsCoordMenuOpen(!isCoordMenuOpen)}
+                    >
+                      <ShieldCheck className={cn("w-6 h-6 transition-transform", isCoordMenuOpen ? "text-primary rotate-180" : "text-muted-foreground")} />
+                    </Button>
+                  )}
+                />
+                <TooltipContent side="right" className="neo-card bg-card border-2 font-black text-primary uppercase text-xs">
+                  Coordinación
+                </TooltipContent>
+              </Tooltip>
+
+              <AnimatePresence>
+                {isCoordMenuOpen && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="flex flex-col gap-3 overflow-hidden"
+                  >
+                    {coordinatorItems.map((item) => (
+                      <NavItem key={item.id} item={item} compact />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           )}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-4">
+        <div className="mt-auto flex flex-col gap-3 py-4 shrink-0">
           <ThemeToggle />
           <Tooltip>
             <TooltipTrigger
-              render={
+              render={(props) => (
                 <Button
+                  {...props}
                   variant="ghost"
                   size="icon"
                   className="w-12 h-12 rounded-xl text-destructive hover:bg-destructive/10 border-2 border-transparent"
@@ -154,7 +192,7 @@ export function Dashboard() {
                 >
                   <LogOut className="w-6 h-6" />
                 </Button>
-              }
+              )}
             />
             <TooltipContent side="right" className="neo-card bg-destructive text-destructive-foreground border-2 font-black uppercase text-xs">
               Salir
@@ -175,8 +213,8 @@ export function Dashboard() {
             >
               <Menu className="w-6 h-6" />
             </Button>
-            <h1 className="text-2xl font-black tracking-tight text-foreground uppercase">
-              {menuItems.find(i => i.id === currentScreen)?.label || "Túmin"}
+            <h1 className="text-xl font-black tracking-tight text-foreground uppercase truncate">
+              {menuItems.find(i => i.id === currentScreen)?.label || coordinatorItems.find(i => i.id === currentScreen)?.label || "Túmin"}
             </h1>
           </div>
           <div className="md:hidden">
@@ -199,10 +237,10 @@ export function Dashboard() {
 
         {/* Mobile Sidebar (Slide-out) */}
         <aside className={cn(
-          "md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card border-r-2 border-border z-70 transition-transform duration-300 transform p-6 overflow-y-auto",
+          "md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card border-r-2 border-border z-70 transition-transform duration-300 transform flex flex-col",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}>
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex justify-between items-center p-6 shrink-0">
             <h2 className="text-xl font-black uppercase">Menú</h2>
             <Button 
               variant="ghost" 
@@ -214,49 +252,75 @@ export function Dashboard() {
             </Button>
           </div>
 
-          <nav className="flex flex-col gap-3">
+          <nav className="flex flex-col gap-2 p-6 pt-0 flex-1 overflow-y-auto scrollbar-hide">
             {menuItems.map((item) => (
               <Button 
                 key={item.id}
                 variant="ghost" 
                 className={cn(
-                  "justify-start gap-3 h-12 text-lg neo-btn bg-background shadow-neo-sm/40",
+                  "justify-start gap-3 h-11 text-base neo-btn bg-background shadow-neo-sm/40 px-4",
                   currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
                 )}
                 onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-4 h-4" />
                 {item.label}
               </Button>
             ))}
 
             {isCoordinator && (
-              <>
-                <div className="h-1 bg-border my-4" />
-                {coordinatorItems.map((item) => (
-                  <Button 
-                    key={item.id}
-                    variant="ghost" 
-                    className={cn(
-                      "justify-start gap-3 h-12 text-lg neo-btn bg-background",
-                      currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
-                    )}
-                    onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
-                  </Button>
-                ))}
-              </>
+              <div className="flex flex-col gap-2">
+                <div className="h-0.5 bg-border my-2 shrink-0" />
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "justify-between h-11 text-base neo-btn bg-muted/30 px-4",
+                    isCoordMenuOpen && "bg-primary/5"
+                  )}
+                  onClick={() => setIsCoordMenuOpen(!isCoordMenuOpen)}
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    <span>COORDINACIÓN</span>
+                  </div>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", isCoordMenuOpen && "rotate-180")} />
+                </Button>
+
+                <AnimatePresence>
+                  {isCoordMenuOpen && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="flex flex-col gap-2 overflow-hidden pl-4"
+                    >
+                      {coordinatorItems.map((item) => (
+                        <Button 
+                          key={item.id}
+                          variant="ghost" 
+                          className={cn(
+                            "justify-start gap-3 h-10 text-sm neo-btn bg-background",
+                            currentScreen === item.id && "bg-primary shadow-none translate-x-1 translate-y-1"
+                          )}
+                          onClick={() => { setCurrentScreen(item.id); setSidebarOpen(false); }}
+                        >
+                          <item.icon className="w-3.5 h-3.5" />
+                          {item.label}
+                        </Button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
             
-            <div className="h-1 bg-border my-4" />
+            <div className="h-0.5 bg-border my-4 shrink-0" />
             <Button 
               variant="ghost" 
-              className="justify-start gap-3 h-12 text-lg neo-btn bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="justify-start gap-3 h-11 text-base neo-btn bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 shrink-0"
               onClick={() => signOut()}
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
               Cerrar Sesión
             </Button>
           </nav>
@@ -274,7 +338,7 @@ export function Dashboard() {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-card border-t-4 border-border flex justify-around items-center px-4 z-50">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t-4 border-border flex justify-around items-center px-4 z-50">
           <NavItem isMobile item={menuItems[0]} /> {/* Inicio */}
           <NavItem isMobile item={itemWithId(menuItems, "pagar")} />
           <NavItem isMobile item={itemWithId(menuItems, "bazar")} />

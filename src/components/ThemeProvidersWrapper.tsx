@@ -1,0 +1,17 @@
+"use client";
+
+import { ThemeProvider } from "@/components/ThemeProvider";
+import React from "react";
+
+export function ThemeProvidersWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      {children}
+    </ThemeProvider>
+  );
+}

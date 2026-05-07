@@ -3,8 +3,8 @@ import { Space_Grotesk, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { TRPCReactProvider } from "@/lib/trpc/react";
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvidersWrapper } from "@/components/ThemeProvidersWrapper";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-heading",
@@ -35,16 +35,11 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground transition-colors duration-300">
         <SessionProvider>
           <TRPCReactProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
+            <ThemeProvidersWrapper>
               <TooltipProvider>
                 {children}
               </TooltipProvider>
-            </ThemeProvider>
+            </ThemeProvidersWrapper>
           </TRPCReactProvider>
         </SessionProvider>
       </body>

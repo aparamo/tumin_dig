@@ -2,7 +2,7 @@ import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib
 import { z } from "zod";
 import { db } from "../../db";
 import { users, userRoleEnum, media } from "../../db/schema";
-import { eq, or, and, sql } from "drizzle-orm";
+import { eq, or, and, sql, desc, ilike } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 
@@ -175,15 +175,16 @@ export const userRouter = createTRPCRouter({
   }),
 
   updateRole: protectedProcedure
-    .input(z.object({ userId: z.string(), role: z.enum(["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR"]) }))
+    .input(z.object({ userId: z.string(), role: z.enum(["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR", "COORDINADOR_GENERAL"]) }))
     .mutation(async ({ ctx, input }) => {
       const myRole = ctx.session.user.role;
-      if (myRole !== "COORDINADOR" && myRole !== "COORDINADOR_LOCAL") {
+      const isGlobal = myRole === "COORDINADOR_GENERAL";
+      if (myRole !== "COORDINADOR" && myRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para cambiar roles" });
       }
 
-      // If COORDINADOR_LOCAL, check if target user is in the same region
-      if (myRole === "COORDINADOR_LOCAL") {
+      // If COORDINADOR_LOCAL or COORDINADOR (regional), check if target user is in the same region
+      if (!isGlobal) {
         const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
         if (!targetUser || targetUser.region !== ctx.session.user.region) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes cambiar roles en tu región" });
@@ -196,5 +197,120 @@ export const userRouter = createTRPCRouter({
         .where(eq(users.id, input.userId));
       
       return { success: true };
+    }),
+
+  getUnverifiedUsers: protectedProcedure
+    .input(z.object({ region: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      const targetRegion = isGlobal ? (input?.region && input.region !== "Todas" ? input.region : null) : ctx.session.user.region;
+
+      const condition = and(
+        eq(users.isVerified, false),
+        targetRegion ? eq(users.region, targetRegion) : undefined
+      );
+
+      return await db
+        .select({ 
+          id: users.id, 
+          name: users.name, 
+          region: users.region, 
+          createdAt: users.createdAt,
+          phone: users.phone,
+          email: users.email,
+          isVerified: users.isVerified
+        })
+        .from(users)
+        .where(condition)
+        .orderBy(desc(users.createdAt));
+    }),
+
+  verifyUserIdentity: protectedProcedure
+    .input(z.object({ userId: z.string(), verified: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      await db
+        .update(users)
+        .set({ isVerified: input.verified })
+        .where(eq(users.id, input.userId));
+      
+      return { success: true };
+    }),
+
+  getUsersAdvanced: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      roleFilter: z.string().optional(),
+      statusFilter: z.string().optional(),
+      regionFilter: z.string().optional(),
+      sortBy: z.enum(["name_asc", "name_desc", "date_asc", "date_desc"]).default("date_desc"),
+      cursor: z.number().default(0),
+      limit: z.number().min(1).max(100).default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      const targetRegion = isGlobal ? (input.regionFilter && input.regionFilter !== "Todas" ? input.regionFilter : null) : ctx.session.user.region;
+
+      const conditions = [];
+      if (targetRegion) conditions.push(eq(users.region, targetRegion));
+      if (input.search) {
+        conditions.push(or(
+          ilike(users.name, `%${input.search}%`),
+          ilike(users.phone, `%${input.search}%`),
+          ilike(users.email, `%${input.search}%`)
+        ));
+      }
+      if (input.roleFilter && input.roleFilter !== "Todos") conditions.push(eq(users.role, input.roleFilter as any));
+      if (input.statusFilter && input.statusFilter !== "Todos") conditions.push(eq(users.status, input.statusFilter as any));
+
+      const orderBys = [];
+      if (input.sortBy === "name_asc") orderBys.push(sql`${users.name} ASC`);
+      else if (input.sortBy === "name_desc") orderBys.push(sql`${users.name} DESC`);
+      else if (input.sortBy === "date_asc") orderBys.push(sql`${users.createdAt} ASC`);
+      else orderBys.push(sql`${users.createdAt} DESC`);
+
+      const results = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          role: users.role,
+          region: users.region,
+          status: users.status,
+          createdAt: users.createdAt,
+          phone: users.phone,
+          email: users.email,
+        })
+        .from(users)
+        .where(and(...conditions))
+        .orderBy(...orderBys)
+        .limit(input.limit + 1)
+        .offset(input.cursor);
+
+      let nextCursor: number | undefined = undefined;
+      if (results.length > input.limit) {
+        results.pop();
+        nextCursor = input.cursor + input.limit;
+      }
+
+      return {
+        items: results,
+        nextCursor,
+      };
     }),
 });

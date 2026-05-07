@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib/trpc/server";
 import { db } from "../../db";
-import { products, users, ratings } from "../../db/schema";
+import { products, users, ratings, transactions } from "../../db/schema";
 import { eq, and, ilike, sql, or } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -100,6 +100,12 @@ export const bazarRouter = createTRPCRouter({
       const userRegion = ctx.session.user.region;
 
       return await db.transaction(async (tx) => {
+        const [userBefore] = await tx
+          .select({ productOk: users.productOk })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
         const [newProduct] = await tx
           .insert(products)
           .values({
@@ -115,10 +121,32 @@ export const bazarRouter = createTRPCRouter({
           })
           .returning();
 
-        await tx
-          .update(users)
-          .set({ productOk: true })
-          .where(eq(users.id, userId));
+        if (userBefore && !userBefore.productOk) {
+          // Ensure SYSTEM user exists
+          await tx.insert(users).values({
+            id: "SYSTEM",
+            name: "Sistema Tumin",
+            phone: "SYSTEM_PHONE",
+            nip: "SYSTEM_NIP", 
+            region: "SISTEMA",
+            status: "ACTIVO",
+            role: "COORDINADOR",
+          }).onConflictDoNothing({ target: users.id });
+
+          // Give Welcome Bonus: 25 (Activation) + 5 (First product) = 30 Tumin
+          await tx.insert(transactions).values({
+            fromId: "SYSTEM",
+            toId: userId,
+            amount: 30,
+            concept: "Bono de Bienvenida y Activación",
+            type: "BONO",
+          });
+
+          await tx
+            .update(users)
+            .set({ productOk: true })
+            .where(eq(users.id, userId));
+        }
 
         return newProduct;
       });

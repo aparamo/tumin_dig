@@ -92,6 +92,15 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
+      
+      <div className="fixed bottom-4 right-4 flex gap-4 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
+        <Link href="/manual" className="hover:text-primary transition-colors">
+          Guía completa
+        </Link>
+        <Link href="/privacidad" className="hover:text-primary transition-colors">
+          Aviso de privacidad
+        </Link>
+      </div>
     </div>
   );
 }

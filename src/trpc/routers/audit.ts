@@ -15,26 +15,34 @@ interface ParasiteRow {
 }
 
 export const auditRouter = createTRPCRouter({
-  getAuditReport: protectedProcedure.query(async ({ ctx }) => {
-    const userRole = ctx.session.user.role;
-    if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden ver reportes de auditoría" });
-    }
+  getAuditReport: protectedProcedure
+    .input(z.object({ region: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role;
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden ver reportes de auditoría" });
+      }
 
-    // 1. Top 10 duplicator bonuses
-    const topDuplicators = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        duplicatorBonus: users.duplicatorBonus,
-      })
-      .from(users)
-      .orderBy(desc(users.duplicatorBonus))
-      .limit(10);
+      const targetRegion = isGlobal ? (input?.region && input.region !== "Todas" ? input.region : null) : ctx.session.user.region;
+
+      const baseUserCondition = targetRegion ? eq(users.region, targetRegion) : undefined;
+
+      // 1. Top 10 duplicator bonuses
+      const topDuplicators = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          duplicatorBonus: users.duplicatorBonus,
+        })
+        .from(users)
+        .where(baseUserCondition)
+        .orderBy(desc(users.duplicatorBonus))
+        .limit(10);
 
     // 2. "Parasite" detection
     // Users who mine and send all to one person.
-    const query = sql<ParasiteRow>`
+      const query = sql<ParasiteRow>`
       WITH user_sent_totals AS (
         SELECT 
           from_id, 
@@ -74,12 +82,51 @@ export const auditRouter = createTRPCRouter({
       JOIN ${users} ur ON ust.to_id = ur.id
       WHERE ud.unique_receivers = 1 
       AND ud.grand_total_sent >= um.total_mined * 0.9
+      ${targetRegion ? sql`AND u.region = ${targetRegion}` : sql``}
     `;
 
     const parasitesResult = await db.execute(query);
     const parasites = parasitesResult as unknown as ParasiteRow[];
 
-    // 3. Product control quality list
+    // 3. Inactive users (Semáforo Rojo)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const inactiveUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        status: users.status,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.status, "ACTIVO"),
+          targetRegion ? eq(users.region, targetRegion) : undefined,
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${transactions} 
+            WHERE (${transactions.fromId} = ${users.id} OR ${transactions.toId} = ${users.id})
+            AND ${transactions.createdAt} >= ${thirtyDaysAgo}
+          )`
+        )
+      )
+      .limit(20);
+
+    // 4. Frozen users (to allow reactivation)
+    const frozenUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        status: users.status,
+      })
+      .from(users)
+      .where(and(
+        eq(users.status, "CONGELADO"),
+        targetRegion ? eq(users.region, targetRegion) : undefined
+      ))
+      .limit(20);
+
+    // 5. Product control quality list
     const productQuality = await db
       .select({
         productId: products.id,
@@ -91,12 +138,15 @@ export const auditRouter = createTRPCRouter({
       .from(products)
       .innerJoin(users, eq(products.sellerId, users.id))
       .leftJoin(ratings, eq(ratings.sellerId, users.id))
+      .where(targetRegion ? eq(users.region, targetRegion) : undefined)
       .groupBy(products.id, products.name, users.name)
       .orderBy(sql`AVG(${ratings.stars}) ASC NULLS LAST`);
 
     return {
       topDuplicators,
       parasites,
+      inactiveUsers,
+      frozenUsers,
       productQuality,
     };
   }),
@@ -105,7 +155,7 @@ export const auditRouter = createTRPCRouter({
     .input(z.object({ userId: z.string(), status: z.enum(["ACTIVO", "CONGELADO"]) }))
     .mutation(async ({ ctx, input }) => {
       const userRole = ctx.session.user.role;
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && userRole !== "COORDINADOR_GENERAL") {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden congelar usuarios" });
       }
 
@@ -122,7 +172,7 @@ export const auditRouter = createTRPCRouter({
     const userId = ctx.session.user.id;
     const userRole = ctx.session.user.role;
 
-    if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
+    if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && userRole !== "COORDINADOR_GENERAL") {
       throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden reclamar recompensa de auditoría" });
     }
 

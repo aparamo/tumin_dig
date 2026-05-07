@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle, Flame, Bug, Star } from "lucide-react";
+import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle, Flame, Bug, Star, AlertTriangle, UserCheck } from "lucide-react";
 
 interface ParasiteRow {
   id: string;
@@ -20,8 +20,8 @@ export function Auditoria() {
   const { data: report, isLoading } = trpc.audit.getAuditReport.useQuery();
 
   const freezeMutation = trpc.audit.freezeUser.useMutation({
-    onSuccess: () => {
-      alert("Usuario congelado correctamente.");
+    onSuccess: (data) => {
+      alert(`Usuario ${data.status === 'ACTIVO' ? 'reactivado' : 'congelado'} correctamente.`);
       utils.audit.getAuditReport.invalidate();
     },
   });
@@ -44,6 +44,70 @@ export function Auditoria() {
         </div>
         <h1 className="text-4xl font-black uppercase tracking-tighter">Auditoría Regional</h1>
       </div>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 px-2">
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+          <h2 className="text-xl font-black uppercase tracking-tight">Semáforo Rojo (Inactividad {'>'}30 días)</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {report?.inactiveUsers.map((u) => (
+            <Card key={u.id} className="border-l-8 border-l-red-500 shadow-neo-sm">
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="space-y-1">
+                  <div className="font-black uppercase text-sm">{u.name}</div>
+                  <div className="text-[10px] text-muted-foreground font-bold uppercase">Inactivo</div>
+                </div>
+                <Button 
+                   variant="destructive" 
+                   size="sm" 
+                   onClick={() => freezeMutation.mutate({ userId: u.id, status: "CONGELADO" })}
+                   className="h-8 text-[10px] font-black uppercase"
+                >
+                  Congelar
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+          {report?.inactiveUsers.length === 0 && (
+             <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 shadow-none p-8 text-center text-muted-foreground font-bold uppercase text-xs">
+                Todos los socios están activos.
+             </div>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 px-2">
+          <UserCheck className="w-5 h-5 text-blue-500" />
+          <h2 className="text-xl font-black uppercase tracking-tight">Cuentas Congeladas</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {report?.frozenUsers.map((u) => (
+            <Card key={u.id} className="border-l-8 border-l-blue-500 shadow-neo-sm">
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="space-y-1">
+                  <div className="font-black uppercase text-sm">{u.name}</div>
+                  <div className="text-[10px] text-muted-foreground font-bold uppercase">Congelado</div>
+                </div>
+                <Button 
+                   variant="secondary" 
+                   size="sm" 
+                   onClick={() => freezeMutation.mutate({ userId: u.id, status: "ACTIVO" })}
+                   className="h-8 text-[10px] font-black uppercase bg-blue-100 text-blue-700 hover:bg-blue-200"
+                >
+                  Reactivar
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+          {report?.frozenUsers.length === 0 && (
+             <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 shadow-none p-8 text-center text-muted-foreground font-bold uppercase text-xs">
+                No hay cuentas congeladas.
+             </div>
+          )}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section className="space-y-4">

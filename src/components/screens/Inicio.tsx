@@ -3,17 +3,24 @@
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag } from "lucide-react";
+import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, UserCog, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import Image from "next/image";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
+  const { data: session } = useSession();
   const utils = trpc.useUtils();
+
+  const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL";
   
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = trpc.wallet.getBalance.useQuery();
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
+  const { data: activeAds } = trpc.ads.getActiveAds.useQuery();
   
   const claimMining = trpc.mining.claimMining.useMutation({
     onSuccess: (data) => {
@@ -28,6 +35,33 @@ export function Inicio() {
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
+      {activeAds && activeAds.length > 0 && (
+        <div className="md:col-span-12">
+          <div className="relative w-full aspect-[21/9] md:aspect-[32/9] rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
+            <Image 
+              src={activeAds[0].imageUrl} 
+              alt="Anuncio Comunitario" 
+              fill 
+              className="object-cover transition-transform group-hover:scale-105 duration-700" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+              <div className="text-white">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Mes de anuncio gratis</div>
+                <div className="text-xl font-black uppercase">¡Descubre algo nuevo hoy!</div>
+              </div>
+            </div>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="absolute top-4 right-4 h-8 text-[10px] font-black uppercase shadow-neo-sm"
+              onClick={() => setCurrentScreen("bazar")}
+            >
+              Ver Bazar
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Left Column: Balance & Quick Actions */}
       <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-8">
         <Card className="bg-primary/10 border-primary shadow-neo">
@@ -76,6 +110,45 @@ export function Inicio() {
             <span className="uppercase text-xs font-black">Bazar</span>
           </Button>
         </div>
+
+        <Link href="/manual" className="w-full">
+          <Button variant="outline" className="w-full h-16 border-2 border-border shadow-neo-sm flex gap-3 uppercase font-black">
+            <BookOpen className="w-6 h-6 text-primary" />
+            Guía y Manual Digital
+          </Button>
+        </Link>
+
+        {isCoordinator && (
+          <div className="flex flex-col gap-4 mt-4">
+            <h3 className="text-lg font-black uppercase tracking-tight px-2">Panel de Coordinación</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentScreen("coordinacion")}
+                className="h-20 flex flex-col gap-1 border-2 border-primary/20 hover:border-primary shadow-neo-sm"
+              >
+                <ShieldCheck className="w-6 h-6 text-primary" />
+                <span className="text-[10px] font-black uppercase">Validar</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentScreen("gestion-roles")}
+                className="h-20 flex flex-col gap-1 border-2 border-purple-500/20 hover:border-purple-500 shadow-neo-sm"
+              >
+                <UserCog className="w-6 h-6 text-purple-500" />
+                <span className="text-[10px] font-black uppercase">Roles</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentScreen("auditoria")}
+                className="h-20 flex flex-col gap-1 border-2 border-red-500/20 hover:border-red-500 shadow-neo-sm"
+              >
+                <Search className="w-6 h-6 text-red-500" />
+                <span className="text-[10px] font-black uppercase">Auditoría</span>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right Column: Transactions */}

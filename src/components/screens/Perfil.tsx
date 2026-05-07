@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Loader2, User, Phone, Mail, MapPin, Key, Save, 
-  Camera, ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy
+  Loader2, User, Key, Save, 
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -48,16 +48,17 @@ export function Perfil() {
 
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
   const [nipData, setNipData] = useState({ current: "", new: "", confirm: "" });
+  const [prevUserId, setPrevUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setEditData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || ""
-      });
-    }
-  }, [user]);
+  // Sync editData with user data when it first loads or changes
+  if (user && user.id !== prevUserId) {
+    setPrevUserId(user.id);
+    setEditData({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || ""
+    });
+  }
 
   const copyLink = () => {
     if (!user) return;
@@ -96,7 +97,7 @@ export function Perfil() {
                     button: "Cambiar Foto"
                   }}
                   appearance={{
-                    button: "neo-btn bg-white text-black font-black uppercase text-[10px] h-8 px-4",
+                    button: "neo-btn bg-primary text-primary-foreground uppercase text-[10px] h-8 px-4",
                     allowedContent: "hidden"
                   }}
                 />

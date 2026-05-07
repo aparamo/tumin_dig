@@ -97,6 +97,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Minimal scrollbar for Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
   }
   body {
     @apply bg-background text-foreground transition-colors duration-300;
@@ -107,6 +110,39 @@
   /* Forzamos colores de texto en dark mode */
   h1, h2, h3, h4, h5, h6, p, span, label, div {
     @apply text-foreground;
+  }
+
+  /* Custom minimal scrollbar for Chrome/Safari/Edge */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 0px; /* Hide horizontal scrollbar */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 3px;
   }
 }
 
