@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Smartphone, Monitor, CheckCircle2 } from "lucide-react";
+import { Smartphone, Monitor, CheckCircle2, ShieldCheck, Eye, UserCheck } from "lucide-react";
 
 export default function PrimerosPasosPage() {
   return (
@@ -49,56 +49,84 @@ export default function PrimerosPasosPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          Interfaz y Niveles
+          Activación de tu cuenta
         </h2>
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
-          Diseñada bajo el principio de <strong>&quot;Abundancia Progresiva&quot;</strong>, la app te guía paso a paso conforme te integras a la comunidad.
+          Para que la moneda tenga valor, todos debemos ser <strong>prosumidores</strong>. Tu cuenta se activa oficialmente cuando publicas tu primer producto o servicio en el Bazar desde la sección <strong>Mis Productos</strong>.
         </p>
-        <div className="space-y-4">
-          <div className="flex gap-4 p-4 border rounded-xl bg-orange-500/5 border-orange-500/20">
-            <div className="w-2 h-full bg-orange-500 rounded-full" />
-            <div>
-              <h4 className="font-black uppercase text-md tracking-widest text-orange-600 mb-1">Color Naranja</h4>
-              <p className="text-sm text-foreground/70">Energía del comercio y el Bazar.</p>
-            </div>
-          </div>
-          <div className="flex gap-4 p-4 border rounded-xl bg-green-500/5 border-green-500/20">
-            <div className="w-2 h-full bg-green-500 rounded-full" />
-            <div>
-              <h4 className="font-black uppercase text-md tracking-widest text-green-600 mb-1">Color Verde</h4>
-              <p className="text-sm text-foreground/70">Fluidez de los pagos y crecimiento de tu saldo.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-6 pb-20">
-        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          Suscripción de Primera Venta
-        </h2>
         <div className="bg-primary/20 text-primary-foreground p-8 rounded-2xl space-y-6">
           <div className="flex items-center gap-4">
             <CheckCircle2 className="w-10 h-10 shrink-0" />
             <h3 className="text-2xl font-black uppercase tracking-tighter">¡Activa tu Cuenta!</h3>
           </div>
-          <p className="text-sm opacity-90 leading-relaxed font-medium">
-            Para que la moneda tenga valor, todos debemos ser <strong>prosumidores</strong>. Tu cuenta se activará oficialmente cuando publiques tu primer producto o servicio en el Bazar.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
             <div className="bg-background/10 p-4 rounded-lg">
-              <span className="text-md font-black uppercase tracking-widest opacity-60">Paso 1</span>
-              <p className="text-base font-bold mt-1">Publicar Producto</p>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Paso 1</span>
+              <p className="text-sm font-bold mt-1">Regístrate</p>
             </div>
             <div className="bg-background/10 p-4 rounded-lg">
-              <span className="text-md font-black uppercase tracking-widest opacity-60">Paso 2</span>
-              <p className="text-base font-bold mt-1">Recibir Bono <strong>25 Ŧ</strong></p>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Paso 2</span>
+              <p className="text-sm font-bold mt-1">Ve a <strong>Mis Productos</strong></p>
             </div>
             <div className="bg-background/10 p-4 rounded-lg">
-              <span className="text-md font-black uppercase tracking-widest opacity-60">Paso 3</span>
-              <p className="text-base font-bold mt-1">Desbloquear Minado</p>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Paso 3</span>
+              <p className="text-sm font-bold mt-1">Publica tu primer producto</p>
+            </div>
+            <div className="bg-background/10 p-4 rounded-lg">
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Paso 4</span>
+              <p className="text-sm font-bold mt-1">Recibe <strong>30 Ŧ</strong> y desbloquea el minado</p>
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          El badge de Socix Verificadx
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Tu Bantúmin local puede otorgarte el reconocimiento de <strong>Socix Verificadx</strong> una vez que confirme tu identidad y que eres una persona real de la comunidad.
+        </p>
+        <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <UserCheck className="w-8 h-8 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <h4 className="font-black uppercase tracking-tight">¿Qué significa estar verificadx?</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Aparece un badge <strong>&quot;Verificadx&quot;</strong> <ShieldCheck className="inline w-4 h-4 text-primary" /> en tu perfil público. Es un sello de confianza visible para el resto de la comunidad, pero <strong>no es un requisito</strong> para usar la app, el Bazar ni ninguna funcionalidad — puedes empezar de inmediato.
+            </p>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Si aún no estás verificadx, simplemente contacta a tu Bantúmin regional y cuéntale sobre tu participación en la red.
+        </p>
+      </section>
+
+      <section className="space-y-6 pb-20">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Tu Perfil Público
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Cada socix puede tener una página pública en la dirección <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">/u/tu-id</code> donde la comunidad puede ver tus productos y contactarte. <strong>Tú controlas qué información es visible.</strong>
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50">
+            <Eye className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Cómo activarlo</h4>
+              <p className="text-sm text-foreground/70">Ve a <strong>Perfil → Privacidad y perfil público</strong> y activa el interruptor &quot;Perfil público&quot;.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50">
+            <ShieldCheck className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Qué puedes controlar</h4>
+              <p className="text-sm text-foreground/70">Nombre público, bio, si se muestra tu teléfono, correo o región. Por default el teléfono se usa para el botón de WhatsApp en el Bazar.</p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Si no activas el perfil público, tu página <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">/u/tu-id</code> no será visible para nadie.
+        </p>
       </section>
     </article>
   );

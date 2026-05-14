@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
@@ -18,31 +18,25 @@ function RegisterForm() {
   const { status } = useSession();
   const registerMutation = trpc.user.register.useMutation();
 
+  const referrerId = searchParams.get("ref") ?? "";
+  const isReferralValid = referrerId.length > 0;
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     region: "Veracruz",
     nip: "",
-    referrerId: "",
+    referrerId,
   });
 
   const [error, setError] = useState("");
-  const [isReferralValid, setIsReferralValid] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
       router.replace("/");
     }
   }, [status, router]);
-
-  useEffect(() => {
-    const ref = searchParams.get("ref");
-    if (ref) {
-      setFormData((prev) => ({ ...prev, referrerId: ref }));
-      setIsReferralValid(true);
-    }
-  }, [searchParams]);
 
   if (status === "loading" || status === "authenticated") {
     return (
@@ -159,7 +153,7 @@ function RegisterForm() {
               />
             </div>
             
-            {error && <p className="text-sm text-destructive font-bold text-center uppercase text-xs">{error}</p>}
+            {error && <p className="text-sm text-destructive font-bold text-center uppercase">{error}</p>}
 
             <Button 
               type="submit" 

@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Shield, Users, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Shield, Users, Zap, FolderOpen } from "lucide-react";
 
 export default function ManualPage() {
   return (
@@ -89,6 +89,26 @@ export default function ManualPage() {
             <CardContent>
               <p className="text-sm text-foreground/70 leading-relaxed">
                 Conoce la organización autónoma regional y el rol facilitador de los coordinadores o Bantúmin.
+              </p>
+              <Button variant="ghost" className="mt-4 p-0 font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
+                Leer más <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer group md:col-span-2">
+          <Link href="/manual/8-mis-archivos">
+            <CardHeader>
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <FolderOpen className="w-6 h-6" />
+              </div>
+              <CardTitle className="uppercase font-black tracking-tight">Mis Archivos</CardTitle>
+              <CardDescription className="font-bold text-xs uppercase tracking-widest">Capítulo 8: Gestor de Medios</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Administra tus imágenes, avatar y enlaces externos. Aprende a usar el gestor de medios para enriquecer tus productos.
               </p>
               <Button variant="ghost" className="mt-4 p-0 font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
                 Leer más <ArrowRight className="ml-2 w-4 h-4" />

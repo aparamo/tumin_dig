@@ -337,7 +337,7 @@ export function GestionProductos() {
                     </div>
                     <div className="flex items-start justify-between gap-3 rounded-lg border-2 border-border bg-muted/20 p-3">
                       <div className="min-w-0">
-                        <Label htmlFor={`show-profile-${editingProduct.id ?? "new"}`} className="text-[10px] font-black uppercase">
+                        <Label htmlFor={`show-profile-${editingProduct.id ?? "new"}`} className="text-base font-black uppercase">
                           Visible en bazar y perfil
                         </Label>
                         <p className="mt-1 text-[9px] font-medium text-muted-foreground">
@@ -363,7 +363,7 @@ export function GestionProductos() {
                       {categories.map(c => (
                         <div key={c} className="flex items-center gap-3 py-1">
                           <Checkbox id={`edit-${c}`} checked={editingProduct.categories?.includes(c)} onCheckedChange={() => toggleCategory(c)} className="h-4 w-4 border-2" />
-                          <label htmlFor={`edit-${c}`} className="text-[10px] font-black uppercase cursor-pointer">{c}</label>
+                          <label htmlFor={`edit-${c}`} className="text-sm font-black uppercase cursor-pointer">{c}</label>
                         </div>
                       ))}
                     </div>
@@ -372,11 +372,11 @@ export function GestionProductos() {
 
                 <div className="space-y-6 border-t-2 border-border pt-8 md:pt-10">
                   <div className="space-y-2">
-                    <Label className="font-black uppercase text-xs">
+                    <Label className="font-black uppercase text-base">
                       Descripción <span className="text-destructive">*</span>
                     </Label>
                     <p className="text-xs font-medium leading-relaxed text-muted-foreground sm:text-sm lg:text-base lg:leading-snug">
-                      Obligatoria al crear o editar aquí; en la base puede haber filas sin descripción por migraciones.
+                      Escribe una descripción breve y clara de tu producto o servicio.
                     </p>
                     <Textarea
                       value={editingProduct.description}
@@ -387,7 +387,7 @@ export function GestionProductos() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-black uppercase text-[10px] text-muted-foreground sm:text-xs">
+                    <Label className="font-black uppercase text-base text-muted-foreground">
                       Información adicional (opcional)
                     </Label>
                     <Textarea

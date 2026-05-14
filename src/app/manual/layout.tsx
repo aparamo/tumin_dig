@@ -12,8 +12,9 @@ const chapters = [
   { id: "3-primeros-pasos", title: "3. Primeros Pasos" },
   { id: "4-motor-abundancia", title: "4. Motor de Abundancia" },
   { id: "5-mercado-interno", title: "5. Comprando y Vendiendo" },
-  { id: "6-gobernanza", title: "6. Gobernanza y Rol del Coordinador" },
-  { id: "7-seguridad", title: "7. Seguridad y Auditoría" },
+  { id: "6-gobernanza", title: "6. Gobernanza y Coordinación" },
+  { id: "7-seguridad", title: "7. Seguridad y Privacidad" },
+  { id: "8-mis-archivos", title: "8. Mis Archivos" },
 ];
 
 export default async function ManualLayout({

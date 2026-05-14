@@ -52,7 +52,7 @@ export default function LoginPage() {
       } else {
         router.push("/");
       }
-    } catch (err) {
+    } catch {
       setError("Ocurrió un error al iniciar sesión");
     } finally {
       setIsLoading(false);
@@ -93,7 +93,7 @@ export default function LoginPage() {
               />
               <p className="text-[9px] text-muted-foreground font-bold uppercase text-center">4 a 6 caracteres alfanuméricos</p>
             </div>
-            {error && <p className="text-sm text-destructive font-bold text-center uppercase text-xs">{error}</p>}
+            {error && <p className="text-sm text-destructive font-bold text-center uppercase">{error}</p>}
             <Button 
               type="submit" 
               variant="default"
