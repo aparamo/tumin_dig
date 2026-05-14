@@ -1,7 +1,8 @@
--- Safe incremental migration for existing Postgres databases.
--- Run manually (e.g. psql -f 0001_safe_additions.sql). Idempotent: safe to re-run.
--- Requires PostgreSQL 11+ for ADD COLUMN IF NOT EXISTS.
--- Note: product "description" is nullable in DB (legacy/migration rows may be NULL). App forms still require it for create/edit.
+-- Safe incremental migration for existing Postgres databases (outside Drizzle journal).
+-- Use when la base ya existía antes de `drizzle-kit migrate` o tiene columnas parciales.
+-- Idempotent: safe to re-run. PostgreSQL 11+ for ADD COLUMN IF NOT EXISTS.
+-- From tumin-app: psql "$DATABASE_URL" -f src/db/manual/safe_additions_existing_postgres.sql
+-- Note: product "description" is nullable in app schema; forms still require it on create/edit.
 
 -- TUMIN_users: privacy / public profile columns
 ALTER TABLE "TUMIN_users" ADD COLUMN IF NOT EXISTS "public_name" text;
@@ -12,8 +13,6 @@ ALTER TABLE "TUMIN_users" ADD COLUMN IF NOT EXISTS "show_email" boolean DEFAULT 
 ALTER TABLE "TUMIN_users" ADD COLUMN IF NOT EXISTS "show_region" boolean DEFAULT true NOT NULL;
 
 -- TUMIN_products: descriptions + visibility in bazar/public profile
--- description is optional (nullable). Existing rows without the column: first run adds NULL.
--- If you already ran an older 0001 that used NOT NULL DEFAULT '', the DO block relaxes the column.
 ALTER TABLE "TUMIN_products" ADD COLUMN IF NOT EXISTS "description" text;
 
 DO $$

@@ -8,6 +8,13 @@
       "when": 1778719578288,
       "tag": "0000_curvy_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778722297508,
+      "tag": "0001_schema_align_products_privacy",
+      "breakpoints": true
     }
   ]
 }
