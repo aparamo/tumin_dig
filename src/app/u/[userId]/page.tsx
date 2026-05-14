@@ -8,7 +8,8 @@ import { users, products, ratings } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, ShoppingBag, User, ShieldCheck, Star, Zap, Calendar } from "lucide-react";
+import { ProfileProductsSection } from "@/components/profile/ProfileProductsSection";
+import { MessageCircle, User, ShieldCheck, Star, Zap, Calendar } from "lucide-react";
 import type { Metadata } from "next";
 
 const TIER_LABELS: Record<string, { label: string; className: string }> = {
@@ -157,41 +158,19 @@ export default async function PublicUserPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        <section>
-          <h2 className="mb-4 text-xl font-black uppercase tracking-tight">Productos en el bazar</h2>
-          {activeProducts.length === 0 ? (
-            <p className="rounded-xl border-2 border-dashed border-border bg-muted/20 p-8 text-center text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Sin productos activos por ahora.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {activeProducts.map((p) => {
-                const cover = p.imgUrls?.[0] ?? p.imageUrl;
-                return (
-                  <Card key={p.id} className="overflow-hidden border-2">
-                    <div className="relative aspect-video bg-muted">
-                      {cover ? (
-                        <Image src={cover} alt={p.name} fill sizes="(max-width:640px) 100vw, 50vw" className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground/40">
-                          <ShoppingBag className="h-12 w-12" />
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="space-y-2 p-4">
-                      <h3 className="line-clamp-2 font-black uppercase leading-tight">{p.name}</h3>
-                      <p className="line-clamp-2 text-xs text-muted-foreground">{p.description || "—"}</p>
-                      <div className="flex flex-wrap gap-2 text-lg font-black">
-                        <span className="text-primary">$ {p.priceMxn} MXN</span>
-                        <span className="text-secondary">+ {p.priceTumin} Ŧ</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        <ProfileProductsSection
+          products={activeProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            priceMxn: p.priceMxn,
+            priceTumin: p.priceTumin,
+            imgUrls: p.imgUrls ?? [],
+            imageUrl: p.imageUrl,
+          }))}
+          sellerName={displayName}
+          sellerPhone={phone}
+        />
       </div>
     </div>
   );
