@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 function RegisterForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { status } = useSession();
   const registerMutation = trpc.user.register.useMutation();
 
   const [formData, setFormData] = useState({
@@ -29,12 +31,28 @@ function RegisterForm() {
   const [isReferralValid, setIsReferralValid] = useState(false);
 
   useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) {
       setFormData((prev) => ({ ...prev, referrerId: ref }));
       setIsReferralValid(true);
     }
   }, [searchParams]);
+
+  if (status === "loading" || status === "authenticated") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+          {status === "loading" ? "Cargando…" : "Redirigiendo…"}
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

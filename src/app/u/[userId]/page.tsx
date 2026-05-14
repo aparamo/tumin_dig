@@ -127,7 +127,7 @@ export default async function PublicUserPage({ params }: PageProps) {
                   Miembro desde {memberSince}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/50 px-2 py-1">
-                  {productCount} producto{productCount === 1 ? "" : "s"} en vitrina
+                  {productCount} producto{productCount === 1 ? "" : "s"} 
                 </span>
                 {avgRating > 0 && (
                   <span className="inline-flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-2 py-1 text-accent">

@@ -6,22 +6,18 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X, 
+  Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, 
   Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
   Palette, Home as HomeIcon, Sparkles, GraduationCap, 
   Presentation, Music, Ticket, Leaf,
-  ShoppingBag, Trash2, type LucideIcon
+  ShoppingBag, type LucideIcon
 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
-import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 
@@ -54,28 +50,13 @@ function formatRegion(region: string) {
 }
 
 export function Bazar() {
-  const { setCurrentScreen } = useStore();
-  const utils = trpc.useUtils();
-  const { data: mediaList } = trpc.user.listMedia.useQuery();
+  const { setCurrentScreen, setOpenGestionProductCreate } = useStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [region, setRegion] = useState("Todas");
   const [sortBy, setSortBy] = useState<"recientes" | "menor_precio" | "mayor_precio">("recientes");
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    extraInfo: "",
-    priceMxn: 0,
-    priceTumin: 0,
-    categories: [] as string[],
-    imageUrl: "",
-    imgUrls: [] as string[],
-  });
 
   const { 
     data: productsData, 
@@ -96,25 +77,6 @@ export function Bazar() {
 
   const allProducts = productsData?.pages.flatMap(page => page.items) || [];
 
-  const createProduct = trpc.bazar.createProduct.useMutation({
-    onSuccess: () => {
-      alert("¡Producto publicado correctamente!");
-      setIsFormOpen(false);
-      utils.bazar.getProducts.invalidate();
-      setFormData({
-        name: "",
-        description: "",
-        extraInfo: "",
-        priceMxn: 0,
-        priceTumin: 0,
-        categories: [],
-        imageUrl: "",
-        imgUrls: [],
-      });
-    },
-    onError: (error) => alert(error.message),
-  });
-
   const categories = [
     "Alimentos", "Bebidas", "Ropa", "Artesanías", "Salud y Bienestar", 
     "Servicios Profesionales", "Arte", "Hogar", "Cuidado Personal", "Educación", 
@@ -123,55 +85,9 @@ export function Bazar() {
 
   const regions = ["Todas", "Veracruz", "Chiapas", "Oaxaca", "Hidalgo", "Estado de México", "Morelos"];
 
-  const handleCategoryToggle = (cat: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(cat) 
-        ? prev.categories.filter(c => c !== cat)
-        : [...prev.categories, cat]
-    }));
-  };
-
-  const removeUrl = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      imgUrls: prev.imgUrls.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addUrl = () => {
-    const urlInput = document.getElementById("external-url-input") as HTMLInputElement;
-    const val = urlInput.value;
-    if (!val) return;
-    try {
-      new URL(val);
-      setFormData(prev => ({ ...prev, imgUrls: [...prev.imgUrls, val] }));
-      urlInput.value = "";
-    } catch {
-      alert("URL inválida");
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (createProduct.isPending) return;
-
-    const total = formData.priceMxn + formData.priceTumin;
-    if (formData.priceTumin < total * 0.1) {
-      alert("El precio en Túmin debe ser al menos el 10% del total.");
-      return;
-    }
-
-    if (!formData.description.trim()) {
-      alert("Agrega una descripción del producto.");
-      return;
-    }
-
-    createProduct.mutate({
-      ...formData,
-      description: formData.description.trim(),
-      extraInfo: formData.extraInfo.trim() || undefined,
-    });
+  const handleAddNewProduct = () => {
+    setOpenGestionProductCreate(true);
+    setCurrentScreen("gestion-productos");
   };
 
   return (
@@ -179,11 +95,11 @@ export function Bazar() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Bazar</h1>
         <Button 
-          onClick={() => setIsFormOpen(true)}
+          onClick={handleAddNewProduct}
           variant="secondary"
-          className="h-12 shadow-neo-sm"
+          className="h-12 shadow-neo-sm font-black uppercase text-xs sm:text-sm"
         >
-          <Plus className="w-5 h-5 mr-1" /> Vender
+          <Plus className="w-5 h-5 mr-1 shrink-0" /> Agregar nuevo
         </Button>
       </div>
 
@@ -410,203 +326,6 @@ export function Bazar() {
         }}
         onBuy={() => setCurrentScreen("pagar")}
       />
-
-      {isFormOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-100 flex items-center justify-center p-4 overflow-auto py-10">
-          <Card className="w-full max-w-md shadow-2xl relative">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-4 top-4 neo-btn bg-background h-10 w-10" 
-              onClick={() => setIsFormOpen(false)}
-            >
-              <X className="w-6 h-6" />
-            </Button>
-            <CardHeader>
-              <CardTitle className="text-3xl">Vender</CardTitle>
-              <CardDescription className="font-bold uppercase text-[10px]">Publica tu producto o servicio</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs">Nombre del Producto</Label>
-                  <Input 
-                    placeholder="Ej. Jabón Artesanal" 
-                    className="bg-background"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs">
-                    Descripción <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="text-[9px] font-medium text-muted-foreground">
-                    Obligatoria al publicar desde aquí; la base admite productos sin descripción.
-                  </p>
-                  <Textarea
-                    placeholder="Describe tu producto o servicio"
-                    className="min-h-[100px] border-2 bg-background text-sm"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
-                    maxLength={8000}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-[10px] text-muted-foreground">
-                    Información adicional (opcional)
-                  </Label>
-                  <Textarea
-                    placeholder="Detalles extra, condiciones, entregas…"
-                    className="min-h-[72px] border-2 bg-background text-sm"
-                    value={formData.extraInfo}
-                    onChange={(e) => setFormData({ ...formData, extraInfo: e.target.value })}
-                    maxLength={16000}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="font-black uppercase text-xs">Precio Pesos ($)</Label>
-                    <Input 
-                      type="number" 
-                      className="bg-background font-black"
-                      value={formData.priceMxn}
-                      onChange={(e) => setFormData({...formData, priceMxn: parseFloat(e.target.value)})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-black uppercase text-xs">Precio Túmin (Ŧ)</Label>
-                    <Input 
-                      type="number" 
-                      className="bg-background font-black"
-                      value={formData.priceTumin}
-                      onChange={(e) => setFormData({...formData, priceTumin: parseFloat(e.target.value)})}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs">Categoría</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-muted/30 rounded-lg border-2 border-border scrollbar-hide">
-                    {categories.map(c => (
-                      <div key={c} className="flex items-center gap-3 py-1">
-                        <Checkbox 
-                          id={c} 
-                          checked={formData.categories.includes(c)}
-                          onCheckedChange={() => handleCategoryToggle(c)}
-                          className="h-5 w-5 border-2"
-                        />
-                        <label htmlFor={c} className="text-[10px] font-black uppercase cursor-pointer">{c}</label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t-2 border-border">
-                  <div className="flex justify-between items-center mb-2">
-                    <Label className="font-black uppercase text-xs">Imágenes del Producto</Label>
-                    <UploadButton
-                      endpoint="userMedia"
-                      onClientUploadComplete={(res) => {
-                        const newFiles = res.map(r => r.url);
-                        setFormData(prev => ({
-                          ...prev,
-                          imgUrls: [...prev.imgUrls, ...newFiles]
-                        }));
-                        utils.user.listMedia.invalidate();
-                        utils.user.getMediaUsage.invalidate();
-                      }}
-                      onUploadError={(e) => alert(e.message)}
-                      content={{
-                        button: "Subir Imagen",
-                        allowedContent: "Imágenes permitidas"
-                      }}
-                      appearance={{
-                        button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
-                        allowedContent: "hidden"
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {formData.imgUrls.map((url, i) => (
-                      <div key={i} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
-                        <Image src={url} alt="producto" fill sizes="64px" className="object-cover" />
-                        <button 
-                          type="button" 
-                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeUrl(i)}
-                        >
-                          <Trash2 className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    ))}
-                    {formData.imgUrls.length === 0 && (
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold w-full text-center py-4 border-2 border-dashed rounded-lg bg-muted/20">
-                        Sin imágenes seleccionadas.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="font-black uppercase text-[10px] text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
-                    <div className="flex gap-2 overflow-x-auto pb-2 min-h-[4rem]">
-                      {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
-                        const isSelected = formData.imgUrls.includes(m.url);
-                        return (
-                          <div 
-                            key={m.id} 
-                            className={cn(
-                              "relative w-16 h-16 shrink-0 rounded-lg border-2 overflow-hidden cursor-pointer transition-all",
-                              isSelected ? "border-primary opacity-50 cursor-not-allowed" : "border-border hover:border-primary"
-                            )}
-                            onClick={() => {
-                              if (!isSelected) {
-                                setFormData(prev => ({ ...prev, imgUrls: [...prev.imgUrls, m.url] }));
-                              }
-                            }}
-                          >
-                            <Image src={m.url} alt={m.name} fill sizes="64px" className="object-cover" />
-                          </div>
-                        );
-                      })}
-                      {(!mediaList || mediaList.filter(m => m.type === "IMAGE").length === 0) && (
-                        <div className="flex items-center justify-center w-full text-[9px] font-bold text-muted-foreground uppercase opacity-50">
-                          Tu galería está vacía
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Input id="external-url-input" placeholder="O pega un link externo..." className="bg-background flex-1 text-[10px]" />
-                    <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm h-10 px-4">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  variant="default"
-                  className="w-full h-14 text-lg"
-                  disabled={createProduct.isPending}
-                >
-                  {createProduct.isPending ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
-                  Publicar
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

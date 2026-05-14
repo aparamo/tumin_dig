@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, startTransition } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 import type { InferSelectModel } from "drizzle-orm";
 import { products } from "@/db/schema";
+import { useStore } from "@/lib/store";
 
 type ProductRow = InferSelectModel<typeof products>;
 
@@ -35,6 +36,8 @@ type ProductForm = {
 
 export function GestionProductos() {
   const utils = trpc.useUtils();
+  const openGestionProductCreate = useStore((s) => s.openGestionProductCreate);
+  const setOpenGestionProductCreate = useStore((s) => s.setOpenGestionProductCreate);
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
   const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [editingProduct, setEditingProduct] = useState<ProductForm | null>(null);
@@ -46,7 +49,8 @@ export function GestionProductos() {
     onSuccess: () => {
       alert("Producto creado exitosamente");
       setIsModalOpen(false);
-      utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getProducts.invalidate();
     },
     onError: (e) => alert(e.message),
   });
@@ -55,7 +59,8 @@ export function GestionProductos() {
     onSuccess: () => {
       alert("Producto actualizado");
       setIsModalOpen(false);
-      utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getProducts.invalidate();
     },
     onError: (e) => alert(e.message),
   });
@@ -99,7 +104,7 @@ export function GestionProductos() {
     setIsModalOpen(true);
   };
 
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     setIsCreating(true);
     setEditingProduct({
       name: "",
@@ -113,7 +118,15 @@ export function GestionProductos() {
       showInProfile: true,
     });
     setIsModalOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!openGestionProductCreate) return;
+    startTransition(() => {
+      setOpenGestionProductCreate(false);
+      handleCreateNew();
+    });
+  }, [openGestionProductCreate, setOpenGestionProductCreate, handleCreateNew]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,8 +257,8 @@ export function GestionProductos() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-wide text-foreground">Visible en bazar y perfil</p>
-                      <p className="text-[9px] font-medium text-muted-foreground">Si lo apagas, no aparece en el mercado ni en /u</p>
+                      <p className="text-base!important font-black uppercase tracking-wide text-foreground">Visible en bazar y perfil</p>
+                      <p className="text-base!important font-medium text-muted-foreground">Si lo apagas, no aparece en el mercado ni en /u</p>
                     </div>
                     <Switch
                       checked={p.showInProfile ?? true}
@@ -274,63 +287,37 @@ export function GestionProductos() {
       </StaggerContainer>
 
       {isModalOpen && editingProduct && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-auto py-10">
-          <Card className="w-full max-w-2xl shadow-2xl relative">
-            <Button variant="ghost" size="icon" className="absolute right-4 top-4 neo-btn bg-background h-10 w-10" onClick={() => setIsModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-background/80 backdrop-blur-md">
+          <div className="flex min-h-full justify-center p-4 py-8 sm:p-6 sm:py-12">
+            <Card className="relative my-auto flex w-full max-w-2xl flex-col overflow-hidden border-2 shadow-2xl md:max-w-4xl lg:max-w-5xl max-h-[min(100dvh-2.5rem,920px)]">
+            <Button variant="ghost" size="icon" className="absolute right-3 top-3 z-10 neo-btn bg-background h-10 w-10 sm:right-4 sm:top-4" onClick={() => setIsModalOpen(false)}>
               <X className="w-6 h-6" />
             </Button>
-            <CardHeader>
+            <CardHeader className="shrink-0 pr-14 pt-2 sm:pr-16">
               <CardTitle className="text-2xl uppercase font-black">
                 {isCreating ? "Nuevo Producto" : "Editar Producto"}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 sm:px-6">
               <form onSubmit={handleSave} className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-xs">
-                    Descripción <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="text-[9px] font-medium text-muted-foreground">
-                    Obligatoria al crear o editar aquí; en la base puede haber filas sin descripción por migraciones.
-                  </p>
-                  <Textarea
-                    value={editingProduct.description}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                    className="min-h-[100px] border-2 bg-background"
-                    required
-                    maxLength={8000}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-black uppercase text-[10px] text-muted-foreground">
-                    Información adicional (opcional)
-                  </Label>
-                  <Textarea
-                    value={editingProduct.extraInfo}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, extraInfo: e.target.value })}
-                    className="min-h-[72px] border-2 bg-background"
-                    maxLength={16000}
-                  />
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="font-black uppercase text-xs">Nombre</Label>
+                      <Label className="font-black uppercase text-base">Nombre</Label>
                       <Input value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} required className="bg-background" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="font-black uppercase text-xs">Precio Pesos</Label>
+                        <Label className="font-black uppercase text-base">Precio Pesos</Label>
                         <Input type="number" value={editingProduct.priceMxn} onChange={e => setEditingProduct({...editingProduct, priceMxn: parseFloat(e.target.value)})} required className="bg-background font-black" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="font-black uppercase text-xs">Precio Túmin</Label>
+                        <Label className="font-black uppercase text-base">Precio Túmin</Label>
                         <Input type="number" value={editingProduct.priceTumin} onChange={e => setEditingProduct({...editingProduct, priceTumin: parseFloat(e.target.value)})} required className="bg-background font-black" />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-black uppercase text-xs">Estado</Label>
+                      <Label className="font-black uppercase text-base">Estado</Label>
                       <Select 
                         value={editingProduct.status} 
                         onValueChange={(v) => {
@@ -371,7 +358,7 @@ export function GestionProductos() {
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="font-black uppercase text-xs">Categorías</Label>
+                    <Label className="font-black uppercase text-base">Categorías</Label>
                     <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-3 bg-muted/30 rounded-lg border-2 border-border">
                       {categories.map(c => (
                         <div key={c} className="flex items-center gap-3 py-1">
@@ -383,9 +370,38 @@ export function GestionProductos() {
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t-2 border-border">
+                <div className="space-y-6 border-t-2 border-border pt-8 md:pt-10">
+                  <div className="space-y-2">
+                    <Label className="font-black uppercase text-xs">
+                      Descripción <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs font-medium leading-relaxed text-muted-foreground sm:text-sm lg:text-base lg:leading-snug">
+                      Obligatoria al crear o editar aquí; en la base puede haber filas sin descripción por migraciones.
+                    </p>
+                    <Textarea
+                      value={editingProduct.description}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                      className="min-h-[100px] border-2 bg-background"
+                      required
+                      maxLength={8000}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-black uppercase text-[10px] text-muted-foreground sm:text-xs">
+                      Información adicional (opcional)
+                    </Label>
+                    <Textarea
+                      value={editingProduct.extraInfo}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, extraInfo: e.target.value })}
+                      className="min-h-[72px] border-2 bg-background"
+                      maxLength={16000}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t-2 border-border pt-8 md:pt-10">
                   <div className="flex justify-between items-center mb-2">
-                    <Label className="font-black uppercase text-xs">Imágenes del Producto</Label>
+                    <Label className="font-black uppercase text-base">Imágenes del Producto</Label>
                     <UploadButton
                       endpoint="userMedia"
                       onClientUploadComplete={(res) => {
@@ -403,8 +419,9 @@ export function GestionProductos() {
                         allowedContent: "Imágenes permitidas"
                       }}
                       appearance={{
-                        button: "neo-btn bg-secondary text-secondary-foreground uppercase font-black text-[10px] h-8 px-4 py-0",
-                        allowedContent: "hidden"
+                        button:
+                          "neo-btn bg-secondary text-stone-900 uppercase text-[10px] h-8 px-4 py-0 transition-all duration-200 hover:bg-secondary/90 hover:bg-muted/50 hover:text-black hover:-translate-y-0.5 active:translate-y-0 active:shadow-none",
+                        allowedContent: "hidden",
                       }}
                     />
                   </div>
@@ -423,7 +440,7 @@ export function GestionProductos() {
                       </div>
                     ))}
                     {(!editingProduct.imgUrls || editingProduct.imgUrls.length === 0) && (
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold w-full text-center py-4 border-2 border-dashed rounded-lg bg-muted/20">
+                      <p className="text-base text-muted-foreground uppercase font-bold w-full text-center py-4 border-2 border-dashed rounded-lg bg-muted/20">
                         Sin imágenes. Sube una o selecciona de tu galería.
                       </p>
                     )}
@@ -431,7 +448,7 @@ export function GestionProductos() {
 
                   {/* Media Gallery Selector */}
                   <div className="space-y-2">
-                    <Label className="font-black uppercase text-[10px] text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
+                    <Label className="font-black uppercase text-md text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
                     <div className="flex gap-2 overflow-x-auto pb-2 min-h-[4rem]">
                       {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
                         const isSelected = editingProduct.imgUrls?.includes(m.url);
@@ -456,7 +473,7 @@ export function GestionProductos() {
                         );
                       })}
                       {(!mediaList || mediaList.filter(m => m.type === "IMAGE").length === 0) && (
-                        <div className="flex items-center justify-center w-full text-[9px] font-bold text-muted-foreground uppercase opacity-50">
+                        <div className="flex items-center justify-center w-full text-base font-bold text-muted-foreground uppercase opacity-50">
                           Tu galería está vacía
                         </div>
                       )}
@@ -465,7 +482,7 @@ export function GestionProductos() {
 
                   {/* External Link (Fallback) */}
                   <div className="flex gap-2 mt-4">
-                    <Input placeholder="O pega un link externo..." value={newUrl} onChange={e => setNewUrl(e.target.value)} className="bg-background flex-1 text-[10px]" />
+                    <Input placeholder="O pega un link externo..." value={newUrl} onChange={e => setNewUrl(e.target.value)} className="bg-background flex-1 text-base" />
                     <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm h-10 px-4">
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -488,6 +505,7 @@ export function GestionProductos() {
               </form>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>
