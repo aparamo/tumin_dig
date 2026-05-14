@@ -51,8 +51,22 @@ export const adsRouter = createTRPCRouter({
     .input(z.object({ adId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const userRole = ctx.session.user.role;
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && userRole !== "COORDINADOR_GENERAL") {
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      // Regional boundary check — coordinators can only approve ads from their region
+      if (!isGlobal) {
+        const [ad] = await db
+          .select({ ownerRegion: users.region })
+          .from(ads)
+          .innerJoin(users, eq(ads.userId, users.id))
+          .where(eq(ads.id, input.adId))
+          .limit(1);
+        if (!ad || ad.ownerRegion !== ctx.session.user.region) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu región" });
+        }
       }
 
       const expiresAt = new Date();
@@ -62,22 +76,36 @@ export const adsRouter = createTRPCRouter({
         .update(ads)
         .set({ status: "ACTIVO", expiresAt })
         .where(eq(ads.id, input.adId))
-        .returning();
+        .returning({ id: ads.id, status: ads.status, expiresAt: ads.expiresAt });
     }),
 
   rejectAd: protectedProcedure
     .input(z.object({ adId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const userRole = ctx.session.user.role;
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && userRole !== "COORDINADOR_GENERAL") {
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      // Regional boundary check — coordinators can only reject ads from their region
+      if (!isGlobal) {
+        const [ad] = await db
+          .select({ ownerRegion: users.region })
+          .from(ads)
+          .innerJoin(users, eq(ads.userId, users.id))
+          .where(eq(ads.id, input.adId))
+          .limit(1);
+        if (!ad || ad.ownerRegion !== ctx.session.user.region) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu región" });
+        }
       }
 
       return await db
         .update(ads)
         .set({ status: "INACTIVO" })
         .where(eq(ads.id, input.adId))
-        .returning();
+        .returning({ id: ads.id, status: ads.status });
     }),
 
   getActiveAds: publicProcedure.query(async () => {

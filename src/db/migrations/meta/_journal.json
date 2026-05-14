@@ -15,6 +15,13 @@
       "when": 1778722297508,
       "tag": "0001_schema_align_products_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778781006421,
+      "tag": "0002_fancy_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { users, transactions, products, ratings } from "../../db/schema";
 import { eq, and, desc, sql, gte, lt } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import bcrypt from "bcryptjs";
 
 interface ParasiteRow {
   id: string;
@@ -155,15 +156,28 @@ export const auditRouter = createTRPCRouter({
     .input(z.object({ userId: z.string(), status: z.enum(["ACTIVO", "CONGELADO"]) }))
     .mutation(async ({ ctx, input }) => {
       const userRole = ctx.session.user.role;
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && userRole !== "COORDINADOR_GENERAL") {
+      const isGlobal = userRole === "COORDINADOR_GENERAL";
+      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo los coordinadores pueden congelar usuarios" });
+      }
+
+      // Regional boundary check — coordinators can only freeze users in their region
+      if (!isGlobal) {
+        const [targetUser] = await db
+          .select({ region: users.region })
+          .from(users)
+          .where(eq(users.id, input.userId))
+          .limit(1);
+        if (!targetUser || targetUser.region !== ctx.session.user.region) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar socios de tu región" });
+        }
       }
 
       const [updatedUser] = await db
         .update(users)
         .set({ status: input.status })
         .where(eq(users.id, input.userId))
-        .returning();
+        .returning({ id: users.id, name: users.name, status: users.status, region: users.region });
 
       return updatedUser;
     }),
@@ -222,19 +236,19 @@ export const auditRouter = createTRPCRouter({
          throw new TRPCError({ code: "BAD_REQUEST", message: "Ya has reclamado tu recompensa este mes" });
        }
 
-       // Ensure SYSTEM user exists
-       const [systemUser] = await tx.select().from(users).where(eq(users.id, "SYSTEM")).limit(1);
-       if (!systemUser) {
-          await tx.insert(users).values({
-            id: "SYSTEM",
-            name: "Sistema Tumin",
-            phone: "0000000000",
-            nip: "SYSTEM", 
-            region: "SYSTEM",
-            status: "ACTIVO",
-            role: "COORDINADOR",
-          });
-       }
+       // Ensure SYSTEM user exists — always CONGELADO so it can never log in
+       await tx
+         .insert(users)
+         .values({
+           id: "SYSTEM",
+           name: "Sistema Tumin",
+           phone: "SYSTEM_INTERNAL",
+           nip: await bcrypt.hash(process.env.SYSTEM_NIP_SECRET ?? "unset-rotate-me", 10),
+           region: "SISTEMA",
+           status: "CONGELADO",
+           role: "COORDINADOR",
+         })
+         .onConflictDoNothing({ target: users.id });
 
        const [transaction] = await tx
          .insert(transactions)

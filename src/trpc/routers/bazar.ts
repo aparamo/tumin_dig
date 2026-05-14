@@ -1,4 +1,5 @@
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib/trpc/server";
+import bcrypt from "bcryptjs";
 import { db } from "../../db";
 import { products, users, ratings, transactions, productComments } from "../../db/schema";
 import { eq, and, ilike, sql, desc } from "drizzle-orm";
@@ -38,6 +39,8 @@ export const bazarRouter = createTRPCRouter({
       if (region && region !== "Todas") conditions.push(eq(products.region, region));
       conditions.push(eq(products.status, "ACTIVO"));
       conditions.push(eq(products.showInProfile, true));
+      // Only show products from users with a public profile
+      conditions.push(eq(users.publicProfile, true));
 
       const orderBys = [];
 
@@ -110,7 +113,12 @@ export const bazarRouter = createTRPCRouter({
         })
         .from(products)
         .innerJoin(users, eq(products.sellerId, users.id))
-        .where(and(eq(products.id, input.id), eq(products.status, "ACTIVO"), eq(products.showInProfile, true)))
+        .where(and(
+          eq(products.id, input.id),
+          eq(products.status, "ACTIVO"),
+          eq(products.showInProfile, true),
+          eq(users.publicProfile, true),
+        ))
         .limit(1);
 
       if (!row) {
@@ -296,16 +304,16 @@ export const bazarRouter = createTRPCRouter({
           .returning();
 
         if (userBefore && !userBefore.productOk) {
-          // Ensure SYSTEM user exists
+          // Ensure SYSTEM user exists — always CONGELADO so it can never log in
           await tx
             .insert(users)
             .values({
               id: "SYSTEM",
               name: "Sistema Tumin",
-              phone: "SYSTEM_PHONE",
-              nip: "SYSTEM_NIP",
+              phone: "SYSTEM_INTERNAL",
+              nip: await bcrypt.hash(process.env.SYSTEM_NIP_SECRET ?? "unset-rotate-me", 10),
               region: "SISTEMA",
-              status: "ACTIVO",
+              status: "CONGELADO",
               role: "COORDINADOR",
             })
             .onConflictDoNothing({ target: users.id });

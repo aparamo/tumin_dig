@@ -55,6 +55,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user) return null;
 
+        // Block internal system accounts from ever logging in
+        if (user.id === "SYSTEM") {
+          return null;
+        }
+
+        // Block frozen accounts
+        if (user.status === "CONGELADO") {
+          throw new Error("Tu cuenta está suspendida. Contacta a tu coordinador.");
+        }
+
         // Security check: Lockout
         if (user.lockedUntil && user.lockedUntil > new Date()) {
           throw new Error(`Cuenta bloqueada temporalmente hasta ${user.lockedUntil.toLocaleString()}.`);

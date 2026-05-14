@@ -1,13 +1,18 @@
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib/trpc/server";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+  rateLimitedPublicProcedure,
+} from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, userRoleEnum, media } from "../../db/schema";
+import { users, media } from "../../db/schema";
 import { eq, or, and, sql, desc, ilike } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 
 export const userRouter = createTRPCRouter({
-  register: publicProcedure
+  register: rateLimitedPublicProcedure
     .input(
       z.object({
         name: z.string().min(2),
@@ -75,7 +80,7 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
-  searchByDato: publicProcedure
+  searchByDato: protectedProcedure
     .input(z.object({ dato: z.string().min(3) }))
     .query(async ({ input }) => {
       const [user] = await db
@@ -97,7 +102,32 @@ export const userRouter = createTRPCRouter({
   }),
 
   fullMe: protectedProcedure.query(async ({ ctx }) => {
-    const [user] = await db.select().from(users).where(eq(users.id, ctx.session.user.id)).limit(1);
+    const [user] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        phone: users.phone,
+        email: users.email,
+        region: users.region,
+        role: users.role,
+        status: users.status,
+        accountTier: users.accountTier,
+        avatarUrl: users.avatarUrl,
+        publicName: users.publicName,
+        bio: users.bio,
+        publicProfile: users.publicProfile,
+        showPhone: users.showPhone,
+        showEmail: users.showEmail,
+        showRegion: users.showRegion,
+        isVerified: users.isVerified,
+        referrerId: users.referrerId,
+        createdAt: users.createdAt,
+        // Intentionally excluded: nip, failedLoginAttempts, lockedUntil,
+        // duplicatorBonus, firstSaleOk, productOk (internal fields)
+      })
+      .from(users)
+      .where(eq(users.id, ctx.session.user.id))
+      .limit(1);
     if (!user) throw new TRPCError({ code: "NOT_FOUND" });
     return user;
   }),
@@ -298,6 +328,18 @@ export const userRouter = createTRPCRouter({
       const isGlobal = userRole === "COORDINADOR_GENERAL";
       if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      }
+
+      // Regional boundary check — coordinators can only verify users in their region
+      if (!isGlobal) {
+        const [targetUser] = await db
+          .select({ region: users.region })
+          .from(users)
+          .where(eq(users.id, input.userId))
+          .limit(1);
+        if (!targetUser || targetUser.region !== ctx.session.user.region) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes verificar socios de tu región" });
+        }
       }
 
       await db

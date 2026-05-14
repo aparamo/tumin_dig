@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "../../lib/trpc/server";
+import { createTRPCRouter, protectedProcedure, rateLimitedProtectedProcedure } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
 import { users, transactions } from "../../db/schema";
@@ -35,11 +35,13 @@ export const walletRouter = createTRPCRouter({
       .limit(15);
   }),
 
-  sendTumin: protectedProcedure
+  sendTumin: rateLimitedProtectedProcedure
     .input(z.object({
       toId: z.string(),
       amount: z.number().positive(),
-      concept: z.string().min(1),
+      concept: z.string().min(1).max(500),
+      /** Client-generated UUID — pass the same key on retries to avoid duplicates */
+      idempotencyKey: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
       const meId = ctx.session.user.id;
@@ -49,24 +51,18 @@ export const walletRouter = createTRPCRouter({
       }
 
       return await db.transaction(async (tx) => {
+        // Idempotency check — return existing transaction on retry/double-submit
+        const [existing] = await tx
+          .select()
+          .from(transactions)
+          .where(eq(transactions.idempotencyKey, input.idempotencyKey))
+          .limit(1);
+        if (existing) return existing;
+
         // 0. Row-level lock users in a consistent alphabetical order to prevent deadlocks
         const [lockId1, lockId2] = [meId, input.toId].sort();
         await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${lockId1} FOR UPDATE`);
         await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${lockId2} FOR UPDATE`);
-
-        // Ensure SYSTEM user exists
-        const [systemUser] = await tx.select().from(users).where(eq(users.id, "SYSTEM")).limit(1);
-        if (!systemUser) {
-           await tx.insert(users).values({
-             id: "SYSTEM",
-             name: "Sistema Tumin",
-             phone: "0000000000",
-             nip: "SYSTEM", // Placeholder
-             region: "SYSTEM",
-             status: "ACTIVO",
-             role: "COORDINADOR",
-           });
-        }
 
         // 1. Check sender balance
         const [received] = await tx
@@ -109,6 +105,7 @@ export const walletRouter = createTRPCRouter({
             amount: input.amount,
             concept: input.concept,
             type: "TRANSFERENCIA",
+            idempotencyKey: input.idempotencyKey,
           })
           .returning();
 

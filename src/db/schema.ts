@@ -59,9 +59,10 @@ export const users = pgTable("TUMIN_users", {
   /** Optional name shown on public profile / bazar instead of legal name */
   publicName: text("public_name"),
   bio: text("bio"),
-  /** Whether `/u/[id]` and public APIs expose this user */
-  publicProfile: boolean("public_profile").default(true).notNull(),
-  showPhone: boolean("show_phone").default(true).notNull(),
+  /** Whether `/u/[id]` and public APIs expose this user — privacy-first: off by default */
+  publicProfile: boolean("public_profile").default(false).notNull(),
+  /** Phone is hidden by default; users can opt-in to show it on their public profile/bazar */
+  showPhone: boolean("show_phone").default(false).notNull(),
   showEmail: boolean("show_email").default(false).notNull(),
   showRegion: boolean("show_region").default(true).notNull(),
   failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
@@ -99,6 +100,8 @@ export const transactions = pgTable("TUMIN_transactions", {
   amount: doublePrecision("amount").notNull(),
   concept: text("concept").notNull(),
   type: transactionTypeEnum("type").notNull(),
+  /** Client-generated UUID for idempotency — prevents duplicate payments on retry/double-submit */
+  idempotencyKey: text("idempotency_key").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

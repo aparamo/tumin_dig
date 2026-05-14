@@ -25,6 +25,8 @@ export function Pagar() {
   const [recipient, setRecipient] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState("");
   const [concept, setConcept] = useState("");
+  // Generate a new idempotency key each time the form is opened — reused on retries
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     if (!pendingPurchase || appliedFromPurchaseRef.current) return;
@@ -79,6 +81,7 @@ export function Pagar() {
       toId: recipient.id,
       amount: parseFloat(amount),
       concept,
+      idempotencyKey,
     });
   };
 
