@@ -50,7 +50,7 @@ function formatRegion(region: string) {
 }
 
 export function Bazar() {
-  const { setCurrentScreen, setOpenGestionProductCreate } = useStore();
+  const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [region, setRegion] = useState("Todas");
@@ -281,7 +281,17 @@ export function Bazar() {
                       <Button 
                         variant="default"
                         className="flex-2 h-12 shadow-neo-sm"
-                        onClick={() => setCurrentScreen("pagar")}
+                        onClick={() => {
+                          setPendingPurchase({
+                            sellerId: item.seller.id,
+                            sellerName: item.seller.displayName,
+                            sellerPhone: item.seller.phone ?? null,
+                            sellerEmail: null,
+                            productName: item.product.name,
+                            priceTumin: item.product.priceTumin,
+                          });
+                          setCurrentScreen("pagar");
+                        }}
                       >
                         <ShoppingCart className="w-5 h-5 mr-2" /> Comprar
                       </Button>
@@ -324,7 +334,10 @@ export function Bazar() {
           setDetailOpen(open);
           if (!open) setDetailProductId(null);
         }}
-        onBuy={() => setCurrentScreen("pagar")}
+        onBuy={(purchase) => {
+          setPendingPurchase(purchase);
+          setCurrentScreen("pagar");
+        }}
       />
     </div>
   );

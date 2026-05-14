@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/react";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProductComments } from "@/components/bazar/ProductComments";
+import type { PendingPurchase } from "@/lib/store";
 
 function formatRegion(region: string) {
   if (region === "Estado de México") return "EdoMex";
@@ -27,7 +28,7 @@ export interface ProductDetailDialogProps {
   productId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onBuy: () => void;
+  onBuy: (purchase: PendingPurchase) => void;
 }
 
 export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: ProductDetailDialogProps) {
@@ -41,8 +42,10 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
 
   useEffect(() => {
     if (!open) {
-      setImgIndex(0);
-      setShowExtra(false);
+      startTransition(() => {
+        setImgIndex(0);
+        setShowExtra(false);
+      });
     }
   }, [open, productId]);
 
@@ -72,7 +75,11 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
       <DialogContent
         showCloseButton
         className={cn(
-          "fixed inset-0 left-0 top-0 z-50 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
+          "z-50 flex flex-col gap-0 overflow-hidden bg-background p-0 ring-0",
+          // Mobile: full-screen edge-to-edge
+          "fixed inset-0 left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 shadow-none",
+          // sm+: centered modal, wide layout
+          "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border-2 sm:border-border sm:shadow-neo"
         )}
       >
         {!productId || isLoading ? (
@@ -224,7 +231,14 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                   variant="default"
                   className="h-12 flex-1 shadow-neo-sm"
                   onClick={() => {
-                    onBuy();
+                    onBuy({
+                      sellerId: seller.id,
+                      sellerName: seller.displayName,
+                      sellerPhone: seller.phone ?? null,
+                      sellerEmail: seller.email ?? null,
+                      productName: product.name,
+                      priceTumin: product.priceTumin,
+                    });
                     onOpenChange(false);
                   }}
                 >

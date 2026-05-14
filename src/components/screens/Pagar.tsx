@@ -1,25 +1,44 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, CheckCircle2, X, ShoppingBag } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
 
 export function Pagar() {
   const { setCurrentScreen } = useStore();
+  const pendingPurchase = useStore((s) => s.pendingPurchase);
   const utils = trpc.useUtils();
-  const isSendingRef = useRef(false);
-  const [, setUpdate] = useState(0);
-  
+  const [isSending, setIsSending] = useState(false);
+  const appliedFromPurchaseRef = useRef(false);
+
+  const [purchaseBanner, setPurchaseBanner] = useState<{
+    productName: string;
+    sellerName: string;
+  } | null>(null);
+
   const [recipientInput, setRecipientInput] = useState("");
   const [recipient, setRecipient] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState("");
   const [concept, setConcept] = useState("");
+
+  useEffect(() => {
+    if (!pendingPurchase || appliedFromPurchaseRef.current) return;
+    startTransition(() => {
+      setRecipientInput(pendingPurchase.sellerPhone ?? pendingPurchase.sellerEmail ?? "");
+      setAmount(String(pendingPurchase.priceTumin));
+      setConcept(`Compra: ${pendingPurchase.productName}`);
+      setPurchaseBanner({
+        productName: pendingPurchase.productName,
+        sellerName: pendingPurchase.sellerName,
+      });
+      appliedFromPurchaseRef.current = true;
+    });
+  }, [pendingPurchase]);
 
   const { data: foundUser, isLoading: isSearching } = trpc.user.searchByDato.useQuery(
     { dato: recipientInput },
@@ -27,11 +46,13 @@ export function Pagar() {
   );
 
   useEffect(() => {
-    if (foundUser) {
-      setRecipient(foundUser);
-    } else {
-      setRecipient(null);
-    }
+    startTransition(() => {
+      if (foundUser) {
+        setRecipient(foundUser);
+      } else {
+        setRecipient(null);
+      }
+    });
   }, [foundUser]);
 
   const sendTumin = trpc.wallet.sendTumin.useMutation({
@@ -45,17 +66,15 @@ export function Pagar() {
       alert(error.message);
     },
     onSettled: () => {
-      isSendingRef.current = false;
-      setUpdate(v => v + 1);
-    }
+      setIsSending(false);
+    },
   });
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSendingRef.current || !recipient || !amount || !concept) return;
-    
-    isSendingRef.current = true;
-    setUpdate(v => v + 1);
+    if (isSending || !recipient || !amount || !concept) return;
+
+    setIsSending(true);
     sendTumin.mutate({
       toId: recipient.id,
       amount: parseFloat(amount),
@@ -65,6 +84,35 @@ export function Pagar() {
 
   return (
     <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto w-full">
+      {purchaseBanner && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 p-4 shadow-neo-sm"
+        >
+          <ShoppingBag className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Desde el Bazar</p>
+            <p className="text-sm font-black uppercase leading-snug text-foreground">
+              Comprando: <span className="text-primary">{purchaseBanner.productName}</span> de{" "}
+              {purchaseBanner.sellerName}
+            </p>
+            <p className="text-xs font-bold text-muted-foreground">
+              Datos del formulario autocompletados; revisa y confirma antes de transferir.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0 rounded-full"
+            onClick={() => setPurchaseBanner(null)}
+            aria-label="Cerrar aviso"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Enviar Túmin</CardTitle>
@@ -117,9 +165,9 @@ export function Pagar() {
               type="submit" 
               variant="default"
               className="w-full h-14 text-lg"
-              disabled={isSendingRef.current || !recipient || sendTumin.isPending}
+              disabled={isSending || !recipient || sendTumin.isPending}
             >
-              {(isSendingRef.current || sendTumin.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+              {(isSending || sendTumin.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
               Transferir
             </Button>
           </form>
