@@ -7,16 +7,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
+
+function PrivacyRow({
+  id,
+  label,
+  description,
+  checked,
+  onCheckedChange,
+}: {
+  id: string;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0 space-y-1">
+        <Label htmlFor={id} className="text-xs font-black uppercase">
+          {label}
+        </Label>
+        {description ? (
+          <p className="text-[10px] font-medium leading-snug text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} className="shrink-0" />
+    </div>
+  );
+}
 
 const TIER_BADGES = {
   NORMAL: { label: "Socix", color: "bg-slate-500", icon: User },
@@ -46,8 +76,24 @@ export function Perfil() {
     onError: (e) => alert(e.message)
   });
 
+  const updatePrivacySettings = trpc.user.updatePrivacySettings.useMutation({
+    onSuccess: () => {
+      alert("Privacidad y perfil público actualizados");
+      void utils.user.fullMe.invalidate();
+    },
+    onError: (e) => alert(e.message),
+  });
+
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
   const [nipData, setNipData] = useState({ current: "", new: "", confirm: "" });
+  const [privacy, setPrivacy] = useState({
+    publicProfile: true,
+    showPhone: true,
+    showEmail: false,
+    showRegion: true,
+    publicName: "",
+    bio: "",
+  });
   const [prevUserId, setPrevUserId] = useState<string | null>(null);
 
   // Sync editData with user data when it first loads or changes
@@ -57,6 +103,14 @@ export function Perfil() {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || ""
+    });
+    setPrivacy({
+      publicProfile: user.publicProfile,
+      showPhone: user.showPhone,
+      showEmail: user.showEmail,
+      showRegion: user.showRegion,
+      publicName: user.publicName ?? "",
+      bio: user.bio ?? "",
     });
   }
 
@@ -195,6 +249,94 @@ export function Perfil() {
               >
                 {updateProfile.isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
                 Guardar Cambios
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Privacidad y perfil público */}
+          <Card className="neo-card border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl font-black uppercase tracking-tight">Privacidad y perfil público</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase">
+                Controla qué datos se muestran en el bazar y en tu página pública
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" asChild className="h-10 border-2 font-black uppercase text-xs">
+                  <a href={`/u/${user.id}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" /> Ver mi perfil público
+                  </a>
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase ml-1">Nombre público (opcional)</Label>
+                <Input
+                  placeholder="Si lo dejas vacío, usamos tu nombre completo"
+                  value={privacy.publicName}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, publicName: e.target.value }))}
+                  className="bg-background border-2 h-12"
+                  maxLength={80}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase ml-1">Bio pública (máx. 300)</Label>
+                <Textarea
+                  placeholder="Cuéntale a la comunidad quién eres…"
+                  value={privacy.bio}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, bio: e.target.value.slice(0, 300) }))}
+                  className="min-h-[88px] border-2 bg-background"
+                  maxLength={300}
+                />
+              </div>
+
+              <div className="space-y-4 rounded-xl border-2 border-border bg-muted/20 p-4">
+                <PrivacyRow
+                  id="publicProfile"
+                  label="Perfil público visible"
+                  description="Permite que exista la página /u con tu información permitida."
+                  checked={privacy.publicProfile}
+                  onCheckedChange={(v) => setPrivacy((p) => ({ ...p, publicProfile: v }))}
+                />
+                <PrivacyRow
+                  id="showPhone"
+                  label="Mostrar teléfono en el bazar"
+                  description="Habilita el botón de WhatsApp cuando publicas o vendes."
+                  checked={privacy.showPhone}
+                  onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
+                />
+                <PrivacyRow
+                  id="showEmail"
+                  label="Mostrar correo en perfil público"
+                  checked={privacy.showEmail}
+                  onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showEmail: v }))}
+                />
+                <PrivacyRow
+                  id="showRegion"
+                  label="Mostrar región en perfil público"
+                  checked={privacy.showRegion}
+                  onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showRegion: v }))}
+                />
+              </div>
+
+              <Button
+                className="w-full md:w-auto px-8 h-12 font-black uppercase"
+                disabled={updatePrivacySettings.isPending}
+                onClick={() =>
+                  updatePrivacySettings.mutate({
+                    publicProfile: privacy.publicProfile,
+                    showPhone: privacy.showPhone,
+                    showEmail: privacy.showEmail,
+                    showRegion: privacy.showRegion,
+                    publicName: privacy.publicName.trim() === "" ? null : privacy.publicName.trim(),
+                    bio: privacy.bio.trim() === "" ? null : privacy.bio.trim(),
+                  })
+                }
+              >
+                {updatePrivacySettings.isPending ? <Loader2 className="animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
+                Guardar privacidad
               </Button>
             </CardContent>
           </Card>

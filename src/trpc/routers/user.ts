@@ -102,6 +102,67 @@ export const userRouter = createTRPCRouter({
     return user;
   }),
 
+  getPublicProfile: publicProcedure
+    .input(z.object({ userId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const [u] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!u || !u.publicProfile) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Perfil no disponible" });
+      }
+
+      return {
+        id: u.id,
+        displayName: (u.publicName?.trim() ? u.publicName.trim() : null) ?? u.name,
+        avatarUrl: u.avatarUrl ?? null,
+        bio: u.bio?.trim() ? u.bio.trim() : null,
+        region: u.showRegion ? u.region : null,
+        phone: u.showPhone ? u.phone : null,
+        email: u.showEmail ? (u.email ?? null) : null,
+        accountTier: u.accountTier,
+        isVerified: u.isVerified,
+        createdAt: u.createdAt,
+      };
+    }),
+
+  updatePrivacySettings: protectedProcedure
+    .input(
+      z.object({
+        publicProfile: z.boolean().optional(),
+        showPhone: z.boolean().optional(),
+        showEmail: z.boolean().optional(),
+        showRegion: z.boolean().optional(),
+        publicName: z.string().max(80).nullable().optional(),
+        bio: z.string().max(300).nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const patch: {
+        publicProfile?: boolean;
+        showPhone?: boolean;
+        showEmail?: boolean;
+        showRegion?: boolean;
+        publicName?: string | null;
+        bio?: string | null;
+      } = {};
+      if (input.publicProfile !== undefined) patch.publicProfile = input.publicProfile;
+      if (input.showPhone !== undefined) patch.showPhone = input.showPhone;
+      if (input.showEmail !== undefined) patch.showEmail = input.showEmail;
+      if (input.showRegion !== undefined) patch.showRegion = input.showRegion;
+      if (input.publicName !== undefined) {
+        patch.publicName = input.publicName === null || input.publicName.trim() === "" ? null : input.publicName.trim();
+      }
+      if (input.bio !== undefined) {
+        patch.bio = input.bio === null || input.bio.trim() === "" ? null : input.bio.trim();
+      }
+
+      if (Object.keys(patch).length === 0) {
+        return { success: true as const };
+      }
+
+      await db.update(users).set(patch).where(eq(users.id, ctx.session.user.id));
+      return { success: true as const };
+    }),
+
   updateProfile: protectedProcedure
     .input(z.object({
       name: z.string().min(2).optional(),

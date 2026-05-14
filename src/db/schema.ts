@@ -56,6 +56,14 @@ export const users = pgTable("TUMIN_users", {
   status: userStatusEnum("status").default("ACTIVO").notNull(),
   accountTier: accountTierEnum("account_tier").default("NORMAL").notNull(),
   avatarUrl: text("avatar_url"),
+  /** Optional name shown on public profile / bazar instead of legal name */
+  publicName: text("public_name"),
+  bio: text("bio"),
+  /** Whether `/u/[id]` and public APIs expose this user */
+  publicProfile: boolean("public_profile").default(true).notNull(),
+  showPhone: boolean("show_phone").default(true).notNull(),
+  showEmail: boolean("show_email").default(false).notNull(),
+  showRegion: boolean("show_region").default(true).notNull(),
   failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
   lockedUntil: timestamp("locked_until"),
   duplicatorBonus: doublePrecision("duplicator_bonus").default(0).notNull(),
@@ -111,19 +119,49 @@ export const products = pgTable("TUMIN_products", {
   id: uuid("id").primaryKey().defaultRandom(),
   sellerId: text("seller_id").references(() => users.id).notNull(),
   name: text("name").notNull(),
+  /** Optional; null or empty means no public description */
+  description: text("description"),
+  extraInfo: text("extra_info"),
   priceMxn: doublePrecision("price_mxn").notNull(),
   priceTumin: doublePrecision("price_tumin").notNull(),
   categories: jsonb("categories").$type<string[]>().notNull(),
   region: text("region").notNull(),
   status: productStatusEnum("status").default("ACTIVO").notNull(),
+  /** When false, product is hidden from bazar and public profile (still manageable as seller) */
+  showInProfile: boolean("show_in_profile").default(true).notNull(),
   imageUrl: text("image_url"),
   imgUrls: jsonb("img_urls").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const productsRelations = relations(products, ({ one }) => ({
+export const productComments = pgTable("TUMIN_product_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id")
+    .references(() => products.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: text("author_id")
+    .references(() => users.id)
+    .notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const productsRelations = relations(products, ({ one, many }) => ({
   seller: one(users, {
     fields: [products.sellerId],
+    references: [users.id],
+  }),
+  comments: many(productComments),
+}));
+
+export const productCommentsRelations = relations(productComments, ({ one }) => ({
+  product: one(products, {
+    fields: [productComments.productId],
+    references: [products.id],
+  }),
+  author: one(users, {
+    fields: [productComments.authorId],
     references: [users.id],
   }),
 }));

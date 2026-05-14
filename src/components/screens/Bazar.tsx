@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,13 +16,14 @@ import {
   Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, X, 
   Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
   Palette, Home as HomeIcon, Sparkles, GraduationCap, 
-  Presentation, Music, Ticket, Leaf, ChevronLeft, ChevronRight,
+  Presentation, Music, Ticket, Leaf,
   ShoppingBag, Trash2, type LucideIcon
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
+import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Alimentos": Utensils,
@@ -53,18 +56,20 @@ function formatRegion(region: string) {
 export function Bazar() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
-  const isSubmittingRef = useRef(false);
-  const [, setUpdate] = useState(0);
   const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [region, setRegion] = useState("Todas");
   const [sortBy, setSortBy] = useState<"recientes" | "menor_precio" | "mayor_precio">("recientes");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [detailProductId, setDetailProductId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
     name: "",
+    description: "",
+    extraInfo: "",
     priceMxn: 0,
     priceTumin: 0,
     categories: [] as string[],
@@ -96,13 +101,18 @@ export function Bazar() {
       alert("¡Producto publicado correctamente!");
       setIsFormOpen(false);
       utils.bazar.getProducts.invalidate();
-      setFormData({ name: "", priceMxn: 0, priceTumin: 0, categories: [], imageUrl: "", imgUrls: [] });
+      setFormData({
+        name: "",
+        description: "",
+        extraInfo: "",
+        priceMxn: 0,
+        priceTumin: 0,
+        categories: [],
+        imageUrl: "",
+        imgUrls: [],
+      });
     },
     onError: (error) => alert(error.message),
-    onSettled: () => {
-      isSubmittingRef.current = false;
-      setUpdate(v => v + 1);
-    }
   });
 
   const categories = [
@@ -137,14 +147,14 @@ export function Bazar() {
       new URL(val);
       setFormData(prev => ({ ...prev, imgUrls: [...prev.imgUrls, val] }));
       urlInput.value = "";
-    } catch (e) {
+    } catch {
       alert("URL inválida");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmittingRef.current) return;
+    if (createProduct.isPending) return;
 
     const total = formData.priceMxn + formData.priceTumin;
     if (formData.priceTumin < total * 0.1) {
@@ -152,9 +162,16 @@ export function Bazar() {
       return;
     }
 
-    isSubmittingRef.current = true;
-    setUpdate(v => v + 1);
-    createProduct.mutate(formData);
+    if (!formData.description.trim()) {
+      alert("Agrega una descripción del producto.");
+      return;
+    }
+
+    createProduct.mutate({
+      ...formData,
+      description: formData.description.trim(),
+      extraInfo: formData.extraInfo.trim() || undefined,
+    });
   };
 
   return (
@@ -235,7 +252,13 @@ export function Bazar() {
         ) : allProducts.length > 0 ? (
           allProducts.map((item) => (
             <StaggerItem key={item.product.id}>
-              <Card className="group overflow-hidden">
+              <Card
+                className="group cursor-pointer overflow-hidden"
+                onClick={() => {
+                  setDetailProductId(item.product.id);
+                  setDetailOpen(true);
+                }}
+              >
                 <CardContent className="p-0">
                   {/* Image Container */}
                   <div className="aspect-square bg-muted relative overflow-hidden border-b-2 border-border">
@@ -280,9 +303,16 @@ export function Bazar() {
                   </div>
 
                   <div className="p-5">
-                    <div className="mb-3">
-                      <h3 className="font-black text-lg text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-[3rem]">{item.product.name}</h3>
+                    <div className="mb-2">
+                      <h3 className="font-black text-base text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.75rem] sm:text-lg">
+                        {item.product.name}
+                      </h3>
                     </div>
+                    {item.product.description ? (
+                      <p className="mb-3 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
+                        {item.product.description}
+                      </p>
+                    ) : null}
                     
                     <div className="flex items-baseline gap-2 mb-4">
                       <span className="text-2xl font-black text-primary tracking-tighter">
@@ -294,9 +324,21 @@ export function Bazar() {
                     </div>
 
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-6">
-                      <div className="bg-muted px-2 py-1 rounded border-border border max-w-[100px] truncate">
-                        {item.seller.name}
-                      </div>
+                      {item.seller.publicProfile ? (
+                        <Link
+                          href={`/u/${item.seller.id}`}
+                          className="max-w-[140px] truncate rounded border border-border bg-muted px-2 py-1 text-primary underline-offset-2 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.seller.displayName}
+                        </Link>
+                      ) : (
+                        <div className="max-w-[140px] truncate rounded border border-border bg-muted px-2 py-1">
+                          {item.seller.displayName}
+                        </div>
+                      )}
                       {item.avgRating > 0 && (
                         <span className="flex items-center text-accent font-black bg-accent/10 px-2 py-1 rounded border border-accent/20">
                           <Star className="w-3 h-3 fill-current mr-1" /> {item.avgRating.toFixed(1)}
@@ -304,18 +346,18 @@ export function Bazar() {
                       )}
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                       <Button 
                         variant="outline" 
                         className="flex-1 h-12 border shadow-neo-sm"
                         onClick={() => {
                           const sellerPhone = item.seller.phone;
                           if (!sellerPhone) {
-                            alert("Este socio no tiene un teléfono registrado.");
+                            alert("Este socio no ha habilitado el contacto por WhatsApp.");
                             return;
                           }
                           const phone = sellerPhone.replace(/\D/g, "");
-                          window.open(`https://wa.me/${phone.startsWith("52") ? phone : "52" + phone}?text=Hola%20${encodeURIComponent(item.seller.name)},%20me%20interesa%20tu%20producto:%20${encodeURIComponent(item.product.name)}`, "_blank");
+                          window.open(`https://wa.me/${phone.startsWith("52") ? phone : "52" + phone}?text=Hola%20${encodeURIComponent(item.seller.displayName)},%20me%20interesa%20tu%20producto:%20${encodeURIComponent(item.product.name)}`, "_blank");
                         }}
                       >
                         <MessageCircle className="w-5 h-5 mr-2" /> WA
@@ -359,6 +401,16 @@ export function Bazar() {
         </div>
       )}
 
+      <ProductDetailDialog
+        productId={detailProductId}
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) setDetailProductId(null);
+        }}
+        onBuy={() => setCurrentScreen("pagar")}
+      />
+
       {isFormOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-100 flex items-center justify-center p-4 overflow-auto py-10">
           <Card className="w-full max-w-md shadow-2xl relative">
@@ -384,6 +436,36 @@ export function Bazar() {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-black uppercase text-xs">
+                    Descripción <span className="text-destructive">*</span>
+                  </Label>
+                  <p className="text-[9px] font-medium text-muted-foreground">
+                    Obligatoria al publicar desde aquí; la base admite productos sin descripción.
+                  </p>
+                  <Textarea
+                    placeholder="Describe tu producto o servicio"
+                    className="min-h-[100px] border-2 bg-background text-sm"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    required
+                    maxLength={8000}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-black uppercase text-[10px] text-muted-foreground">
+                    Información adicional (opcional)
+                  </Label>
+                  <Textarea
+                    placeholder="Detalles extra, condiciones, entregas…"
+                    className="min-h-[72px] border-2 bg-background text-sm"
+                    value={formData.extraInfo}
+                    onChange={(e) => setFormData({ ...formData, extraInfo: e.target.value })}
+                    maxLength={16000}
                   />
                 </div>
 
@@ -515,9 +597,9 @@ export function Bazar() {
                   type="submit" 
                   variant="default"
                   className="w-full h-14 text-lg"
-                  disabled={isSubmittingRef.current || createProduct.isPending}
+                  disabled={createProduct.isPending}
                 >
-                  {(isSubmittingRef.current || createProduct.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
+                  {createProduct.isPending ? <Loader2 className="animate-spin mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
                   Publicar
                 </Button>
               </form>

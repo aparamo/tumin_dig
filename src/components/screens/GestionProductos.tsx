@@ -1,33 +1,40 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Edit2, Trash2, X, Link as LinkIcon, ExternalLink, ImageIcon } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, X, ExternalLink } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
+import type { InferSelectModel } from "drizzle-orm";
+import { products } from "@/db/schema";
+
+type ProductRow = InferSelectModel<typeof products>;
 
 type ProductForm = {
   id?: string;
   name: string;
+  description: string;
+  extraInfo: string;
   priceMxn: number;
   priceTumin: number;
   categories: string[];
   imgUrls: string[];
   status: "ACTIVO" | "INACTIVO";
+  showInProfile: boolean;
 };
 
 export function GestionProductos() {
   const utils = trpc.useUtils();
-  const isSubmittingRef = useRef(false);
-  const [, setUpdate] = useState(0);
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
   const { data: mediaList } = trpc.user.listMedia.useQuery();
   const [editingProduct, setEditingProduct] = useState<ProductForm | null>(null);
@@ -42,10 +49,6 @@ export function GestionProductos() {
       utils.bazar.getMyProducts.invalidate();
     },
     onError: (e) => alert(e.message),
-    onSettled: () => {
-      isSubmittingRef.current = false;
-      setUpdate(v => v + 1);
-    }
   });
 
   const updateMutation = trpc.bazar.updateProduct.useMutation({
@@ -55,10 +58,6 @@ export function GestionProductos() {
       utils.bazar.getMyProducts.invalidate();
     },
     onError: (e) => alert(e.message),
-    onSettled: () => {
-      isSubmittingRef.current = false;
-      setUpdate(v => v + 1);
-    }
   });
 
   const deleteMutation = trpc.bazar.deleteProduct.useMutation({
@@ -69,17 +68,33 @@ export function GestionProductos() {
     onError: (e) => alert(e.message),
   });
 
+  const toggleShowInProfileMutation = trpc.bazar.toggleShowInProfile.useMutation({
+    onSuccess: () => {
+      void utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getProducts.invalidate();
+    },
+    onError: (e) => alert(e.message),
+  });
+
   const categories = [
     "Alimentos", "Bebidas", "Ropa", "Artesanías", "Salud y Bienestar", 
     "Servicios Profesionales", "Arte", "Hogar", "Cuidado Personal", "Educación", 
     "Talleres", "Cultura", "Entretenimiento", "Agroecología y Jardinería"
   ];
 
-  const handleEdit = (product: ProductForm) => {
+  const handleEdit = (product: ProductRow) => {
     setIsCreating(false);
     setEditingProduct({
-      ...product,
-      imgUrls: product.imgUrls || []
+      id: product.id,
+      name: product.name,
+      description: product.description ?? "",
+      extraInfo: product.extraInfo ?? "",
+      priceMxn: product.priceMxn,
+      priceTumin: product.priceTumin,
+      categories: product.categories || [],
+      imgUrls: product.imgUrls || [],
+      status: product.status,
+      showInProfile: product.showInProfile ?? true,
     });
     setIsModalOpen(true);
   };
@@ -88,28 +103,56 @@ export function GestionProductos() {
     setIsCreating(true);
     setEditingProduct({
       name: "",
+      description: "",
+      extraInfo: "",
       priceMxn: 0,
       priceTumin: 0,
       categories: [],
       imgUrls: [],
-      status: "ACTIVO"
+      status: "ACTIVO",
+      showInProfile: true,
     });
     setIsModalOpen(true);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmittingRef.current || !editingProduct) return;
+    if (createMutation.isPending || updateMutation.isPending || !editingProduct) return;
 
-    isSubmittingRef.current = true;
-    setUpdate(v => v + 1);
+    if (!editingProduct.description.trim()) {
+      alert("La descripción es obligatoria para publicar o guardar desde este formulario.");
+      return;
+    }
+
+    const total = editingProduct.priceMxn + editingProduct.priceTumin;
+    if (editingProduct.priceTumin < total * 0.1) {
+      alert("El precio en Túmin debe ser al menos el 10% del total.");
+      return;
+    }
 
     if (isCreating) {
-      createMutation.mutate(editingProduct);
+      createMutation.mutate({
+        name: editingProduct.name,
+        description: editingProduct.description.trim(),
+        extraInfo: editingProduct.extraInfo.trim() || undefined,
+        priceMxn: editingProduct.priceMxn,
+        priceTumin: editingProduct.priceTumin,
+        categories: editingProduct.categories,
+        imgUrls: editingProduct.imgUrls,
+        showInProfile: editingProduct.showInProfile,
+      });
     } else {
       updateMutation.mutate({
-        ...editingProduct,
-        id: editingProduct.id!
+        id: editingProduct.id!,
+        name: editingProduct.name,
+        description: editingProduct.description.trim(),
+        extraInfo: editingProduct.extraInfo.trim() || undefined,
+        priceMxn: editingProduct.priceMxn,
+        priceTumin: editingProduct.priceTumin,
+        categories: editingProduct.categories,
+        imgUrls: editingProduct.imgUrls,
+        status: editingProduct.status,
+        showInProfile: editingProduct.showInProfile,
       });
     }
   };
@@ -123,7 +166,7 @@ export function GestionProductos() {
         imgUrls: [...editingProduct.imgUrls, newUrl]
       });
       setNewUrl("");
-    } catch (e) {
+    } catch {
       alert("URL inválida. Debe empezar con http:// o https://");
     }
   };
@@ -181,6 +224,10 @@ export function GestionProductos() {
                     </div>
                   </div>
 
+                  {p.description ? (
+                    <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                  ) : null}
+
                   <div className="flex items-baseline gap-2 mb-4">
                     <span className="text-xl font-black text-primary">$ {p.priceMxn}</span>
                     <span className="text-xl font-black text-secondary">+ {p.priceTumin} Ŧ</span>
@@ -190,6 +237,24 @@ export function GestionProductos() {
                     {p.categories.map(c => (
                       <span key={c} className="bg-muted px-2 py-0.5 rounded text-[10px] font-black uppercase border border-border">{c}</span>
                     ))}
+                  </div>
+
+                  <div
+                    className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wide text-foreground">Visible en bazar y perfil</p>
+                      <p className="text-[9px] font-medium text-muted-foreground">Si lo apagas, no aparece en el mercado ni en /u</p>
+                    </div>
+                    <Switch
+                      checked={p.showInProfile ?? true}
+                      disabled={toggleShowInProfileMutation.isPending}
+                      onCheckedChange={(checked) => {
+                        toggleShowInProfileMutation.mutate({ productId: p.id, showInProfile: checked === true });
+                      }}
+                      className="shrink-0"
+                    />
                   </div>
 
                   {p.imgUrls && p.imgUrls.length > 0 && (
@@ -221,6 +286,33 @@ export function GestionProductos() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="font-black uppercase text-xs">
+                    Descripción <span className="text-destructive">*</span>
+                  </Label>
+                  <p className="text-[9px] font-medium text-muted-foreground">
+                    Obligatoria al crear o editar aquí; en la base puede haber filas sin descripción por migraciones.
+                  </p>
+                  <Textarea
+                    value={editingProduct.description}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                    className="min-h-[100px] border-2 bg-background"
+                    required
+                    maxLength={8000}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-black uppercase text-[10px] text-muted-foreground">
+                    Información adicional (opcional)
+                  </Label>
+                  <Textarea
+                    value={editingProduct.extraInfo}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, extraInfo: e.target.value })}
+                    className="min-h-[72px] border-2 bg-background"
+                    maxLength={16000}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -255,6 +347,26 @@ export function GestionProductos() {
                           <SelectItem value="INACTIVO">INACTIVO</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="flex items-start justify-between gap-3 rounded-lg border-2 border-border bg-muted/20 p-3">
+                      <div className="min-w-0">
+                        <Label htmlFor={`show-profile-${editingProduct.id ?? "new"}`} className="text-[10px] font-black uppercase">
+                          Visible en bazar y perfil
+                        </Label>
+                        <p className="mt-1 text-[9px] font-medium text-muted-foreground">
+                          Apágalo para ocultarlo del mercado y de tu página pública.
+                        </p>
+                      </div>
+                      <Switch
+                        id={`show-profile-${editingProduct.id ?? "new"}`}
+                        checked={editingProduct.showInProfile}
+                        onCheckedChange={(checked) =>
+                          setEditingProduct((prev) =>
+                            prev ? { ...prev, showInProfile: checked === true } : null
+                          )
+                        }
+                        className="shrink-0"
+                      />
                     </div>
                   </div>
 
@@ -306,7 +418,6 @@ export function GestionProductos() {
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => removeUrl(index)}
                         >
-                  ...
                           <Trash2 className="w-4 h-4 text-white" />
                         </button>
                       </div>
@@ -361,8 +472,12 @@ export function GestionProductos() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-lg uppercase font-black tracking-widest" disabled={isSubmittingRef.current || updateMutation.isPending || createMutation.isPending}>
-                  {isSubmittingRef.current || updateMutation.isPending || createMutation.isPending ? (
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg uppercase font-black tracking-widest"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  {createMutation.isPending || updateMutation.isPending ? (
                     <Loader2 className="animate-spin" />
                   ) : isCreating ? (
                     "Publicar Producto"
