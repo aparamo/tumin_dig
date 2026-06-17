@@ -126,7 +126,7 @@ export default function SeguridadPage() {
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Nombre público y bio:</strong> cómo quieres presentarte (distinto a tu nombre de registro si lo deseas).</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Teléfono:</strong> si se muestra el botón de WhatsApp para que te contacten desde el Bazar.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Correo electrónico:</strong> si es visible en tu perfil público.</span></li>
-              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Región:</strong> si se muestra tu ubicación aproximada.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Ubicación:</strong> si se muestra dónde vives (ciudad/estado o país), no tu región de inscripción comunitaria.</span></li>
             </ul>
             <p className="text-xs text-foreground/50 italic pt-1">
               Por default, el teléfono está habilitado para el botón de contacto. Si no lo deseas, desactívalo en esta sección.

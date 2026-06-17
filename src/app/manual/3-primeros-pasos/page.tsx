@@ -82,6 +82,32 @@ export default function PrimerosPasosPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Al registrarte
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          El formulario de registro tiene <strong>dos bloques</strong> que no deben confundirse:
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-5 space-y-2 border-2 border-primary/10">
+            <h4 className="font-black uppercase text-sm tracking-widest text-primary">Inscripción comunitaria</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Indica en qué <strong>región comunitaria</strong> te inscribiste (Totonacapan, Tolteca, Chiapas, Oaxaca, Náhuatl, Huaxteca, Tenoxca) o describe tu proceso si eliges <strong>&quot;Otra región o proceso distinto&quot;</strong>. Esto ayuda a tu Bantúmin a verificarte. <strong>No tiene que coincidir con donde vives.</strong>
+            </p>
+          </Card>
+          <Card className="p-5 space-y-2 border-2 border-primary/10">
+            <h4 className="font-black uppercase text-sm tracking-widest text-primary">Dónde vives actualmente</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Puedes elegir <strong>cualquier estado de México</strong> o indicar si vives en otro país. Solo sirve para el Bazar y tu perfil público; <strong>no limita</strong> tu participación en la red.
+            </p>
+          </Card>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Después del registro puedes actualizar tu ubicación en <strong>Perfil → Inscripción y ubicación</strong>. La región de inscripción queda fija para coordinación.
+        </p>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
           El badge de Socix Verificadx
         </h2>
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
@@ -120,7 +146,7 @@ export default function PrimerosPasosPage() {
             <ShieldCheck className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Qué puedes controlar</h4>
-              <p className="text-sm text-foreground/70">Nombre público, bio, si se muestra tu teléfono, correo o región. Por default el teléfono se usa para el botón de WhatsApp en el Bazar.</p>
+              <p className="text-sm text-foreground/70">Nombre público, bio, si se muestra tu teléfono, correo o <strong>ubicación</strong> (dónde vives, no tu región de inscripción).</p>
             </div>
           </div>
         </div>

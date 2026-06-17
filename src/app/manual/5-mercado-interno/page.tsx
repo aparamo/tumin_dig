@@ -17,7 +17,7 @@ export default function MercadoInternoPage() {
           El Bazar: descubrir y comprar
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          El Bazar es el corazón de la app. Aquí puedes explorar los productos y servicios de toda la red, filtrar por categoría y región, y ordenar por precio o novedad. Los artículos de tu misma región aparecen primero.
+          El Bazar es el corazón de la app. Aquí puedes explorar los productos y servicios de toda la red, filtrar por categoría y <strong>ubicación</strong> (estado donde vive el vendedor), y ordenar por precio o novedad. Los artículos de vendedores en tu mismo estado aparecen primero.
         </p>
         <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
           <Eye className="w-6 h-6 text-primary shrink-0 mt-0.5" />

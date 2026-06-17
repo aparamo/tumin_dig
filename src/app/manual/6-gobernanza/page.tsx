@@ -111,7 +111,7 @@ export default function GobernanzaPage() {
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest mb-1">Socios</h4>
               <p className="text-sm text-foreground/70">
-                Lista de socios de la región que aún no tienen el badge de verificación. Al pulsar <strong>&quot;Validar Socio&quot;</strong> se otorga el badge <strong>&quot;Verificadx&quot;</strong> visible en su perfil público.
+                Lista de socios de la región de <strong>inscripción</strong> que aún no tienen el badge de verificación. En cada ficha verás su adscripción comunitaria y, si la indicó, <strong>dónde vive</strong> (puede ser otro estado o país). Al pulsar <strong>&quot;Validar Socio&quot;</strong> se otorga el badge <strong>&quot;Verificadx&quot;</strong> visible en su perfil público.
               </p>
               <p className="text-xs text-foreground/50 mt-1 italic">
                 Este badge es un reconocimiento de confianza — no bloquea ni desbloquea funcionalidades de la app.
