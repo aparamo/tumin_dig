@@ -10,7 +10,10 @@ declare module "next-auth" {
   interface User {
     id?: string;
     role: string;
+    /** Enrollment / adscripción region — coordinator jurisdiction */
     region: string;
+    residenceState?: string | null;
+    residenceCountry?: string | null;
   }
   interface Session {
     user: {
@@ -20,6 +23,8 @@ declare module "next-auth" {
       image?: string | null;
       role: string;
       region: string;
+      residenceState?: string | null;
+      residenceCountry?: string | null;
     };
   }
 }
@@ -29,6 +34,8 @@ declare module "next-auth/jwt" {
     id: string;
     role: string;
     region: string;
+    residenceState?: string | null;
+    residenceCountry?: string | null;
   }
 }
 
@@ -104,6 +111,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           role: user.role,
           region: user.region,
+          residenceState: user.residenceState,
+          residenceCountry: user.residenceCountry,
         };
       },
     }),
@@ -114,6 +123,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id!;
         token.role = user.role;
         token.region = user.region;
+        token.residenceState = user.residenceState ?? null;
+        token.residenceCountry = user.residenceCountry ?? null;
       }
       return token;
     },
@@ -122,6 +133,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.region = token.region as string;
+        session.user.residenceState = (token.residenceState as string | null) ?? null;
+        session.user.residenceCountry = (token.residenceCountry as string | null) ?? null;
       }
       return session;
     },

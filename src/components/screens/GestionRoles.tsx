@@ -10,6 +10,11 @@ import { Loader2, Users, Search, ChevronLeft, ChevronRight, Filter } from "lucid
 import { useState } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
+import {
+  ENROLLMENT_REGION_FILTER_OPTIONS,
+  formatEnrollmentDisplay,
+  formatPublicLocation,
+} from "@/lib/location";
 
 type SortOption = "name_asc" | "name_desc" | "date_asc" | "date_desc";
 type UserRole = "SOCIO" | "COORDINADOR_LOCAL" | "COORDINADOR" | "COORDINADOR_GENERAL";
@@ -48,9 +53,7 @@ export function GestionRoles() {
     onError: (error) => alert(error.message),
   });
 
-  const regions = [
-    "Todas", "Veracruz", "Espinal", "Puebla", "CDMX", "Oaxaca", "Chiapas", "Yucatán"
-  ];
+  const regions = [...ENROLLMENT_REGION_FILTER_OPTIONS];
 
   if (!session?.user) return null;
 
@@ -62,7 +65,7 @@ export function GestionRoles() {
             <Users className="w-8 h-8 text-purple-600" /> Gestión de Socios
           </h1>
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
-            Administración de la red {isGlobal ? "Global" : `en ${session.user.region}`}
+            Administración por región adscrita {isGlobal ? "(global)" : `en ${session.user.region}`}
           </p>
         </div>
       </div>
@@ -110,7 +113,7 @@ export function GestionRoles() {
               {isGlobal && (
                 <Select value={regionFilter} onValueChange={(v: string | null) => { if (v) { setRegionFilter(v); setCursor(0); } }}>
                   <SelectTrigger className="h-11 border-2 font-bold uppercase text-[10px]">
-                    <SelectValue placeholder="Región" />
+                    <SelectValue placeholder="Región adscrita" />
                   </SelectTrigger>
                   <SelectContent>
                     {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -153,7 +156,17 @@ export function GestionRoles() {
                     </div>
                     <div className="text-[10px] text-muted-foreground font-bold uppercase flex flex-wrap gap-x-4 gap-y-1 mt-1">
                       <span>ID: <span className="text-foreground">{user.id}</span></span>
-                      <span>Región: <span className="text-foreground">{user.region}</span></span>
+                      <span>Adscripción: <span className="text-foreground">
+                        {formatEnrollmentDisplay(user.region, user.enrollmentMethod, user.enrollmentMethodOther)}
+                      </span></span>
+                      <span>Vive en: <span className="text-foreground">
+                        {formatPublicLocation({
+                          residenceCountry: user.residenceCountry,
+                          residenceState: user.residenceState,
+                          residenceCity: user.residenceCity,
+                          residencePostalCode: null,
+                        }) ?? "—"}
+                      </span></span>
                       <span>Tel: <span className="text-foreground">{user.phone}</span></span>
                       {user.email && <span>Email: <span className="text-foreground">{user.email}</span></span>}
                     </div>

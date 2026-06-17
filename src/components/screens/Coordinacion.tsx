@@ -9,6 +9,10 @@ import { Loader2, Check, X, MapPin, UserCheck, ImageIcon, Briefcase, ThumbsUp, T
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
+import {
+  formatEnrollmentDisplay,
+  formatPublicLocation,
+} from "@/lib/location";
 
 export function Coordinacion() {
   const { data: session } = useSession();
@@ -57,7 +61,7 @@ export function Coordinacion() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Panel de Coordinación</h1>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-          Gestión regional: {session.user.region}
+          Gestión por región adscrita: {session.user.region}
         </p>
       </div>
 
@@ -87,7 +91,7 @@ export function Coordinacion() {
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {item.requester.region}
+                          <MapPin className="w-3 h-3" /> Adscripción: {item.requester.region}
                         </Badge>
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">
                           {new Date(item.job.createdAt).toLocaleDateString()}
@@ -146,6 +150,23 @@ export function Coordinacion() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="text-xs space-y-1">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground uppercase font-bold shrink-0">Inscripción:</span>
+                          <span className="font-black text-right">
+                            {formatEnrollmentDisplay(u.region, u.enrollmentMethod, u.enrollmentMethodOther)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground uppercase font-bold shrink-0">Vive en:</span>
+                          <span className="font-black text-right">
+                            {formatPublicLocation({
+                              residenceCountry: u.residenceCountry,
+                              residenceState: u.residenceState,
+                              residenceCity: u.residenceCity,
+                              residencePostalCode: u.residencePostalCode,
+                            }) ?? "Sin registrar"}
+                          </span>
+                        </div>
                         <div className="flex justify-between"><span className="text-muted-foreground uppercase font-bold">Tel:</span> <span className="font-black">{u.phone}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground uppercase font-bold">Email:</span> <span className="font-black">{u.email || "N/A"}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground uppercase font-bold">Registro:</span> <span className="font-black">{new Date(u.createdAt).toLocaleDateString()}</span></div>

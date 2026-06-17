@@ -50,7 +50,14 @@ export const users = pgTable("TUMIN_users", {
   phone: text("phone").notNull().unique(),
   email: text("email").unique(),
   nip: text("nip").notNull(), // Hashed
+  /** Community enrollment / adscripción region — used for coordinator jurisdiction */
   region: text("region").notNull(),
+  enrollmentMethod: text("enrollment_method").default("REGION").notNull(),
+  enrollmentMethodOther: text("enrollment_method_other"),
+  residenceCountry: text("residence_country"),
+  residenceState: text("residence_state"),
+  residenceCity: text("residence_city"),
+  residencePostalCode: text("residence_postal_code"),
   role: userRoleEnum("role").default("SOCIO").notNull(),
   referrerId: text("referrer_id"), // Self-reference
   status: userStatusEnum("status").default("ACTIVO").notNull(),

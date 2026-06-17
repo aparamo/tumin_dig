@@ -12,13 +12,23 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ENROLLMENT_OTHER,
+  MEXICO_STATES,
+  MEXICO_COUNTRY,
+  formatEnrollmentDisplay,
+  formatPublicLocation,
+  isKnownEnrollmentRegion,
+  isMexicoCountry,
+} from "@/lib/location";
 
 function PrivacyRow({
   id,
@@ -76,6 +86,14 @@ export function Perfil() {
     onError: (e) => alert(e.message)
   });
 
+  const updateLocation = trpc.user.updateLocation.useMutation({
+    onSuccess: () => {
+      alert("Ubicación actualizada correctamente");
+      void utils.user.fullMe.invalidate();
+    },
+    onError: (e) => alert(e.message),
+  });
+
   const updatePrivacySettings = trpc.user.updatePrivacySettings.useMutation({
     onSuccess: () => {
       alert("Privacidad y perfil público actualizados");
@@ -94,6 +112,13 @@ export function Perfil() {
     publicName: "",
     bio: "",
   });
+  const [locationData, setLocationData] = useState({
+    residenceMode: "mexico" as "mexico" | "international",
+    residenceState: "",
+    residenceCity: "",
+    residencePostalCode: "",
+    residenceCountry: "",
+  });
   const [prevUserId, setPrevUserId] = useState<string | null>(null);
 
   // Sync editData with user data when it first loads or changes
@@ -102,7 +127,7 @@ export function Perfil() {
     setEditData({
       name: user.name || "",
       email: user.email || "",
-      phone: user.phone || ""
+      phone: user.phone || "",
     });
     setPrivacy({
       publicProfile: user.publicProfile,
@@ -112,7 +137,23 @@ export function Perfil() {
       publicName: user.publicName ?? "",
       bio: user.bio ?? "",
     });
+    const intl = user.residenceCountry && !isMexicoCountry(user.residenceCountry);
+    setLocationData({
+      residenceMode: intl ? "international" : "mexico",
+      residenceState: user.residenceState ?? "",
+      residenceCity: user.residenceCity ?? "",
+      residencePostalCode: user.residencePostalCode ?? "",
+      residenceCountry: intl ? (user.residenceCountry ?? "") : "",
+    });
   }
+
+  const needsEnrollmentFix =
+    user &&
+    !isKnownEnrollmentRegion(user.region) &&
+    user.region !== ENROLLMENT_OTHER;
+
+  const needsResidence =
+    user && !user.residenceCountry && !user.residenceState;
 
   const copyLink = () => {
     if (!user) return;
@@ -220,11 +261,7 @@ export function Perfil() {
                     className="bg-background border-2 h-12"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase ml-1">Región</Label>
-                  <Input value={user.region} disabled className="bg-muted border-2 h-12 font-bold" />
-                </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-[10px] font-black uppercase ml-1">Teléfono</Label>
                   <Input 
                     value={editData.phone} 
@@ -232,7 +269,7 @@ export function Perfil() {
                     className="bg-background border-2 h-12"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-[10px] font-black uppercase ml-1">Correo Electrónico</Label>
                   <Input 
                     type="email"
@@ -249,6 +286,198 @@ export function Perfil() {
               >
                 {updateProfile.isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
                 Guardar Cambios
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Inscripción y ubicación */}
+          <Card className="neo-card border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+                <MapPin className="h-6 w-6 text-primary" /> Inscripción y ubicación
+              </CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase">
+                Tu región de inscripción es para coordinación; tu ubicación ayuda al bazar
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {(needsEnrollmentFix || needsResidence) && (
+                <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-4 text-xs font-bold uppercase tracking-wide text-amber-900 dark:text-amber-200">
+                  {needsEnrollmentFix && (
+                    <p>Completa o corrige tu región de inscripción para continuar usando todas las funciones.</p>
+                  )}
+                  {needsResidence && (
+                    <p className={needsEnrollmentFix ? "mt-2" : ""}>
+                      Agrega tu ubicación actual para mejorar el bazar y tu perfil público (opcional pero recomendado).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-xl border-2 border-border bg-muted/20 p-4 space-y-2">
+                <Label className="text-[10px] font-black uppercase">Región de inscripción</Label>
+                <p className="text-sm font-bold">
+                  {formatEnrollmentDisplay(
+                    user.region,
+                    user.enrollmentMethod,
+                    user.enrollmentMethodOther
+                  )}
+                </p>
+                <p className="text-[10px] font-medium text-muted-foreground">
+                  Define qué coordinación puede apoyarte. Para cambiarla contacta a tu coordinador.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase ml-1">Dónde vives actualmente</Label>
+                <Select
+                  value={locationData.residenceMode}
+                  onValueChange={(val) => {
+                    if (val === "mexico" || val === "international") {
+                      setLocationData((l) => ({ ...l, residenceMode: val }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-12 border-2 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mexico">Vivo en México</SelectItem>
+                    <SelectItem value="international">Vivo fuera de México</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {locationData.residenceMode === "mexico" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">Estado</Label>
+                      <Select
+                        value={locationData.residenceState}
+                        onValueChange={(val) =>
+                          val && setLocationData((l) => ({ ...l, residenceState: val }))
+                        }
+                      >
+                        <SelectTrigger className="h-12 border-2 bg-background">
+                          <SelectValue placeholder="Selecciona estado" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {MEXICO_STATES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">Ciudad (opcional)</Label>
+                      <Input
+                        className="bg-background border-2 h-12"
+                        value={locationData.residenceCity}
+                        onChange={(e) =>
+                          setLocationData((l) => ({ ...l, residenceCity: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">C.P. (opcional)</Label>
+                      <Input
+                        className="bg-background border-2 h-12"
+                        value={locationData.residencePostalCode}
+                        onChange={(e) =>
+                          setLocationData((l) => ({ ...l, residencePostalCode: e.target.value }))
+                        }
+                        maxLength={24}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">País o región</Label>
+                      <Input
+                        className="bg-background border-2 h-12"
+                        value={locationData.residenceCountry}
+                        onChange={(e) =>
+                          setLocationData((l) => ({ ...l, residenceCountry: e.target.value }))
+                        }
+                        placeholder="Ej. Colombia"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">Ciudad (opcional)</Label>
+                      <Input
+                        className="bg-background border-2 h-12"
+                        value={locationData.residenceCity}
+                        onChange={(e) =>
+                          setLocationData((l) => ({ ...l, residenceCity: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase ml-1">C.P. (opcional)</Label>
+                      <Input
+                        className="bg-background border-2 h-12"
+                        value={locationData.residencePostalCode}
+                        onChange={(e) =>
+                          setLocationData((l) => ({ ...l, residencePostalCode: e.target.value }))
+                        }
+                        maxLength={24}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formatPublicLocation({
+                  residenceCountry:
+                    locationData.residenceMode === "mexico"
+                      ? MEXICO_COUNTRY
+                      : locationData.residenceCountry || null,
+                  residenceState:
+                    locationData.residenceMode === "mexico" ? locationData.residenceState : null,
+                  residenceCity: locationData.residenceCity || null,
+                  residencePostalCode: locationData.residencePostalCode || null,
+                }) && (
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Vista previa:{" "}
+                    {formatPublicLocation({
+                      residenceCountry:
+                        locationData.residenceMode === "mexico"
+                          ? MEXICO_COUNTRY
+                          : locationData.residenceCountry || null,
+                      residenceState:
+                        locationData.residenceMode === "mexico" ? locationData.residenceState : null,
+                      residenceCity: locationData.residenceCity || null,
+                      residencePostalCode: locationData.residencePostalCode || null,
+                    })}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                className="w-full md:w-auto px-8 h-12 font-black uppercase"
+                disabled={updateLocation.isPending}
+                onClick={() =>
+                  updateLocation.mutate({
+                    residenceCountry:
+                      locationData.residenceMode === "mexico"
+                        ? MEXICO_COUNTRY
+                        : locationData.residenceCountry.trim() || null,
+                    residenceState:
+                      locationData.residenceMode === "mexico"
+                        ? locationData.residenceState || null
+                        : null,
+                    residenceCity: locationData.residenceCity.trim() || null,
+                    residencePostalCode: locationData.residencePostalCode.trim() || null,
+                  })
+                }
+              >
+                {updateLocation.isPending ? (
+                  <Loader2 className="animate-spin mr-2" />
+                ) : (
+                  <MapPin className="w-5 h-5 mr-2" />
+                )}
+                Guardar ubicación
               </Button>
             </CardContent>
           </Card>
@@ -315,7 +544,8 @@ export function Perfil() {
                 />
                 <PrivacyRow
                   id="showRegion"
-                  label="Mostrar región en perfil público"
+                  label="Mostrar ubicación en perfil público"
+                  description="Muestra ciudad/estado o país en tu página pública y bazar."
                   checked={privacy.showRegion}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showRegion: v }))}
                 />

@@ -18,12 +18,6 @@ import { cn } from "@/lib/utils";
 import { ProductComments } from "@/components/bazar/ProductComments";
 import type { PendingPurchase } from "@/lib/store";
 
-function formatRegion(region: string) {
-  if (region === "Estado de México") return "EdoMex";
-  if (region === "Ciudad de México") return "CDMX";
-  return region;
-}
-
 export interface ProductDetailDialogProps {
   productId: string | null;
   open: boolean;
@@ -77,7 +71,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
         className={cn(
           "z-50 flex flex-col gap-0 overflow-hidden bg-background p-0 ring-0",
           // Mobile: full-screen edge-to-edge
-          "fixed inset-0 left-0 top-0 h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 shadow-none",
+          "fixed inset-0 left-0 top-0 h-dvhh-[100dvh] w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 shadow-none",
           // sm+: centered modal, wide layout
           "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border-2 sm:border-border sm:shadow-neo"
         )}
@@ -97,7 +91,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
         ) : product && seller ? (
           <>
             <div className="relative shrink-0 border-b-2 border-border bg-muted">
-              <div className="relative aspect-[4/3] w-full max-h-[42vh] sm:max-h-[48vh]">
+              <div className="relative aspect-4/3 w-full max-h-[42vh] sm:max-h-[48vh]">
                 {images.length > 0 ? (
                   <>
                     <Image
@@ -142,7 +136,9 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background p-4 pb-8 sm:p-6">
               <DialogHeader className="space-y-2 text-left">
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="border-2 font-black uppercase">{formatRegion(product.region)}</Badge>
+                  <Badge className="border-2 font-black uppercase">
+                    {product.locationLabel ?? product.region}
+                  </Badge>
                   {product.categories.slice(0, 4).map((cat) => (
                     <Badge key={cat} variant="secondary" className="border-2 text-[10px] font-black uppercase">
                       {cat}

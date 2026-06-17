@@ -22,6 +22,13 @@
       "when": 1778781006421,
       "tag": "0002_fancy_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781722939985,
+      "tag": "0003_next_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

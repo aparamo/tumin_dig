@@ -10,19 +10,21 @@ import { users, media } from "../../db/schema";
 import { eq, or, and, sql, desc, ilike } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
+import {
+  registerLocationSchema,
+  updateLocationSchema,
+  normalizeResidenceFields,
+  resolveEnrollmentRegionForStorage,
+  formatPublicLocation,
+  isKnownEnrollmentRegion,
+  isSystemUserRegion,
+  ENROLLMENT_OTHER,
+  type EnrollmentMethod,
+} from "../../lib/location";
 
 export const userRouter = createTRPCRouter({
   register: rateLimitedPublicProcedure
-    .input(
-      z.object({
-        name: z.string().min(2),
-        phone: z.string().min(10),
-        email: z.string().email().optional().or(z.literal("")),
-        region: z.string().min(2),
-        nip: z.string().min(4).max(6),
-        referrerId: z.string().optional(),
-      })
-    )
+    .input(registerLocationSchema)
     .mutation(async ({ input }) => {
       // 1. Verify referrer exists if provided
       if (input.referrerId) {
@@ -45,7 +47,7 @@ export const userRouter = createTRPCRouter({
         .from(users)
         .where(eq(users.phone, input.phone))
         .limit(1);
-      
+
       if (existingUser) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -59,6 +61,15 @@ export const userRouter = createTRPCRouter({
       // 4. Generate ID
       const userId = `USR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+      const enrollmentMethod = input.enrollmentMethod as EnrollmentMethod;
+      const storedRegion = resolveEnrollmentRegionForStorage(input.region, enrollmentMethod);
+      const residence = normalizeResidenceFields(input);
+
+      const enrollmentMethodOther =
+        enrollmentMethod === "OTHER"
+          ? input.enrollmentMethodOther?.trim() || null
+          : null;
+
       // 5. Create user
       const [user] = await db
         .insert(users)
@@ -67,7 +78,13 @@ export const userRouter = createTRPCRouter({
           name: input.name,
           phone: input.phone,
           email: input.email || null,
-          region: input.region,
+          region: storedRegion,
+          enrollmentMethod,
+          enrollmentMethodOther,
+          residenceCountry: residence.residenceCountry,
+          residenceState: residence.residenceState,
+          residenceCity: residence.residenceCity,
+          residencePostalCode: residence.residencePostalCode,
           nip: hashedNip,
           referrerId: input.referrerId || null,
         })
@@ -109,6 +126,12 @@ export const userRouter = createTRPCRouter({
         phone: users.phone,
         email: users.email,
         region: users.region,
+        enrollmentMethod: users.enrollmentMethod,
+        enrollmentMethodOther: users.enrollmentMethodOther,
+        residenceCountry: users.residenceCountry,
+        residenceState: users.residenceState,
+        residenceCity: users.residenceCity,
+        residencePostalCode: users.residencePostalCode,
         role: users.role,
         status: users.status,
         accountTier: users.accountTier,
@@ -140,18 +163,101 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Perfil no disponible" });
       }
 
+      const publicLocation =
+        u.showRegion
+          ? formatPublicLocation({
+              residenceCountry: u.residenceCountry,
+              residenceState: u.residenceState,
+              residenceCity: u.residenceCity,
+              residencePostalCode: u.residencePostalCode,
+            })
+          : null;
+
       return {
         id: u.id,
         displayName: (u.publicName?.trim() ? u.publicName.trim() : null) ?? u.name,
         avatarUrl: u.avatarUrl ?? null,
         bio: u.bio?.trim() ? u.bio.trim() : null,
-        region: u.showRegion ? u.region : null,
+        location: publicLocation,
         phone: u.showPhone ? u.phone : null,
         email: u.showEmail ? (u.email ?? null) : null,
         accountTier: u.accountTier,
         isVerified: u.isVerified,
         createdAt: u.createdAt,
       };
+    }),
+
+  updateLocation: protectedProcedure
+    .input(updateLocationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [current] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, ctx.session.user.id))
+        .limit(1);
+
+      if (!current) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const patch: {
+        region?: string;
+        enrollmentMethod?: string;
+        enrollmentMethodOther?: string | null;
+        residenceCountry?: string | null;
+        residenceState?: string | null;
+        residenceCity?: string | null;
+        residencePostalCode?: string | null;
+      } = {};
+
+      const canEditEnrollment =
+        isSystemUserRegion(current.region) ||
+        !isKnownEnrollmentRegion(current.region) ||
+        current.region === ENROLLMENT_OTHER;
+
+      if (input.region !== undefined || input.enrollmentMethod !== undefined) {
+        if (!canEditEnrollment) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "La región de inscripción no puede modificarse. Contacta a tu coordinador.",
+          });
+        }
+        const method = (input.enrollmentMethod ?? current.enrollmentMethod ?? "REGION") as EnrollmentMethod;
+        const regionInput = input.region ?? current.region;
+        patch.enrollmentMethod = method;
+        patch.region = resolveEnrollmentRegionForStorage(regionInput, method);
+        patch.enrollmentMethodOther =
+          method === "OTHER"
+            ? input.enrollmentMethodOther?.trim() || null
+            : null;
+      } else if (input.enrollmentMethodOther !== undefined && current.enrollmentMethod === "OTHER") {
+        patch.enrollmentMethodOther = input.enrollmentMethodOther?.trim() || null;
+      }
+
+      if (
+        input.residenceCountry !== undefined ||
+        input.residenceState !== undefined ||
+        input.residenceCity !== undefined ||
+        input.residencePostalCode !== undefined
+      ) {
+        const residence = normalizeResidenceFields({
+          residenceCountry: input.residenceCountry ?? current.residenceCountry,
+          residenceState: input.residenceState ?? current.residenceState,
+          residenceCity: input.residenceCity ?? current.residenceCity,
+          residencePostalCode: input.residencePostalCode ?? current.residencePostalCode,
+        });
+        patch.residenceCountry = residence.residenceCountry;
+        patch.residenceState = residence.residenceState;
+        patch.residenceCity = residence.residenceCity;
+        patch.residencePostalCode = residence.residencePostalCode;
+      }
+
+      if (Object.keys(patch).length === 0) {
+        return { success: true as const };
+      }
+
+      await db.update(users).set(patch).where(eq(users.id, ctx.session.user.id));
+      return { success: true as const };
     }),
 
   updatePrivacySettings: protectedProcedure
@@ -307,14 +413,20 @@ export const userRouter = createTRPCRouter({
       );
 
       return await db
-        .select({ 
-          id: users.id, 
-          name: users.name, 
-          region: users.region, 
+        .select({
+          id: users.id,
+          name: users.name,
+          region: users.region,
+          enrollmentMethod: users.enrollmentMethod,
+          enrollmentMethodOther: users.enrollmentMethodOther,
+          residenceCountry: users.residenceCountry,
+          residenceState: users.residenceState,
+          residenceCity: users.residenceCity,
+          residencePostalCode: users.residencePostalCode,
           createdAt: users.createdAt,
           phone: users.phone,
           email: users.email,
-          isVerified: users.isVerified
+          isVerified: users.isVerified,
         })
         .from(users)
         .where(condition)
@@ -394,6 +506,11 @@ export const userRouter = createTRPCRouter({
           name: users.name,
           role: users.role,
           region: users.region,
+          enrollmentMethod: users.enrollmentMethod,
+          enrollmentMethodOther: users.enrollmentMethodOther,
+          residenceCountry: users.residenceCountry,
+          residenceState: users.residenceState,
+          residenceCity: users.residenceCity,
           status: users.status,
           createdAt: users.createdAt,
           phone: users.phone,

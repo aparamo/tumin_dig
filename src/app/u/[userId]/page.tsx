@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProfileProductsSection } from "@/components/profile/ProfileProductsSection";
 import { MessageCircle, User, ShieldCheck, Star, Zap, Calendar } from "lucide-react";
 import type { Metadata } from "next";
+import { formatPublicLocation } from "@/lib/location";
 
 const TIER_LABELS: Record<string, { label: string; className: string }> = {
   NORMAL: { label: "Socix", className: "bg-slate-500" },
@@ -41,7 +42,14 @@ export default async function PublicUserPage({ params }: PageProps) {
 
   const displayName = (u.publicName?.trim() ? u.publicName.trim() : null) ?? u.name;
   const bio = u.bio?.trim() ? u.bio.trim() : null;
-  const region = u.showRegion ? u.region : null;
+  const location = u.showRegion
+    ? formatPublicLocation({
+        residenceCountry: u.residenceCountry,
+        residenceState: u.residenceState,
+        residenceCity: u.residenceCity,
+        residencePostalCode: u.residencePostalCode,
+      })
+    : null;
   const phone = u.showPhone ? u.phone : null;
   const email = u.showEmail ? u.email : null;
 
@@ -84,7 +92,7 @@ export default async function PublicUserPage({ params }: PageProps) {
       : null;
 
   return (
-    <div className="min-h-[100dvh] bg-background p-4 pb-16 md:p-8">
+    <div className="min-h-dvh bg-background p-4 pb-16 md:p-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link href="/login" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground underline-offset-4 hover:underline">
@@ -119,8 +127,8 @@ export default async function PublicUserPage({ params }: PageProps) {
                   {tier.label}
                 </Badge>
               </div>
-              {region && (
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{region}</p>
+              {location && (
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{location}</p>
               )}
               <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground md:justify-start">
                 <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/50 px-2 py-1">

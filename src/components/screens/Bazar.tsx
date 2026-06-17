@@ -20,6 +20,7 @@ import {
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
+import { MEXICO_STATES } from "@/lib/location";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Alimentos": Utensils,
@@ -38,22 +39,11 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Agroecología y Jardinería": Leaf
 };
 
-function formatRegion(region: string) {
-  if (region === "Estado de México") return "EdoMex";
-  if (region === "Ciudad de México") return "CDMX";
-  if (region === "Veracruz") return "Ver";
-  if (region === "Oaxaca") return "Oax";
-  if (region === "Chiapas") return "Chps";
-  if (region === "Hidalgo") return "Hgo";
-  if (region === "Morelos") return "Mor";
-  return region;
-}
-
 export function Bazar() {
   const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
-  const [region, setRegion] = useState("Todas");
+  const [locationState, setLocationState] = useState("Todas");
   const [sortBy, setSortBy] = useState<"recientes" | "menor_precio" | "mayor_precio">("recientes");
   const [detailProductId, setDetailProductId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -67,7 +57,7 @@ export function Bazar() {
   } = trpc.bazar.getProducts.useInfiniteQuery({
     name: searchTerm || undefined,
     category: category === "Todas" ? undefined : category,
-    region: region === "Todas" ? undefined : region,
+    locationState: locationState === "Todas" ? undefined : locationState,
     sortBy,
     limit: 12,
   }, {
@@ -83,7 +73,7 @@ export function Bazar() {
     "Talleres", "Cultura", "Entretenimiento", "Agroecología y Jardinería"
   ];
 
-  const regions = ["Todas", "Veracruz", "Chiapas", "Oaxaca", "Hidalgo", "Estado de México", "Morelos"];
+  const locationStates = ["Todas", ...MEXICO_STATES];
 
   const handleAddNewProduct = () => {
     setOpenGestionProductCreate(true);
@@ -129,13 +119,13 @@ export function Bazar() {
         </div>
 
         <div className="w-full md:w-48 space-y-1">
-          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Región</Label>
-          <Select value={region} onValueChange={(val) => val && setRegion(val)}>
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Ubicación</Label>
+          <Select value={locationState} onValueChange={(val) => val && setLocationState(val)}>
             <SelectTrigger className="h-12 bg-card border-2">
-              <SelectValue placeholder="Región" />
+              <SelectValue placeholder="Estado" />
             </SelectTrigger>
-            <SelectContent className="bg-card border-2">
-              {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            <SelectContent className="bg-card border-2 max-h-64">
+              {locationStates.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -202,7 +192,7 @@ export function Bazar() {
                     
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
                       <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
-                        {formatRegion(item.product.region)}
+                        {item.product.locationLabel ?? item.seller.locationCompact ?? "—"}
                       </Badge>
                     </div>
 
@@ -220,7 +210,7 @@ export function Bazar() {
 
                   <div className="p-5">
                     <div className="mb-2">
-                      <h3 className="font-black text-base text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.75rem] sm:text-lg">
+                      <h3 className="font-black text-base text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-11 sm:text-lg">
                         {item.product.name}
                       </h3>
                     </div>

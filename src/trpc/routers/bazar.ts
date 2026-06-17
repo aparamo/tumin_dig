@@ -5,6 +5,12 @@ import { products, users, ratings, transactions, productComments } from "../../d
 import { eq, and, ilike, sql, desc } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import {
+  formatCompactLocation,
+  formatPublicLocation,
+  isMexicoCountry,
+  MEXICO_COUNTRY,
+} from "../../lib/location";
 
 function sellerDisplayNameSql() {
   return sql<string>`COALESCE(${users.publicName}, ${users.name})`;
@@ -14,39 +20,98 @@ function sellerPhonePublicSql() {
   return sql<string | null>`CASE WHEN ${users.showPhone} = true THEN ${users.phone} ELSE NULL END`;
 }
 
+function sellerResidenceFields() {
+  return {
+    residenceCountry: users.residenceCountry,
+    residenceState: users.residenceState,
+    residenceCity: users.residenceCity,
+    residencePostalCode: users.residencePostalCode,
+    showRegion: users.showRegion,
+  };
+}
+
+function mapSellerLocation<T extends {
+  showRegion: boolean;
+  residenceCountry: string | null;
+  residenceState: string | null;
+  residenceCity: string | null;
+  residencePostalCode: string | null;
+}>(seller: T) {
+  const residence = {
+    residenceCountry: seller.residenceCountry,
+    residenceState: seller.residenceState,
+    residenceCity: seller.residenceCity,
+    residencePostalCode: seller.residencePostalCode,
+  };
+  return {
+    ...seller,
+    location: seller.showRegion ? formatPublicLocation(residence) : null,
+    locationCompact: seller.showRegion ? formatCompactLocation(residence) : null,
+  };
+}
+
 export const bazarRouter = createTRPCRouter({
   getProducts: publicProcedure
     .input(
       z.object({
         name: z.string().optional(),
         category: z.string().optional(),
+        /** @deprecated use locationState */
         region: z.string().optional(),
+        locationState: z.string().optional(),
+        locationCountry: z.string().optional(),
         sortBy: z.enum(["recientes", "menor_precio", "mayor_precio"]).default("recientes"),
         limit: z.number().min(1).max(50).default(12),
-        cursor: z.number().nullish(), // offset
+        cursor: z.number().nullish(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { name, category, region, sortBy, limit, cursor } = input;
+      const { name, category, sortBy, limit, cursor } = input;
       const offset = cursor ?? 0;
-      const userRegion = ctx.session?.user?.region;
+      const locationState = input.locationState ?? (input.region && input.region !== "Todas" ? input.region : undefined);
+      const locationCountry = input.locationCountry;
+
+      const sessionUserId = ctx.session?.user?.id;
+      let viewerResidenceState: string | null = ctx.session?.user?.residenceState ?? null;
+      let viewerResidenceCountry: string | null = ctx.session?.user?.residenceCountry ?? null;
+
+      if (sessionUserId && (!viewerResidenceState && !viewerResidenceCountry)) {
+        const [viewer] = await db
+          .select({
+            residenceState: users.residenceState,
+            residenceCountry: users.residenceCountry,
+          })
+          .from(users)
+          .where(eq(users.id, sessionUserId))
+          .limit(1);
+        viewerResidenceState = viewer?.residenceState ?? null;
+        viewerResidenceCountry = viewer?.residenceCountry ?? null;
+      }
 
       const conditions = [];
       if (name) conditions.push(ilike(products.name, `%${name}%`));
       if (category) {
         conditions.push(sql`${products.categories} @> ${JSON.stringify([category])}::jsonb`);
       }
-      if (region && region !== "Todas") conditions.push(eq(products.region, region));
+      if (locationState && locationState !== "Todas") {
+        conditions.push(eq(users.residenceState, locationState));
+      } else if (locationCountry && locationCountry !== "Todas") {
+        conditions.push(eq(users.residenceCountry, locationCountry));
+      }
       conditions.push(eq(products.status, "ACTIVO"));
       conditions.push(eq(products.showInProfile, true));
-      // Only show products from users with a public profile
       conditions.push(eq(users.publicProfile, true));
 
       const orderBys = [];
 
-      // Proximity priority (user region first)
-      if (userRegion) {
-        orderBys.push(sql`CASE WHEN ${products.region} = ${userRegion} THEN 0 ELSE 1 END ASC`);
+      if (viewerResidenceState) {
+        orderBys.push(
+          sql`CASE WHEN ${users.residenceState} = ${viewerResidenceState} THEN 0 ELSE 1 END ASC`
+        );
+      } else if (viewerResidenceCountry) {
+        orderBys.push(
+          sql`CASE WHEN ${users.residenceCountry} = ${viewerResidenceCountry} THEN 0 ELSE 1 END ASC`
+        );
       }
 
       if (sortBy === "recientes") {
@@ -63,11 +128,11 @@ export const bazarRouter = createTRPCRouter({
           seller: {
             id: users.id,
             displayName: sellerDisplayNameSql(),
-            region: sql<string | null>`CASE WHEN ${users.showRegion} = true THEN ${users.region} ELSE NULL END`,
             phone: sellerPhonePublicSql(),
             avatarUrl: users.avatarUrl,
             publicProfile: users.publicProfile,
             showPhone: users.showPhone,
+            ...sellerResidenceFields(),
           },
           avgRating: sql<number>`COALESCE((SELECT AVG(${ratings.stars}) FROM ${ratings} WHERE ${ratings.sellerId} = ${products.sellerId}), 0)`.mapWith(
             Number
@@ -81,13 +146,23 @@ export const bazarRouter = createTRPCRouter({
         .offset(offset);
 
       let nextCursor: typeof cursor | undefined = undefined;
-      if (results.length > limit) {
-        results.pop(); // remove the extra item
+      const sliced = [...results];
+      if (sliced.length > limit) {
+        sliced.pop();
         nextCursor = offset + limit;
       }
 
+      const items = sliced.map((row) => ({
+        ...row,
+        seller: mapSellerLocation(row.seller),
+        product: {
+          ...row.product,
+          locationLabel: mapSellerLocation(row.seller).locationCompact ?? row.product.region,
+        },
+      }));
+
       return {
-        items: results,
+        items,
         nextCursor,
       };
     }),
@@ -104,11 +179,14 @@ export const bazarRouter = createTRPCRouter({
             avatarUrl: users.avatarUrl,
             publicProfile: users.publicProfile,
             showPhone: users.showPhone,
-            showRegion: users.showRegion,
             showEmail: users.showEmail,
             phone: sellerPhonePublicSql(),
-            region: sql<string | null>`CASE WHEN ${users.showRegion} = true THEN ${users.region} ELSE NULL END`,
             email: sql<string | null>`CASE WHEN ${users.showEmail} = true THEN ${users.email} ELSE NULL END`,
+            residenceCountry: users.residenceCountry,
+            residenceState: users.residenceState,
+            residenceCity: users.residenceCity,
+            residencePostalCode: users.residencePostalCode,
+            showRegion: users.showRegion,
           },
         })
         .from(products)
@@ -125,7 +203,14 @@ export const bazarRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
       }
 
-      return row;
+      const sellerMapped = mapSellerLocation(row.seller);
+      return {
+        product: {
+          ...row.product,
+          locationLabel: sellerMapped.locationCompact ?? row.product.region,
+        },
+        seller: sellerMapped,
+      };
     }),
 
   getComments: publicProcedure
@@ -273,17 +358,26 @@ export const bazarRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const userRegion = ctx.session.user.region;
 
       return await db.transaction(async (tx) => {
-        // 0. Row-level lock the user
         await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
 
         const [userBefore] = await tx
-          .select({ productOk: users.productOk })
+          .select({
+            productOk: users.productOk,
+            region: users.region,
+            residenceState: users.residenceState,
+            residenceCountry: users.residenceCountry,
+          })
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
+
+        const productRegion =
+          userBefore?.residenceState ??
+          (isMexicoCountry(userBefore?.residenceCountry ?? null) ? null : userBefore?.residenceCountry) ??
+          userBefore?.region ??
+          ctx.session.user.region;
 
         const [newProduct] = await tx
           .insert(products)
@@ -295,7 +389,7 @@ export const bazarRouter = createTRPCRouter({
             priceMxn: input.priceMxn,
             priceTumin: input.priceTumin,
             categories: input.categories,
-            region: userRegion,
+            region: productRegion ?? MEXICO_COUNTRY,
             imageUrl: input.imageUrl,
             imgUrls: input.imgUrls || [],
             status: "ACTIVO",
