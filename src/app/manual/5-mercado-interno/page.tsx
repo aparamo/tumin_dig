@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShoppingBag, MessageSquare, Repeat, Eye, ToggleRight, Star, Pencil, ExternalLink } from "lucide-react";
+import { ShoppingBag, MessageSquare, Repeat, Eye, ToggleRight, Star, Pencil, ExternalLink, Send, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function MercadoInternoPage() {
   return (
@@ -27,6 +27,49 @@ export default function MercadoInternoPage() {
               Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes contactarlo por WhatsApp o ver todos sus productos.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Pagar con Túmin (Enviar)
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          Para transferir Túmin a otra persona usa la pantalla <strong>Enviar Túmin</strong> del menú. También puedes llegar desde el Bazar: al tocar <strong>Comprar</strong> en el detalle de un producto, el formulario se autocompleta con el precio, el concepto y el contacto del vendedor.
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <Send className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Buscar al destinatario</h4>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Escribe el <strong>teléfono o correo</strong> del socio receptor (mínimo 8 caracteres). La app muestra una tarjeta con su foto o iniciales, nombre y si <strong>puede recibir Túmin</strong> antes de que confirmes la transferencia.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border-2 border-green-500/30 rounded-xl items-start bg-green-500/5">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest text-green-700">Puede recibir</h4>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                El destinatario tiene al menos un producto con estado <strong>Activo</strong> y su cuenta no está congelada. Puedes completar la transferencia con confianza.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border-2 border-yellow-500/30 rounded-xl items-start bg-yellow-500/5">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest text-yellow-700">No puede recibir</h4>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                La transferencia se bloquea si el destinatario no tiene productos activos, su cuenta está <strong>congelada</strong>, o intentas enviarte a ti mismo. El botón Transferir permanece deshabilitado y verás el motivo en la tarjeta.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-primary/5 border border-primary/10 p-5 rounded-xl">
+          <p className="text-sm text-foreground/70 leading-relaxed">
+            <strong>Regla importante:</strong> solo cuentan los productos con estado <strong>Activo</strong> en <strong>Mis Productos</strong>. Ocultar un artículo del Bazar con el interruptor de visibilidad <em>no</em> impide recibir pagos; pero si marcas todos tus productos como <strong>Inactivo</strong> o los eliminas, dejarás de poder recibir Túmin hasta que vuelvas a tener al menos uno activo.
+          </p>
         </div>
       </section>
 
@@ -85,7 +128,9 @@ export default function MercadoInternoPage() {
             <ShoppingBag className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest">Estado: Activo / Inactivo</h4>
-              <p className="text-sm text-foreground/70">Además de la visibilidad, puedes marcar un producto como <strong>Inactivo</strong> cuando ya no está disponible, sin perder su historial.</p>
+              <p className="text-sm text-foreground/70">
+                Marca un producto como <strong>Inactivo</strong> cuando ya no está disponible, sin perder su historial. Si es tu <strong>último producto activo</strong>, dejarás de poder recibir transferencias de Túmin hasta que reactives o publiques otro con estado Activo. Minar también requiere al menos un producto activo.
+              </p>
             </div>
           </div>
         </div>

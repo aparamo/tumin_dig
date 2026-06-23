@@ -1,8 +1,8 @@
 import { createTRPCRouter, protectedProcedure, rateLimitedProtectedProcedure } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, transactions } from "../../db/schema";
-import { eq, sql, and, desc, or } from "drizzle-orm";
+import { users, transactions, products } from "../../db/schema";
+import { eq, sql, and, desc, or, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const walletRouter = createTRPCRouter({
@@ -79,20 +79,26 @@ export const walletRouter = createTRPCRouter({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Saldo insuficiente" });
         }
 
-        // 2. Check recipient
+        // 2. Fetch recipient + live product count in same transaction
         const [recipient] = await tx
           .select()
           .from(users)
           .where(eq(users.id, input.toId))
           .limit(1);
-        
+
         if (!recipient) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Destinatario no encontrado" });
         }
         if (recipient.status === "CONGELADO") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "El destinatario está congelado" });
         }
-        if (!recipient.productOk) {
+
+        const [{ activeProducts }] = await tx
+          .select({ activeProducts: count() })
+          .from(products)
+          .where(and(eq(products.sellerId, input.toId), eq(products.status, "ACTIVO")));
+
+        if (Number(activeProducts) === 0) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "El destinatario debe tener un producto activo" });
         }
 

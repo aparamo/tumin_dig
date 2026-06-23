@@ -55,6 +55,9 @@ export default function MotorAbundanciaPage() {
         <p className="text-md text-destructive font-bold uppercase tracking-widest text-center italic">
           ⚠️ Si olvidas minar un solo día, la racha vuelve a 1.
         </p>
+        <p className="text-sm text-foreground/60 text-center leading-relaxed">
+          Para minar necesitas al menos un producto con estado <strong>Activo</strong> en Mis Productos — la misma condición que para recibir transferencias de otros socios.
+        </p>
       </section>
 
       <section className="space-y-6">

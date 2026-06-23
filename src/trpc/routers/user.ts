@@ -6,8 +6,8 @@ import {
 } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, media } from "../../db/schema";
-import { eq, or, and, sql, desc, ilike } from "drizzle-orm";
+import { users, media, products } from "../../db/schema";
+import { eq, or, and, sql, desc, ilike, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import {
@@ -99,9 +99,17 @@ export const userRouter = createTRPCRouter({
 
   searchByDato: protectedProcedure
     .input(z.object({ dato: z.string().min(3) }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const callerId = ctx.session.user.id;
+
       const [user] = await db
-        .select({ id: users.id, name: users.name })
+        .select({
+          id: users.id,
+          name: users.name,
+          publicName: users.publicName,
+          avatarUrl: users.avatarUrl,
+          status: users.status,
+        })
         .from(users)
         .where(
           or(
@@ -110,8 +118,21 @@ export const userRouter = createTRPCRouter({
           )
         )
         .limit(1);
-      
-      return user || null;
+
+      if (!user) return null;
+
+      const isSelf = user.id === callerId;
+
+      const [{ activeProducts }] = await db
+        .select({ activeProducts: count() })
+        .from(products)
+        .where(and(eq(products.sellerId, user.id), eq(products.status, "ACTIVO")));
+
+      return {
+        ...user,
+        hasActiveProduct: Number(activeProducts) > 0,
+        isSelf,
+      };
     }),
 
   me: protectedProcedure.query(({ ctx }) => {

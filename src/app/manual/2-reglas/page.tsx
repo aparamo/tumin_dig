@@ -90,7 +90,7 @@ export default function ReglasPage() {
         <div className="bg-destructive/5 border border-destructive/20 p-6 rounded-xl">
           <h4 className="font-black uppercase text-sm tracking-tight text-destructive mb-2">Regla de Activación Digital</h4>
           <p className="text-sm text-foreground/70 leading-relaxed">
-            No podrás minar Túmin diario ni cobrar bonos hasta que hayas publicado al menos un producto o servicio en el Bazar. Esta regla protege la mesa compartida de nuestra comunidad.
+            No podrás minar Túmin diario, <strong>recibir transferencias de otros socios</strong> ni cobrar bonos de venta hasta que tengas al menos un producto o servicio con estado <strong>Activo</strong> en el Bazar. Esta regla protege la mesa compartida de nuestra comunidad: todos quienes participan en el intercambio deben ofrecer algo a la red.
           </p>
         </div>
       </section>

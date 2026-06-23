@@ -6,14 +6,76 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, CheckCircle2, X, ShoppingBag } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Send, CheckCircle2, X, ShoppingBag, AlertTriangle, UserCircle2 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+interface RecipientCardProps {
+  name: string;
+  publicName: string | null;
+  avatarUrl: string | null;
+  status: "ACTIVO" | "CONGELADO";
+  hasActiveProduct: boolean;
+  isSelf: boolean;
+}
+
+function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, isSelf }: RecipientCardProps) {
+  const displayName = publicName ?? name;
+  const initials = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const canReceive = !isSelf && status === "ACTIVO" && hasActiveProduct;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl border-2 p-3",
+        canReceive ? "border-green-500/40 bg-green-500/5" : "border-yellow-500/40 bg-yellow-500/5"
+      )}
+    >
+      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-muted">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-xs font-black text-muted-foreground">{initials}</span>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black">{displayName}</p>
+        {canReceive ? (
+          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-green-600">
+            <CheckCircle2 className="h-3 w-3" /> Puede recibir Túmin
+          </p>
+        ) : isSelf ? (
+          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-yellow-600">
+            <AlertTriangle className="h-3 w-3" /> No puedes enviarte a ti mismo
+          </p>
+        ) : status === "CONGELADO" ? (
+          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-yellow-600">
+            <AlertTriangle className="h-3 w-3" /> Cuenta congelada
+          </p>
+        ) : (
+          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-yellow-600">
+            <AlertTriangle className="h-3 w-3" /> Sin producto activo en el Bazar
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function Pagar() {
   const { setCurrentScreen } = useStore();
   const pendingPurchase = useStore((s) => s.pendingPurchase);
   const utils = trpc.useUtils();
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const appliedFromPurchaseRef = useRef(false);
 
   const [purchaseBanner, setPurchaseBanner] = useState<{
@@ -22,10 +84,8 @@ export function Pagar() {
   } | null>(null);
 
   const [recipientInput, setRecipientInput] = useState("");
-  const [recipient, setRecipient] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState("");
   const [concept, setConcept] = useState("");
-  // Generate a new idempotency key each time the form is opened — reused on retries
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
@@ -47,38 +107,34 @@ export function Pagar() {
     { enabled: recipientInput.length >= 8 }
   );
 
-  useEffect(() => {
-    startTransition(() => {
-      if (foundUser) {
-        setRecipient(foundUser);
-      } else {
-        setRecipient(null);
-      }
-    });
-  }, [foundUser]);
-
   const sendTumin = trpc.wallet.sendTumin.useMutation({
     onSuccess: () => {
-      alert("¡Pago enviado con éxito!");
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
       setCurrentScreen("inicio");
     },
     onError: (error) => {
-      alert(error.message);
+      setSendError(error.message);
     },
     onSettled: () => {
       setIsSending(false);
     },
   });
 
+  const canTransfer =
+    foundUser &&
+    foundUser.hasActiveProduct &&
+    !foundUser.isSelf &&
+    foundUser.status === "ACTIVO";
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSending || !recipient || !amount || !concept) return;
+    if (isSending || !foundUser || !amount || !concept || !canTransfer) return;
 
+    setSendError(null);
     setIsSending(true);
     sendTumin.mutate({
-      toId: recipient.id,
+      toId: foundUser.id,
       amount: parseFloat(amount),
       concept,
       idempotencyKey,
@@ -86,7 +142,7 @@ export function Pagar() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto w-full">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
       {purchaseBanner && (
         <div
           role="status"
@@ -123,62 +179,88 @@ export function Pagar() {
         <CardContent>
           <form onSubmit={handleSend} className="space-y-6">
             <div className="space-y-2">
-              <Label className="font-black uppercase text-xs">Teléfono o Correo del receptor</Label>
-              <Input 
-                placeholder="Ej. 9611234567" 
+              <Label className="text-xs font-black uppercase">Teléfono o Correo del receptor</Label>
+              <Input
+                placeholder="Ej. 9611234567"
                 value={recipientInput}
-                onChange={(e) => setRecipientInput(e.target.value)}
+                onChange={(e) => {
+                  setRecipientInput(e.target.value);
+                  setSendError(null);
+                }}
                 className="bg-background"
               />
               {isSearching ? (
-                 <p className="text-xs text-muted-foreground font-bold uppercase">Buscando socio...</p>
-              ) : recipient ? (
-                <p className="text-xs font-black text-primary flex items-center gap-1 uppercase">
-                  <CheckCircle2 className="w-3 h-3" /> Socio: {recipient.name}
-                </p>
+                <p className="text-xs font-bold uppercase text-muted-foreground">Buscando socio...</p>
+              ) : foundUser ? (
+                <RecipientCard
+                  name={foundUser.name}
+                  publicName={foundUser.publicName}
+                  avatarUrl={foundUser.avatarUrl}
+                  status={foundUser.status}
+                  hasActiveProduct={foundUser.hasActiveProduct}
+                  isSelf={foundUser.isSelf}
+                />
               ) : recipientInput.length >= 8 ? (
-                 <p className="text-xs text-destructive font-black uppercase">Socio no encontrado</p>
+                <p className="flex items-center gap-1 text-xs font-black uppercase text-destructive">
+                  <UserCircle2 className="h-3 w-3" /> Socio no encontrado
+                </p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <Label className="font-black uppercase text-xs">Cantidad (Ŧ)</Label>
-              <Input 
-                type="number" 
-                placeholder="Ej. 15" 
+              <Label className="text-xs font-black uppercase">Cantidad (Ŧ)</Label>
+              <Input
+                type="number"
+                placeholder="Ej. 15"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  setSendError(null);
+                }}
                 className="bg-background text-2xl font-black"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="font-black uppercase text-xs">Concepto</Label>
-              <Input 
-                placeholder="¿Por qué pagas?" 
+              <Label className="text-xs font-black uppercase">Concepto</Label>
+              <Input
+                placeholder="¿Por qué pagas?"
                 value={concept}
-                onChange={(e) => setConcept(e.target.value)}
+                onChange={(e) => {
+                  setConcept(e.target.value);
+                  setSendError(null);
+                }}
                 className="bg-background"
                 required
               />
             </div>
 
-            <Button 
-              type="submit" 
+            {sendError && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-xs font-bold">{sendError}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
               variant="default"
-              className="w-full h-14 text-lg"
-              disabled={isSending || !recipient || sendTumin.isPending}
+              className="h-14 w-full text-lg"
+              disabled={isSending || sendTumin.isPending || !canTransfer}
             >
-              {(isSending || sendTumin.isPending) ? <Loader2 className="animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+              {isSending || sendTumin.isPending ? (
+                <Loader2 className="mr-2 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-5 w-5" />
+              )}
               Transferir
             </Button>
           </form>
         </CardContent>
       </Card>
-      
-      <p className="text-xs text-muted-foreground text-center px-4 font-bold uppercase tracking-wider">
-        Recuerda que para enviar Túmin, el destinatario debe tener al menos un producto publicado en el Bazar.
+
+      <p className="px-4 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        Recuerda que para enviar Túmin, el destinatario debe tener al menos un producto activo en el Bazar.
       </p>
     </div>
   );

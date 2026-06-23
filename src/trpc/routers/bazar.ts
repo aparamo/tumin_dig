@@ -2,7 +2,7 @@ import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib
 import bcrypt from "bcryptjs";
 import { db } from "../../db";
 import { products, users, ratings, transactions, productComments } from "../../db/schema";
-import { eq, and, ilike, sql, desc } from "drizzle-orm";
+import { eq, and, ilike, sql, desc, count } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
@@ -11,6 +11,17 @@ import {
   isMexicoCountry,
   MEXICO_COUNTRY,
 } from "../../lib/location";
+
+type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Re-calculates and persists productOk for a given seller based on live ACTIVO product count. */
+async function syncProductOk(tx: DrizzleTx, sellerId: string) {
+  const [{ val }] = await tx
+    .select({ val: count() })
+    .from(products)
+    .where(and(eq(products.sellerId, sellerId), eq(products.status, "ACTIVO")));
+  await tx.update(users).set({ productOk: Number(val) > 0 }).where(eq(users.id, sellerId));
+}
 
 function sellerDisplayNameSql() {
   return sql<string>`COALESCE(${users.publicName}, ${users.name})`;
@@ -445,33 +456,36 @@ export const bazarRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const [product] = await db
-        .select()
-        .from(products)
-        .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
-        .limit(1);
+      return await db.transaction(async (tx) => {
+        const [product] = await tx
+          .select()
+          .from(products)
+          .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
+          .limit(1);
 
-      if (!product) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
-      }
+        if (!product) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
+        }
 
-      const [updated] = await db
-        .update(products)
-        .set({
-          name: input.name,
-          description: input.description?.trim() ? input.description.trim() : null,
-          extraInfo: input.extraInfo?.trim() ? input.extraInfo.trim() : null,
-          priceMxn: input.priceMxn,
-          priceTumin: input.priceTumin,
-          categories: input.categories,
-          imgUrls: input.imgUrls,
-          status: input.status,
-          showInProfile: input.showInProfile,
-        })
-        .where(eq(products.id, input.id))
-        .returning();
+        const [updated] = await tx
+          .update(products)
+          .set({
+            name: input.name,
+            description: input.description?.trim() ? input.description.trim() : null,
+            extraInfo: input.extraInfo?.trim() ? input.extraInfo.trim() : null,
+            priceMxn: input.priceMxn,
+            priceTumin: input.priceTumin,
+            categories: input.categories,
+            imgUrls: input.imgUrls,
+            status: input.status,
+            showInProfile: input.showInProfile,
+          })
+          .where(eq(products.id, input.id))
+          .returning();
 
-      return updated;
+        await syncProductOk(tx, userId);
+        return updated;
+      });
     }),
 
   toggleShowInProfile: protectedProcedure
@@ -506,15 +520,18 @@ export const bazarRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const [deleted] = await db
-        .delete(products)
-        .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
-        .returning();
+      return await db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(products)
+          .where(and(eq(products.id, input.id), eq(products.sellerId, userId)))
+          .returning();
 
-      if (!deleted) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
-      }
-      return deleted;
+        if (!deleted) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
+        }
+        await syncProductOk(tx, userId);
+        return deleted;
+      });
     }),
 
   updateProductStatus: protectedProcedure
@@ -528,27 +545,29 @@ export const bazarRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const userRole = ctx.session.user.role;
 
-      const [product] = await db.select().from(products).where(eq(products.id, input.productId)).limit(1);
+      return await db.transaction(async (tx) => {
+        const [product] = await tx.select().from(products).where(eq(products.id, input.productId)).limit(1);
 
-      if (!product) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
-      }
+        if (!product) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
+        }
 
-      // Owner or Coordinator
-      const isOwner = product.sellerId === userId;
-      const isCoordinator = userRole === "COORDINADOR" || userRole === "COORDINADOR_LOCAL";
+        const isOwner = product.sellerId === userId;
+        const isCoordinator = userRole === "COORDINADOR" || userRole === "COORDINADOR_LOCAL";
 
-      if (!isOwner && !isCoordinator) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para actualizar este producto" });
-      }
+        if (!isOwner && !isCoordinator) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para actualizar este producto" });
+        }
 
-      const [updatedProduct] = await db
-        .update(products)
-        .set({ status: input.status })
-        .where(eq(products.id, input.productId))
-        .returning();
+        const [updatedProduct] = await tx
+          .update(products)
+          .set({ status: input.status })
+          .where(eq(products.id, input.productId))
+          .returning();
 
-      return updatedProduct;
+        await syncProductOk(tx, product.sellerId);
+        return updatedProduct;
+      });
     }),
 
   rateSeller: protectedProcedure
