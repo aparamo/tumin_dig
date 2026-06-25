@@ -22,7 +22,7 @@ export function Historial() {
           <div className="flex justify-center p-12"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
         ) : history && history.length > 0 ? (
           history.map((tx) => {
-            const isIngreso = tx.toId === session.user.id;
+            const isIngreso = tx.isIngreso;
             return (
               <StaggerItem key={tx.id}>
                 <Card>

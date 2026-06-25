@@ -27,12 +27,13 @@ export const walletRouter = createTRPCRouter({
 
   getHistory: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    return await db
+    const rows = await db
       .select()
       .from(transactions)
       .where(or(eq(transactions.fromId, userId), eq(transactions.toId, userId)))
       .orderBy(desc(transactions.createdAt))
       .limit(15);
+    return rows.map((tx) => ({ ...tx, isIngreso: tx.toId === userId }));
   }),
 
   sendTumin: rateLimitedProtectedProcedure

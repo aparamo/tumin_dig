@@ -190,9 +190,9 @@ export function Inicio() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-12 h-12 rounded-lg border-2 border-border flex items-center justify-center shadow-neo-sm",
-                      item.type === "TRANSFERENCIA" ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
+                      !item.isIngreso ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
                     )}>
-                      {item.type === "TRANSFERENCIA" ? 
+                      {!item.isIngreso ? 
                         <ArrowUpRight className="w-6 h-6 text-red-600" /> : 
                         <ArrowDownLeft className="w-6 h-6 text-green-600" />
                       }
@@ -208,9 +208,9 @@ export function Inicio() {
                   </div>
                   <div className={cn(
                     "font-black text-2xl tabular-nums tracking-tighter",
-                    item.type === "TRANSFERENCIA" ? "text-red-500" : "text-primary"
+                    !item.isIngreso ? "text-red-500" : "text-primary"
                   )}>
-                    {item.type === "TRANSFERENCIA" ? "-" : "+"}{item.amount} Ŧ
+                    {!item.isIngreso ? "-" : "+"}{item.amount} Ŧ
                   </div>
                 </div>
               </StaggerItem>
