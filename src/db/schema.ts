@@ -44,6 +44,8 @@ export const jobStatusEnum = pgEnum("job_status", [
 
 export const productStatusEnum = pgEnum("product_status", ["ACTIVO", "INACTIVO"]);
 
+export const passwordResetChannelEnum = pgEnum("password_reset_channel", ["EMAIL"]);
+
 export const users = pgTable("TUMIN_users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -98,6 +100,25 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   miningHistory: many(dailyMining),
   media: many(media),
   ads: many(ads),
+  passwordResets: many(passwordResets),
+}));
+
+export const passwordResets = pgTable("TUMIN_password_resets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  channel: passwordResetChannelEnum("channel").notNull(),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const passwordResetsRelations = relations(passwordResets, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResets.userId],
+    references: [users.id],
+  }),
 }));
 
 export const transactions = pgTable("TUMIN_transactions", {

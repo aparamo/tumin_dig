@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw, Mail } from "lucide-react";
 
 export default function SeguridadPage() {
   return (
@@ -35,6 +35,38 @@ export default function SeguridadPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Recuperación de NIP
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Si olvidaste tu NIP, puedes recuperarlo desde la pantalla de inicio de sesión con el enlace <strong>¿Olvidaste tu NIP?</strong>. El sistema te enviará un código de verificación de 6 dígitos que expira en <strong>10 minutos</strong>.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
+            <KeyRound className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Con teléfono registrado</h4>
+              <p className="text-sm text-foreground/70">
+                Recibirás el código por <strong>WhatsApp</strong> o, si no es posible, por <strong>SMS</strong> al número con el que te registraste.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
+            <Mail className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Solo con correo</h4>
+              <p className="text-sm text-foreground/70">
+                Si tu cuenta no tiene teléfono válido pero sí correo electrónico, el código llegará a tu <strong>email</strong> registrado.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Por seguridad, el sistema no indica si un teléfono o correo existe en la red. Si no recibes el código, verifica tus datos o contacta a tu coordinador.
+        </p>
       </section>
 
       <section className="space-y-6">

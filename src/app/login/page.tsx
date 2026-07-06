@@ -13,9 +13,19 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [nip, setNip] = useState("");
   const [error, setError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { status } = useSession();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("reset") === "1") {
+        setResetSuccess(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -93,6 +103,11 @@ export default function LoginPage() {
               />
               <p className="text-[9px] text-muted-foreground font-bold uppercase text-center">4 a 6 caracteres alfanuméricos</p>
             </div>
+            {resetSuccess && (
+              <p className="text-sm text-green-600 dark:text-green-400 font-bold text-center uppercase">
+                Tu NIP fue actualizado. Ya puedes iniciar sesión.
+              </p>
+            )}
             {error && <p className="text-sm text-destructive font-bold text-center uppercase">{error}</p>}
             <Button 
               type="submit" 
@@ -102,6 +117,14 @@ export default function LoginPage() {
             >
               {isLoading ? "Verificando..." : "Entrar"}
             </Button>
+            <div className="text-center mt-2">
+              <Link
+                href="/recuperar"
+                className="text-xs font-bold text-muted-foreground hover:text-foreground underline underline-offset-4 uppercase tracking-widest"
+              >
+                ¿Olvidaste tu NIP?
+              </Link>
+            </div>
           </form>
           <div className="mt-8 text-center text-sm font-medium">
             ¿No tienes cuenta?{" "}
