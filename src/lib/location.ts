@@ -251,14 +251,12 @@ export function formatEnrollmentDisplay(
 
 const enrollmentMethodSchema = z.enum(["REGION", "OTHER"]);
 
-const residenceFieldsSchema = z.object({
-  residenceCountry: z.string().trim().max(80).optional().nullable(),
-  residenceState: z.string().trim().max(80).optional().nullable(),
-  residenceCity: z.string().trim().max(120).optional().nullable(),
-  residencePostalCode: z.string().trim().max(24).optional().nullable(),
-});
-
-type ResidenceFieldsInput = z.infer<typeof residenceFieldsSchema>;
+type ResidenceFieldsInput = {
+  residenceCountry?: string | null;
+  residenceState?: string | null;
+  residenceCity?: string | null;
+  residencePostalCode?: string | null;
+};
 
 function refineResidence(
   data: ResidenceFieldsInput,

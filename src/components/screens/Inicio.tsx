@@ -3,62 +3,108 @@
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, UserCog, Search } from "lucide-react";
+import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, ShieldAlert, UserCog, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useFeedback } from "@/components/FeedbackProvider";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
+  const router = useRouter();
   const { data: session } = useSession();
+  const { notifySuccess, notifyError } = useFeedback();
   const utils = trpc.useUtils();
-  const isMiningRef = useRef(false);
-  const [, setUpdate] = useState(0); // For forcing re-render if needed, though isPending handles it
 
   const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL" || session?.user?.role === "COORDINADOR_GENERAL";
   
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = trpc.wallet.getBalance.useQuery();
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
   const { data: activeAds } = trpc.ads.getActiveAds.useQuery();
-  
+  const { data: rewardStatus } = trpc.audit.getAuditRewardStatus.useQuery(undefined, {
+    enabled: isCoordinator,
+  });
+
+  const showAuditBanner =
+    rewardStatus?.status === "NEEDS_ACTIVITY" ||
+    rewardStatus?.status === "NEEDS_PEER_VALIDATION" ||
+    rewardStatus?.status === "READY_TO_CLAIM";
+
+  const auditBanner =
+    rewardStatus?.status === "NEEDS_ACTIVITY"
+      ? {
+          title: "Auditoría mensual: registra actividad",
+          body: "Realiza al menos una acción de coordinación este mes para poder reclamar tu recompensa.",
+          href: "/coordinacion",
+        }
+      : rewardStatus?.status === "NEEDS_PEER_VALIDATION"
+        ? {
+            title: "Auditoría mensual: falta validación de un par",
+            body: "Ya tienes actividad. Pide a otro coordinador que te valide en Coordinación → Pares.",
+            href: "/coordinacion",
+          }
+        : {
+            title: "Puedes reclamar tu recompensa de 30 Ŧ",
+            body: "Un par ya validó tu trabajo. Finaliza la auditoría mensual en Auditoría.",
+            href: "/auditoria",
+          };
+
   const claimMining = trpc.mining.claimMining.useMutation({
     onSuccess: (data) => {
-      alert(`¡Felicidades! Ganaste ${data.reward} Ŧ\nRacha: ${data.streak} días.`);
+      notifySuccess(`¡Felicidades! Ganaste ${data.reward} Ŧ — Racha: ${data.streak} días.`);
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      notifyError(error.message);
     },
-    onSettled: () => {
-      isMiningRef.current = false;
-      setUpdate(v => v + 1);
-    }
   });
 
   const handleMining = () => {
-    if (isMiningRef.current || claimMining.isPending) return;
-    isMiningRef.current = true;
-    setUpdate(v => v + 1);
+    if (claimMining.isPending) return;
     claimMining.mutate();
   };
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
+      {isCoordinator && showAuditBanner && (
+        <div className="md:col-span-12">
+          <Link href={auditBanner.href} className="block">
+            <div className="rounded-xl overflow-hidden border-2 border-amber-500 bg-amber-500/10 p-4 shadow-neo-sm hover:bg-amber-500/15 transition-colors">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="w-6 h-6 text-amber-600 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-tight text-amber-700">
+                    {auditBanner.title}
+                  </p>
+                  <p className="text-xs font-bold text-amber-700/80">
+                    {auditBanner.body}
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" className="h-8 text-[10px] font-black uppercase">
+                  Revisar
+                </Button>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
+
       {activeAds && activeAds.length > 0 && (
         <div className="md:col-span-12">
-          <div className="relative w-full aspect-[21/9] md:aspect-[32/9] rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
+          <div className="relative w-full aspect-21/9 md:aspect-32/9 rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
             <Image 
               src={activeAds[0].imageUrl} 
               alt="Anuncio Comunitario" 
               fill 
               className="object-cover transition-transform group-hover:scale-105 duration-700" 
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent flex items-end p-6">
               <div className="text-white">
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Mes de anuncio gratis</div>
                 <div className="text-xl font-black uppercase">¡Descubre algo nuevo hoy!</div>
@@ -83,8 +129,24 @@ export function Inicio() {
             <CardTitle className="text-muted-foreground text-sm font-bold uppercase tracking-wider text-center border-none shadow-none bg-transparent p-0">Saldo Disponible</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            <div className="text-6xl font-black text-foreground mb-8 tabular-nums">
+            <div className="text-6xl font-black text-foreground mb-4 tabular-nums">
               {isLoadingBalance ? <Loader2 className="animate-spin inline" /> : `${balanceData?.balance ?? 0} Ŧ`}
+            </div>
+            <div className="mb-6">
+              {session?.user?.isVerified ? (
+                <Badge className="bg-green-100 text-green-700 border-green-200 font-black uppercase text-[10px]">
+                  <ShieldCheck className="w-3 h-3 mr-1" /> Socio verificado
+                </Badge>
+              ) : (
+                <div className="space-y-1">
+                  <Badge variant="secondary" className="font-black uppercase text-[10px]">
+                    Identidad pendiente de validar
+                  </Badge>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Máx. transferencia: 100 Ŧ hasta ser verificado.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-4 w-full">
               <Button 
@@ -98,9 +160,9 @@ export function Inicio() {
                 variant="secondary"
                 className="w-full h-12"
                 onClick={handleMining}
-                disabled={isMiningRef.current || claimMining.isPending}
+                disabled={claimMining.isPending}
               >
-                <Pickaxe className="w-5 h-5 mr-2" /> {(isMiningRef.current || claimMining.isPending) ? "Minando..." : "Minar"}
+                <Pickaxe className="w-5 h-5 mr-2" /> {claimMining.isPending ? "Minando..." : "Minar"}
               </Button>
             </div>
           </CardContent>
@@ -136,25 +198,25 @@ export function Inicio() {
           <div className="flex flex-col gap-4 mt-4">
             <h3 className="text-lg font-black uppercase tracking-tight px-2">Panel de Coordinación</h3>
             <div className="grid grid-cols-2 gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setCurrentScreen("coordinacion")}
+              <Button
+                variant="outline"
+                onClick={() => router.push("/coordinacion")}
                 className="h-20 flex flex-col gap-1 border-2 border-primary/20 hover:border-primary shadow-neo-sm"
               >
                 <ShieldCheck className="w-6 h-6 text-primary" />
                 <span className="text-[10px] font-black uppercase">Validar</span>
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setCurrentScreen("gestion-roles")}
+              <Button
+                variant="outline"
+                onClick={() => router.push("/gestion-socios")}
                 className="h-20 flex flex-col gap-1 border-2 border-purple-500/20 hover:border-purple-500 shadow-neo-sm"
               >
                 <UserCog className="w-6 h-6 text-purple-500" />
                 <span className="text-[10px] font-black uppercase">Roles</span>
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setCurrentScreen("auditoria")}
+              <Button
+                variant="outline"
+                onClick={() => router.push("/auditoria")}
                 className="h-20 flex flex-col gap-1 border-2 border-red-500/20 hover:border-red-500 shadow-neo-sm"
               >
                 <Search className="w-6 h-6 text-red-500" />

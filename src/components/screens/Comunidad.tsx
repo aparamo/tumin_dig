@@ -9,21 +9,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Users, Send } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useFeedback } from "@/components/FeedbackProvider";
 
 export function Comunidad() {
   const { setCurrentScreen } = useStore();
+  const { notifySuccess, notifyError } = useFeedback();
   const [description, setDescription] = useState("");
   const [minutes, setMinutes] = useState("");
 
   const requestJob = trpc.jobs.requestJob.useMutation({
     onSuccess: () => {
-      alert("Solicitud enviada a los coordinadores locales.");
+      notifySuccess("Solicitud enviada a los coordinadores locales.");
       setDescription("");
       setMinutes("");
       setCurrentScreen("inicio");
     },
     onError: (error) => {
-      alert(error.message);
+      notifyError(error.message);
     },
   });
 
@@ -34,7 +36,6 @@ export function Comunidad() {
     requestJob.mutate({
       description,
       minutes: parseInt(minutes),
-      amount: parseInt(minutes), // 1 minute = 1 Tumin
     });
   };
 

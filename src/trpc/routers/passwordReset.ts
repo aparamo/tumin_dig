@@ -68,8 +68,9 @@ export const passwordResetRouter = createTRPCRouter({
           const phoneE164 = toE164(user.phone);
           try {
             await sendPhoneOtp(phoneE164);
-          } catch {
+          } catch (err) {
             // Swallow provider errors — never reveal internal failures to the client
+            console.error("[passwordReset] sendPhoneOtp failed:", err);
           }
         } else if (user.email) {
           const code = generateOtpCode();
@@ -92,8 +93,9 @@ export const passwordResetRouter = createTRPCRouter({
 
           try {
             await sendPasswordResetEmail(user.email, code);
-          } catch {
+          } catch (err) {
             // Swallow provider errors — never reveal internal failures to the client
+            console.error("[passwordReset] sendPasswordResetEmail failed:", err);
           }
         }
       }

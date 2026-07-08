@@ -5,6 +5,8 @@ import { TRPCReactProvider } from "@/lib/trpc/react";
 import { SessionProvider } from "next-auth/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvidersWrapper } from "@/components/ThemeProvidersWrapper";
+import { FeedbackProvider } from "@/components/FeedbackProvider";
+import { SmartAdDialog } from "@/components/SmartAdDialog";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-heading",
@@ -36,9 +38,12 @@ export default function RootLayout({
         <SessionProvider>
           <TRPCReactProvider>
             <ThemeProvidersWrapper>
-              <TooltipProvider>
-                {children}
-              </TooltipProvider>
+              <FeedbackProvider>
+                <TooltipProvider>
+                  {children}
+                  <SmartAdDialog />
+                </TooltipProvider>
+              </FeedbackProvider>
             </ThemeProvidersWrapper>
           </TRPCReactProvider>
         </SessionProvider>

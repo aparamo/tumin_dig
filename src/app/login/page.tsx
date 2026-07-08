@@ -1,31 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [nip, setNip] = useState("");
   const [error, setError] = useState("");
-  const [resetSuccess, setResetSuccess] = useState(false);
+  const searchParams = useSearchParams();
+  const [resetSuccess] = useState(searchParams.get("reset") === "1");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { status } = useSession();
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("reset") === "1") {
-        setResetSuccess(true);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -80,9 +72,9 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="identifier" className="font-black uppercase text-xs">Correo o Teléfono</Label>
-              <Input 
-                id="identifier" 
-                placeholder="Ej. 9611234567" 
+              <Input
+                id="identifier"
+                placeholder="Ej. 9611234567"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 className="bg-background"
@@ -91,11 +83,11 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="nip" className="font-black uppercase text-xs">NIP de Seguridad</Label>
-              <Input 
-                id="nip" 
-                type="password" 
-                placeholder="****" 
-                maxLength={6} 
+              <Input
+                id="nip"
+                type="password"
+                placeholder="****"
+                maxLength={6}
                 className="text-center tracking-[0.5em] text-xl bg-background"
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
@@ -109,8 +101,8 @@ export default function LoginPage() {
               </p>
             )}
             {error && <p className="text-sm text-destructive font-bold text-center uppercase">{error}</p>}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="default"
               className="w-full h-14 text-lg"
               disabled={isLoading}
@@ -134,7 +126,7 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="fixed bottom-4 right-4 flex gap-4 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
         <Link href="/manual" className="hover:text-primary transition-colors">
           Guía completa
@@ -144,5 +136,19 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Cargando…</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Loader2, Plus, Trash2, Link as LinkIcon, Image as ImageIcon, 
-  Video, FileText, ExternalLink, HardDrive, ShieldCheck 
+  Loader2, Trash2, Link as LinkIcon, Image as ImageIcon, 
+  Video, ExternalLink, HardDrive 
 } from "lucide-react";
 import { UploadButton } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
+import { useFeedback } from "@/components/FeedbackProvider";
+import { useConfirm } from "@/hooks/use-confirm";
 
 const TIER_CONFIG = {
   NORMAL: { limit: 30 * 1024 * 1024, label: "Gratuito", color: "bg-slate-500" },
@@ -26,7 +28,9 @@ const TIER_CONFIG = {
 
 export function GestorMedios() {
   const utils = trpc.useUtils();
-  const { data: usage, isLoading: loadingUsage } = trpc.user.getMediaUsage.useQuery();
+  const { notifySuccess, notifyError } = useFeedback();
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { data: usage } = trpc.user.getMediaUsage.useQuery();
   const { data: mediaList, isLoading: loadingMedia } = trpc.user.listMedia.useQuery();
   const deleteMutation = trpc.user.deleteMedia.useMutation({
     onSuccess: () => {
@@ -65,6 +69,7 @@ export function GestorMedios() {
 
   return (
     <div className="flex flex-col gap-8 p-4 pb-12">
+      <ConfirmDialog />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-2">
@@ -106,11 +111,11 @@ export function GestorMedios() {
                 <UploadButton
                   endpoint="userMedia"
                   onClientUploadComplete={() => {
-                    alert("Archivo subido con éxito");
+                    notifySuccess("Archivo subido con éxito");
                     utils.user.listMedia.invalidate();
                     utils.user.getMediaUsage.invalidate();
                   }}
-                  onUploadError={(e) => alert(e.message)}
+                  onUploadError={(e) => notifyError(e.message)}
                   content={{
                     button({ ready }) {
                       if (ready) return "Seleccionar Archivo";
@@ -189,7 +194,15 @@ export function GestorMedios() {
                           size="icon" 
                           variant="destructive" 
                           className="h-10 w-10" 
-                          onClick={() => { if(confirm("¿Eliminar este archivo?")) deleteMutation.mutate({ id: m.id }) }}
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Eliminar archivo",
+                              description: `¿Eliminar "${m.name}" permanentemente?`,
+                              confirmText: "Eliminar",
+                              variant: "destructive",
+                            });
+                            if (ok) deleteMutation.mutate({ id: m.id });
+                          }}
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="w-5 h-5" />

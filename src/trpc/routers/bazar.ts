@@ -1,5 +1,9 @@
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../lib/trpc/server";
-import bcrypt from "bcryptjs";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+  coordinatorProcedure,
+} from "../../lib/trpc/server";
 import { db } from "../../db";
 import { products, users, ratings, transactions, productComments } from "../../db/schema";
 import { eq, and, ilike, sql, desc, count } from "drizzle-orm";
@@ -11,6 +15,9 @@ import {
   isMexicoCountry,
   MEXICO_COUNTRY,
 } from "../../lib/location";
+import { isInJurisdiction, type UserRole } from "../../lib/trpc/authorization";
+import { ensureSystemUser } from "../../lib/system-user";
+import { logAdminAction } from "../../lib/admin-log";
 
 type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -409,19 +416,7 @@ export const bazarRouter = createTRPCRouter({
           .returning();
 
         if (userBefore && !userBefore.productOk) {
-          // Ensure SYSTEM user exists — always CONGELADO so it can never log in
-          await tx
-            .insert(users)
-            .values({
-              id: "SYSTEM",
-              name: "Sistema Tumin",
-              phone: "SYSTEM_INTERNAL",
-              nip: await bcrypt.hash(process.env.SYSTEM_NIP_SECRET ?? "unset-rotate-me", 10),
-              region: "SISTEMA",
-              status: "CONGELADO",
-              role: "COORDINADOR",
-            })
-            .onConflictDoNothing({ target: users.id });
+          await ensureSystemUser(tx);
 
           // Give Welcome Bonus: 25 (Activation) + 5 (First product) = 30 Tumin
           await tx.insert(transactions).values({
@@ -543,7 +538,7 @@ export const bazarRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const userRole = ctx.session.user.role;
+      const userRole = ctx.session.user.role as UserRole;
 
       return await db.transaction(async (tx) => {
         const [product] = await tx.select().from(products).where(eq(products.id, input.productId)).limit(1);
@@ -553,10 +548,16 @@ export const bazarRouter = createTRPCRouter({
         }
 
         const isOwner = product.sellerId === userId;
-        const isCoordinator = userRole === "COORDINADOR" || userRole === "COORDINADOR_LOCAL";
 
-        if (!isOwner && !isCoordinator) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para actualizar este producto" });
+        if (!isOwner) {
+          const [seller] = await tx.select().from(users).where(eq(users.id, product.sellerId)).limit(1);
+          if (!seller || !isInJurisdiction({ role: userRole, region: ctx.session.user.region }, seller)) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para actualizar este producto" });
+          }
+          // Coordinators can only deactivate products that do not belong to them.
+          if (input.status === "ACTIVO") {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes desactivar productos ajenos" });
+          }
         }
 
         const [updatedProduct] = await tx
@@ -567,6 +568,39 @@ export const bazarRouter = createTRPCRouter({
 
         await syncProductOk(tx, product.sellerId);
         return updatedProduct;
+      });
+    }),
+
+  deactivateProduct: coordinatorProcedure
+    .input(z.object({ productId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const userRole = ctx.session.user.role as UserRole;
+      const callerId = ctx.session.user.id;
+
+      return await db.transaction(async (tx) => {
+        const [product] = await tx.select().from(products).where(eq(products.id, input.productId)).limit(1);
+        if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
+
+        const [seller] = await tx.select().from(users).where(eq(users.id, product.sellerId)).limit(1);
+        if (!seller) throw new TRPCError({ code: "NOT_FOUND", message: "Vendedor no encontrado" });
+
+        if (!isInJurisdiction({ role: userRole, region: ctx.session.user.region }, seller)) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Producto fuera de tu jurisdicción" });
+        }
+
+        await tx.update(products).set({ status: "INACTIVO" }).where(eq(products.id, input.productId));
+
+        await syncProductOk(tx, product.sellerId);
+
+        await logAdminAction(tx, {
+          actorId: callerId,
+          targetUserId: product.sellerId,
+          targetProductId: product.id,
+          action: "DEACTIVATE_PRODUCT",
+          metadata: { productName: product.name },
+        });
+
+        return { success: true };
       });
     }),
 

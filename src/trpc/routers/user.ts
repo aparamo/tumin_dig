@@ -2,6 +2,7 @@ import {
   createTRPCRouter,
   publicProcedure,
   protectedProcedure,
+  regionalCoordinatorProcedure,
   rateLimitedPublicProcedure,
 } from "../../lib/trpc/server";
 import { z } from "zod";
@@ -21,6 +22,15 @@ import {
   ENROLLMENT_OTHER,
   type EnrollmentMethod,
 } from "../../lib/location";
+import {
+  buildJurisdictionCondition,
+  assertCanUpdateUserRole,
+  assertNotSelf,
+  isInJurisdiction,
+  isGlobalCoordinator,
+  type UserRole,
+} from "../../lib/trpc/authorization";
+import { logAdminAction } from "../../lib/admin-log";
 
 export const userRouter = createTRPCRouter({
   register: rateLimitedPublicProcedure
@@ -111,12 +121,7 @@ export const userRouter = createTRPCRouter({
           status: users.status,
         })
         .from(users)
-        .where(
-          or(
-            eq(users.phone, input.dato),
-            eq(users.email, input.dato)
-          )
-        )
+        .where(or(eq(users.phone, input.dato), eq(users.email, input.dato)))
         .limit(1);
 
       if (!user) return null;
@@ -184,15 +189,14 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Perfil no disponible" });
       }
 
-      const publicLocation =
-        u.showRegion
-          ? formatPublicLocation({
-              residenceCountry: u.residenceCountry,
-              residenceState: u.residenceState,
-              residenceCity: u.residenceCity,
-              residencePostalCode: u.residencePostalCode,
-            })
-          : null;
+      const publicLocation = u.showRegion
+        ? formatPublicLocation({
+            residenceCountry: u.residenceCountry,
+            residenceState: u.residenceState,
+            residenceCity: u.residenceCity,
+            residencePostalCode: u.residencePostalCode,
+          })
+        : null;
 
       return {
         id: u.id,
@@ -248,9 +252,7 @@ export const userRouter = createTRPCRouter({
         patch.enrollmentMethod = method;
         patch.region = resolveEnrollmentRegionForStorage(regionInput, method);
         patch.enrollmentMethodOther =
-          method === "OTHER"
-            ? input.enrollmentMethodOther?.trim() || null
-            : null;
+          method === "OTHER" ? input.enrollmentMethodOther?.trim() || null : null;
       } else if (input.enrollmentMethodOther !== undefined && current.enrollmentMethod === "OTHER") {
         patch.enrollmentMethodOther = input.enrollmentMethodOther?.trim() || null;
       }
@@ -321,11 +323,13 @@ export const userRouter = createTRPCRouter({
     }),
 
   updateProfile: protectedProcedure
-    .input(z.object({
-      name: z.string().min(2).optional(),
-      email: z.string().email().optional(),
-      phone: z.string().min(10).optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(2).optional(),
+        email: z.string().email().optional(),
+        phone: z.string().min(10).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       await db.update(users).set(input).where(eq(users.id, ctx.session.user.id));
       return { success: true };
@@ -335,10 +339,7 @@ export const userRouter = createTRPCRouter({
     .input(z.object({ nip: z.string().min(4).max(6) }))
     .mutation(async ({ ctx, input }) => {
       const hashedNip = await bcrypt.hash(input.nip, 10);
-      await db
-        .update(users)
-        .set({ nip: hashedNip })
-        .where(eq(users.id, ctx.session.user.id));
+      await db.update(users).set({ nip: hashedNip }).where(eq(users.id, ctx.session.user.id));
       return { success: true };
     }),
 
@@ -346,7 +347,7 @@ export const userRouter = createTRPCRouter({
     const userId = ctx.session.user.id;
     const [user] = await db.select({ tier: users.accountTier }).from(users).where(eq(users.id, userId)).limit(1);
     const [usage] = await db.select({ total: sql<number>`sum(${media.sizeBytes})` }).from(media).where(eq(media.userId, userId));
-    
+
     return {
       tier: user?.tier || "NORMAL",
       usedBytes: Number(usage?.total || 0),
@@ -365,10 +366,12 @@ export const userRouter = createTRPCRouter({
     }),
 
   addExternalLink: protectedProcedure
-    .input(z.object({
-      url: z.string().url(),
-      name: z.string().min(1),
-    }))
+    .input(
+      z.object({
+        url: z.string().url(),
+        name: z.string().min(1),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       await db.insert(media).values({
         userId: ctx.session.user.id,
@@ -380,58 +383,67 @@ export const userRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getUsersByRegion: protectedProcedure.query(async ({ ctx }) => {
-    const userRole = ctx.session.user.role;
-    if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL") {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
-    }
+  getUsersByRegion: regionalCoordinatorProcedure.query(async ({ ctx }) => {
+    const jurisdiction = buildJurisdictionCondition({
+      role: ctx.session.user.role as UserRole,
+      region: ctx.session.user.region,
+    });
 
     return await db
       .select({ id: users.id, name: users.name, role: users.role, region: users.region })
       .from(users)
-      .where(eq(users.region, ctx.session.user.region));
+      .where(jurisdiction);
   }),
 
-  updateRole: protectedProcedure
-    .input(z.object({ userId: z.string(), role: z.enum(["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR", "COORDINADOR_GENERAL"]) }))
+  updateRole: regionalCoordinatorProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        role: z.enum(["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR", "COORDINADOR_GENERAL"]),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      const myRole = ctx.session.user.role;
-      const isGlobal = myRole === "COORDINADOR_GENERAL";
-      if (myRole !== "COORDINADOR" && myRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "No tienes permiso para cambiar roles" });
+      const callerRole = ctx.session.user.role as UserRole;
+      const callerId = ctx.session.user.id;
+
+      assertNotSelf(callerId, input.userId);
+
+      const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+
+      assertCanUpdateUserRole(callerRole, targetUser.role as UserRole, input.role);
+
+      if (!isInJurisdiction({ role: callerRole, region: ctx.session.user.region }, targetUser)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes cambiar roles en tu jurisdicción" });
       }
 
-      // If COORDINADOR_LOCAL or COORDINADOR (regional), check if target user is in the same region
-      if (!isGlobal) {
-        const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
-        if (!targetUser || targetUser.region !== ctx.session.user.region) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes cambiar roles en tu región" });
-        }
-      }
+      await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
 
-      await db
-        .update(users)
-        .set({ role: input.role })
-        .where(eq(users.id, input.userId));
-      
+      await logAdminAction(db, {
+        actorId: callerId,
+        targetUserId: input.userId,
+        action: "UPDATE_ROLE",
+        metadata: { newRole: input.role, previousRole: targetUser.role },
+      });
+
       return { success: true };
     }),
 
-  getUnverifiedUsers: protectedProcedure
+  getUnverifiedUsers: regionalCoordinatorProcedure
     .input(z.object({ region: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
-      }
+      const callerRole = ctx.session.user.role as UserRole;
+      const isGlobal = isGlobalCoordinator(callerRole);
 
-      const targetRegion = isGlobal ? (input?.region && input.region !== "Todas" ? input.region : null) : ctx.session.user.region;
+      const targetRegion = isGlobal
+        ? input?.region && input.region !== "Todas"
+          ? input.region
+          : null
+        : ctx.session.user.region;
 
-      const condition = and(
-        eq(users.isVerified, false),
-        targetRegion ? eq(users.region, targetRegion) : undefined
-      );
+      const jurisdiction = buildJurisdictionCondition({ role: callerRole, region: targetRegion ?? ctx.session.user.region });
+
+      const condition = and(eq(users.isVerified, false), jurisdiction);
 
       return await db
         .select({
@@ -454,66 +466,74 @@ export const userRouter = createTRPCRouter({
         .orderBy(desc(users.createdAt));
     }),
 
-  verifyUserIdentity: protectedProcedure
+  verifyUserIdentity: regionalCoordinatorProcedure
     .input(z.object({ userId: z.string(), verified: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      const callerRole = ctx.session.user.role as UserRole;
+      const callerId = ctx.session.user.id;
+
+      assertNotSelf(callerId, input.userId);
+
+      const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+
+      if (!isInJurisdiction({ role: callerRole, region: ctx.session.user.region }, targetUser)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes verificar socios de tu jurisdicción" });
       }
 
-      // Regional boundary check — coordinators can only verify users in their region
-      if (!isGlobal) {
-        const [targetUser] = await db
-          .select({ region: users.region })
-          .from(users)
-          .where(eq(users.id, input.userId))
-          .limit(1);
-        if (!targetUser || targetUser.region !== ctx.session.user.region) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes verificar socios de tu región" });
-        }
-      }
+      await db.update(users).set({ isVerified: input.verified }).where(eq(users.id, input.userId));
 
-      await db
-        .update(users)
-        .set({ isVerified: input.verified })
-        .where(eq(users.id, input.userId));
-      
+      await logAdminAction(db, {
+        actorId: callerId,
+        targetUserId: input.userId,
+        action: input.verified ? "VERIFY_IDENTITY" : "UNVERIFY_IDENTITY",
+        metadata: { verified: input.verified },
+      });
+
       return { success: true };
     }),
 
-  getUsersAdvanced: protectedProcedure
-    .input(z.object({
-      search: z.string().optional(),
-      roleFilter: z.string().optional(),
-      statusFilter: z.string().optional(),
-      regionFilter: z.string().optional(),
-      sortBy: z.enum(["name_asc", "name_desc", "date_asc", "date_desc"]).default("date_desc"),
-      cursor: z.number().default(0),
-      limit: z.number().min(1).max(100).default(20),
-    }))
+  getUsersAdvanced: regionalCoordinatorProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        roleFilter: z.string().optional(),
+        statusFilter: z.string().optional(),
+        regionFilter: z.string().optional(),
+        sortBy: z.enum(["name_asc", "name_desc", "date_asc", "date_desc"]).default("date_desc"),
+        cursor: z.number().default(0),
+        limit: z.number().min(1).max(100).default(20),
+      })
+    )
     .query(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
-      }
+      const callerRole = ctx.session.user.role as UserRole;
+      const isGlobal = isGlobalCoordinator(callerRole);
 
-      const targetRegion = isGlobal ? (input.regionFilter && input.regionFilter !== "Todas" ? input.regionFilter : null) : ctx.session.user.region;
+      const targetRegion = isGlobal
+        ? input.regionFilter && input.regionFilter !== "Todas"
+          ? input.regionFilter
+          : null
+        : ctx.session.user.region;
 
       const conditions = [];
-      if (targetRegion) conditions.push(eq(users.region, targetRegion));
-      if (input.search) {
-        conditions.push(or(
-          ilike(users.name, `%${input.search}%`),
-          ilike(users.phone, `%${input.search}%`),
-          ilike(users.email, `%${input.search}%`)
-        ));
+      if (!isGlobal && targetRegion) {
+        conditions.push(buildJurisdictionCondition({ role: callerRole, region: targetRegion })!);
       }
-      if (input.roleFilter && input.roleFilter !== "Todos") conditions.push(eq(users.role, input.roleFilter as any));
-      if (input.statusFilter && input.statusFilter !== "Todos") conditions.push(eq(users.status, input.statusFilter as any));
+      if (input.search) {
+        conditions.push(
+          or(
+            ilike(users.name, `%${input.search}%`),
+            ilike(users.phone, `%${input.search}%`),
+            ilike(users.email, `%${input.search}%`)
+          )
+        );
+      }
+      if (input.roleFilter && input.roleFilter !== "Todos") {
+        conditions.push(eq(users.role, input.roleFilter as UserRole));
+      }
+      if (input.statusFilter && input.statusFilter !== "Todos") {
+        conditions.push(eq(users.status, input.statusFilter as "ACTIVO" | "CONGELADO"));
+      }
 
       const orderBys = [];
       if (input.sortBy === "name_asc") orderBys.push(sql`${users.name} ASC`);
@@ -553,5 +573,32 @@ export const userRouter = createTRPCRouter({
         items: results,
         nextCursor,
       };
+    }),
+
+  getRegionalSupportContact: publicProcedure
+    .input(z.object({ region: z.string(), state: z.string().optional() }))
+    .query(async ({ input }) => {
+      const jurisdictionConditions = [eq(users.region, input.region)];
+      if (input.state) {
+        jurisdictionConditions.push(eq(users.residenceState, input.state));
+      }
+
+      const contact = await db
+        .select({ name: users.name, phone: users.phone })
+        .from(users)
+        .where(
+          and(
+            eq(users.status, "ACTIVO"),
+            or(...jurisdictionConditions),
+            or(
+              eq(users.role, "COORDINADOR"),
+              eq(users.role, "COORDINADOR_LOCAL"),
+              eq(users.role, "COORDINADOR_GENERAL")
+            )
+          )
+        )
+        .orderBy(sql`RANDOM()`)
+        .limit(1);
+      return contact[0] ?? null;
     }),
 });

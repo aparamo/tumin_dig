@@ -291,3 +291,75 @@ export const adsRelations = relations(ads, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const adminActionEnum = pgEnum("admin_action", [
+  "FREEZE",
+  "UNFREEZE",
+  "VERIFY_IDENTITY",
+  "UNVERIFY_IDENTITY",
+  "VERIFY_JOB",
+  "REJECT_JOB",
+  "APPROVE_AD",
+  "REJECT_AD",
+  "CREATE_SMART_AD",
+  "DELETE_SMART_AD",
+  "UPDATE_ROLE",
+  "DEACTIVATE_PRODUCT",
+  "CLAIM_AUDIT_REWARD",
+  "VALIDATE_AUDITOR",
+]);
+
+export const adminActionsLog = pgTable("TUMIN_admin_actions_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: text("actor_id")
+    .references(() => users.id)
+    .notNull(),
+  targetUserId: text("target_user_id").references(() => users.id),
+  targetProductId: uuid("target_product_id").references(() => products.id),
+  targetAdId: uuid("target_ad_id").references(() => ads.id),
+  action: adminActionEnum("action").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const adminActionsLogRelations = relations(adminActionsLog, ({ one }) => ({
+  actor: one(users, {
+    fields: [adminActionsLog.actorId],
+    references: [users.id],
+  }),
+  targetUser: one(users, {
+    fields: [adminActionsLog.targetUserId],
+    references: [users.id],
+  }),
+  targetProduct: one(products, {
+    fields: [adminActionsLog.targetProductId],
+    references: [products.id],
+  }),
+  targetAd: one(ads, {
+    fields: [adminActionsLog.targetAdId],
+    references: [ads.id],
+  }),
+}));
+
+export const smartAds = pgTable("TUMIN_smart_ads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  body: text("body"),
+  imageUrl: text("image_url"),
+  linkUrl: text("link_url"),
+  targetRegion: text("target_region"),
+  targetState: text("target_state"),
+  activeFrom: timestamp("active_from").defaultNow().notNull(),
+  activeUntil: timestamp("active_until"),
+  createdBy: text("created_by")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const smartAdsRelations = relations(smartAds, ({ one }) => ({
+  creator: one(users, {
+    fields: [smartAds.createdBy],
+    references: [users.id],
+  }),
+}));

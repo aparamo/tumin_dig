@@ -21,6 +21,7 @@ import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 import { MEXICO_STATES } from "@/lib/location";
+import { useFeedback } from "@/components/FeedbackProvider";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Alimentos": Utensils,
@@ -41,6 +42,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 export function Bazar() {
   const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
+  const { notifyError } = useFeedback();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [locationState, setLocationState] = useState("Todas");
@@ -259,7 +261,7 @@ export function Bazar() {
                         onClick={() => {
                           const sellerPhone = item.seller.phone;
                           if (!sellerPhone) {
-                            alert("Este socio no ha habilitado el contacto por WhatsApp.");
+                            notifyError("Este socio no ha habilitado el contacto por WhatsApp.");
                             return;
                           }
                           const phone = sellerPhone.replace(/\D/g, "");

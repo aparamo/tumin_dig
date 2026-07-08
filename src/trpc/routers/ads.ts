@@ -1,9 +1,20 @@
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../../lib/trpc/server";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  protectedProcedure,
+  coordinatorProcedure,
+  regionalCoordinatorProcedure,
+} from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
 import { ads, users } from "../../db/schema";
 import { eq, and, desc, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import {
+  buildJurisdictionCondition,
+  isInJurisdiction,
+  type UserRole,
+} from "../../lib/trpc/authorization";
 
 export const adsRouter = createTRPCRouter({
   createAd: protectedProcedure
@@ -17,20 +28,26 @@ export const adsRouter = createTRPCRouter({
       }).returning();
     }),
 
-  getPendingAds: protectedProcedure
+  getPendingAds: regionalCoordinatorProcedure
     .input(z.object({ region: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
-      }
+      const userRole = ctx.session.user.role as UserRole;
+      const isGlobal = userRole === "COORDINADOR_GENERAL" || userRole === "COORDINADOR";
 
-      const targetRegion = isGlobal ? (input?.region && input.region !== "Todas" ? input.region : null) : ctx.session.user.region;
+      const targetRegion = isGlobal
+        ? input?.region && input.region !== "Todas"
+          ? input.region
+          : null
+        : ctx.session.user.region;
+
+      const jurisdiction = buildJurisdictionCondition({
+        role: userRole,
+        region: targetRegion ?? ctx.session.user.region,
+      });
 
       const condition = and(
         eq(ads.status, "PENDIENTE"),
-        targetRegion ? eq(users.region, targetRegion) : undefined
+        jurisdiction
       );
 
       return await db
@@ -47,26 +64,26 @@ export const adsRouter = createTRPCRouter({
         .orderBy(desc(ads.createdAt));
     }),
 
-  approveAd: protectedProcedure
+  approveAd: coordinatorProcedure
     .input(z.object({ adId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      const userRole = ctx.session.user.role as UserRole;
+      const userRegion = ctx.session.user.region;
+      const isGlobal = userRole === "COORDINADOR_GENERAL" || userRole === "COORDINADOR";
+
+      const [ad] = await db
+        .select({ owner: users })
+        .from(ads)
+        .innerJoin(users, eq(ads.userId, users.id))
+        .where(eq(ads.id, input.adId))
+        .limit(1);
+
+      if (!ad) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Anuncio no encontrado" });
       }
 
-      // Regional boundary check — coordinators can only approve ads from their region
-      if (!isGlobal) {
-        const [ad] = await db
-          .select({ ownerRegion: users.region })
-          .from(ads)
-          .innerJoin(users, eq(ads.userId, users.id))
-          .where(eq(ads.id, input.adId))
-          .limit(1);
-        if (!ad || ad.ownerRegion !== ctx.session.user.region) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu región" });
-        }
+      if (!isGlobal && !isInJurisdiction({ role: userRole, region: userRegion }, ad.owner)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu jurisdicción" });
       }
 
       const expiresAt = new Date();
@@ -79,26 +96,26 @@ export const adsRouter = createTRPCRouter({
         .returning({ id: ads.id, status: ads.status, expiresAt: ads.expiresAt });
     }),
 
-  rejectAd: protectedProcedure
+  rejectAd: coordinatorProcedure
     .input(z.object({ adId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const userRole = ctx.session.user.role;
-      const isGlobal = userRole === "COORDINADOR_GENERAL";
-      if (userRole !== "COORDINADOR" && userRole !== "COORDINADOR_LOCAL" && !isGlobal) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Acceso restringido" });
+      const userRole = ctx.session.user.role as UserRole;
+      const userRegion = ctx.session.user.region;
+      const isGlobal = userRole === "COORDINADOR_GENERAL" || userRole === "COORDINADOR";
+
+      const [ad] = await db
+        .select({ owner: users })
+        .from(ads)
+        .innerJoin(users, eq(ads.userId, users.id))
+        .where(eq(ads.id, input.adId))
+        .limit(1);
+
+      if (!ad) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Anuncio no encontrado" });
       }
 
-      // Regional boundary check — coordinators can only reject ads from their region
-      if (!isGlobal) {
-        const [ad] = await db
-          .select({ ownerRegion: users.region })
-          .from(ads)
-          .innerJoin(users, eq(ads.userId, users.id))
-          .where(eq(ads.id, input.adId))
-          .limit(1);
-        if (!ad || ad.ownerRegion !== ctx.session.user.region) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu región" });
-        }
+      if (!isGlobal && !isInJurisdiction({ role: userRole, region: userRegion }, ad.owner)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes gestionar anuncios de tu jurisdicción" });
       }
 
       return await db

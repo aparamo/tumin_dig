@@ -2,9 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "./db";
 import { users } from "./db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { JWT } from "next-auth/jwt";
+import { z } from "zod";
+import "next-auth/jwt";
 
 declare module "next-auth" {
   interface User {
@@ -14,6 +15,7 @@ declare module "next-auth" {
     region: string;
     residenceState?: string | null;
     residenceCountry?: string | null;
+    isVerified: boolean;
   }
   interface Session {
     user: {
@@ -25,6 +27,7 @@ declare module "next-auth" {
       region: string;
       residenceState?: string | null;
       residenceCountry?: string | null;
+      isVerified: boolean;
     };
   }
 }
@@ -36,6 +39,7 @@ declare module "next-auth/jwt" {
     region: string;
     residenceState?: string | null;
     residenceCountry?: string | null;
+    isVerified: boolean;
   }
 }
 
@@ -47,17 +51,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         nip: { label: "NIP", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.identifier || !credentials?.nip) return null;
+        const parsed = z
+          .object({
+            identifier: z.string().min(1),
+            nip: z.string().min(1),
+          })
+          .safeParse(credentials);
+
+        if (!parsed.success) return null;
+
+        const { identifier, nip } = parsed.data;
 
         const [user] = await db
           .select()
           .from(users)
-          .where(
-            or(
-              eq(users.phone, credentials.identifier as string),
-              eq(users.email, credentials.identifier as string)
-            )
-          )
+          .where(or(eq(users.phone, identifier), eq(users.email, identifier)))
           .limit(1);
 
         if (!user) return null;
@@ -67,9 +75,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Block frozen accounts
+        // Block frozen accounts and include a regional support contact when available
         if (user.status === "CONGELADO") {
-          throw new Error("Tu cuenta está suspendida. Contacta a tu coordinador.");
+          const jurisdictionConditions = [eq(users.region, user.region)];
+          if (user.residenceState) {
+            jurisdictionConditions.push(eq(users.residenceState, user.residenceState));
+          }
+
+          const contacts = await db
+            .select({ phone: users.phone, name: users.name })
+            .from(users)
+            .where(
+              and(
+                eq(users.status, "ACTIVO"),
+                or(...jurisdictionConditions),
+                or(
+                  eq(users.role, "COORDINADOR"),
+                  eq(users.role, "COORDINADOR_LOCAL"),
+                  eq(users.role, "COORDINADOR_GENERAL")
+                )
+              )
+            )
+            .orderBy(sql`RANDOM()`)
+            .limit(2);
+
+          const contactInfo =
+            contacts.length > 0
+              ? ` Contacta a tus Bantúmines: ${contacts.map((c) => `${c.name} ${c.phone}`).join(" / ")}`
+              : "";
+          throw new Error(`Tu cuenta está suspendida.${contactInfo}`);
         }
 
         // Security check: Lockout
@@ -77,10 +111,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error(`Cuenta bloqueada temporalmente hasta ${user.lockedUntil.toLocaleString()}.`);
         }
 
-        const isNipValid = await bcrypt.compare(
-          credentials.nip as string,
-          user.nip
-        );
+        const isNipValid = await bcrypt.compare(nip, user.nip);
 
         if (!isNipValid) {
           const attempts = user.failedLoginAttempts + 1;
@@ -113,6 +144,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           region: user.region,
           residenceState: user.residenceState,
           residenceCountry: user.residenceCountry,
+          isVerified: user.isVerified,
         };
       },
     }),
@@ -125,6 +157,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.region = user.region;
         token.residenceState = user.residenceState ?? null;
         token.residenceCountry = user.residenceCountry ?? null;
+        token.isVerified = user.isVerified;
       }
       return token;
     },
@@ -135,6 +168,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.region = token.region as string;
         session.user.residenceState = (token.residenceState as string | null) ?? null;
         session.user.residenceCountry = (token.residenceCountry as string | null) ?? null;
+        session.user.isVerified = token.isVerified as boolean;
       }
       return session;
     },

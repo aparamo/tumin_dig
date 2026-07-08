@@ -18,6 +18,8 @@ import { UploadButton } from "@/lib/uploadthing";
 import type { InferSelectModel } from "drizzle-orm";
 import { products } from "@/db/schema";
 import { useStore } from "@/lib/store";
+import { useFeedback } from "@/components/FeedbackProvider";
+import { useConfirm } from "@/hooks/use-confirm";
 
 type ProductRow = InferSelectModel<typeof products>;
 
@@ -36,6 +38,8 @@ type ProductForm = {
 
 export function GestionProductos() {
   const utils = trpc.useUtils();
+  const { notifySuccess, notifyError } = useFeedback();
+  const { confirm, ConfirmDialog } = useConfirm();
   const openGestionProductCreate = useStore((s) => s.openGestionProductCreate);
   const setOpenGestionProductCreate = useStore((s) => s.setOpenGestionProductCreate);
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
@@ -47,30 +51,30 @@ export function GestionProductos() {
 
   const createMutation = trpc.bazar.createProduct.useMutation({
     onSuccess: () => {
-      alert("Producto creado exitosamente");
+      notifySuccess("Producto creado exitosamente");
       setIsModalOpen(false);
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const updateMutation = trpc.bazar.updateProduct.useMutation({
     onSuccess: () => {
-      alert("Producto actualizado");
+      notifySuccess("Producto actualizado");
       setIsModalOpen(false);
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const deleteMutation = trpc.bazar.deleteProduct.useMutation({
     onSuccess: () => {
-      alert("Producto eliminado");
+      notifySuccess("Producto eliminado");
       utils.bazar.getMyProducts.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const toggleShowInProfileMutation = trpc.bazar.toggleShowInProfile.useMutation({
@@ -78,7 +82,7 @@ export function GestionProductos() {
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const categories = [
@@ -133,13 +137,13 @@ export function GestionProductos() {
     if (createMutation.isPending || updateMutation.isPending || !editingProduct) return;
 
     if (!editingProduct.description.trim()) {
-      alert("La descripción es obligatoria para publicar o guardar desde este formulario.");
+      notifyError("La descripción es obligatoria para publicar o guardar desde este formulario.");
       return;
     }
 
     const total = editingProduct.priceMxn + editingProduct.priceTumin;
     if (editingProduct.priceTumin < total * 0.1) {
-      alert("El precio en Túmin debe ser al menos el 10% del total.");
+      notifyError("El precio en Túmin debe ser al menos el 10% del total.");
       return;
     }
 
@@ -180,7 +184,7 @@ export function GestionProductos() {
       });
       setNewUrl("");
     } catch {
-      alert("URL inválida. Debe empezar con http:// o https://");
+      notifyError("URL inválida. Debe empezar con http:// o https://");
     }
   };
 
@@ -205,6 +209,7 @@ export function GestionProductos() {
 
   return (
     <div className="flex flex-col gap-8 p-4 pb-12">
+      <ConfirmDialog />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter">Mis Productos</h1>
@@ -229,8 +234,14 @@ export function GestionProductos() {
                       <Button size="icon" variant="outline" className="h-8 w-8 border-2" onClick={() => handleEdit(p)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button size="icon" variant="destructive" className="h-8 w-8 border-2" onClick={() => {
-                        if(confirm("¿Eliminar este producto?")) deleteMutation.mutate({ id: p.id });
+                      <Button size="icon" variant="destructive" className="h-8 w-8 border-2" onClick={async () => {
+                        const ok = await confirm({
+                          title: "Eliminar producto",
+                          description: `¿Eliminar "${p.name}" permanentemente?`,
+                          confirmText: "Eliminar",
+                          variant: "destructive",
+                        });
+                        if (ok) deleteMutation.mutate({ id: p.id });
                       }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -413,7 +424,7 @@ export function GestionProductos() {
                         utils.user.listMedia.invalidate();
                         utils.user.getMediaUsage.invalidate();
                       }}
-                      onUploadError={(e) => alert(e.message)}
+                      onUploadError={(e) => notifyError(e.message)}
                       content={{
                         button: "Subir Imagen",
                         allowedContent: "Imágenes permitidas"

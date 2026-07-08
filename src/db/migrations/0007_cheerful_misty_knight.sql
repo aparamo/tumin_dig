@@ -1,0 +1,1 @@
+ALTER TYPE "public"."admin_action" ADD VALUE 'VALIDATE_AUDITOR';

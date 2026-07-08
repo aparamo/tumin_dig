@@ -7,6 +7,7 @@ import { bazarRouter } from "./bazar";
 import { jobsRouter } from "./jobs";
 import { auditRouter } from "./audit";
 import { adsRouter } from "./ads";
+import { smartAdsRouter } from "./smartAds";
 import { passwordResetRouter } from "./passwordReset";
 
 export const appRouter = createTRPCRouter({
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   jobs: jobsRouter,
   audit: auditRouter,
   ads: adsRouter,
+  smartAds: smartAdsRouter,
   passwordReset: passwordResetRouter,
 });
 

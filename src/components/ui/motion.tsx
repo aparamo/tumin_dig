@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export function PageTransition({ children }: { children: React.ReactNode }) {

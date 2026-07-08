@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useFeedback } from "@/components/FeedbackProvider";
 import {
   ENROLLMENT_REGIONS,
   ENROLLMENT_REGION_HINTS,
@@ -29,6 +30,7 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { status } = useSession();
+  const { notifySuccess } = useFeedback();
   const registerMutation = trpc.user.register.useMutation();
 
   const referrerId = searchParams.get("ref") ?? "";
@@ -106,7 +108,7 @@ function RegisterForm() {
         nip: formData.nip,
         referrerId: formData.referrerId || undefined,
       });
-      alert("¡Cuenta creada con éxito!");
+      notifySuccess("¡Cuenta creada con éxito!");
       router.push("/login");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al registrarse";

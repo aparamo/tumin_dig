@@ -20,6 +20,7 @@ import { useStore } from "@/lib/store";
 import { UploadButton } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFeedback } from "@/components/FeedbackProvider";
 import {
   ENROLLMENT_OTHER,
   MEXICO_STATES,
@@ -68,38 +69,39 @@ const TIER_BADGES = {
 export function Perfil() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
+  const { notifySuccess, notifyError } = useFeedback();
   const { data: user, isLoading } = trpc.user.fullMe.useQuery();
   
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
-      alert("Perfil actualizado correctamente");
+      notifySuccess("Perfil actualizado correctamente");
       utils.user.fullMe.invalidate();
     },
-    onError: (e) => alert(e.message)
+    onError: (e) => notifyError(e.message)
   });
 
   const updateNip = trpc.user.updateNip.useMutation({
     onSuccess: () => {
-      alert("NIP actualizado");
+      notifySuccess("NIP actualizado");
       setNipData({ current: "", new: "", confirm: "" });
     },
-    onError: (e) => alert(e.message)
+    onError: (e) => notifyError(e.message)
   });
 
   const updateLocation = trpc.user.updateLocation.useMutation({
     onSuccess: () => {
-      alert("Ubicación actualizada correctamente");
+      notifySuccess("Ubicación actualizada correctamente");
       void utils.user.fullMe.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const updatePrivacySettings = trpc.user.updatePrivacySettings.useMutation({
     onSuccess: () => {
-      alert("Privacidad y perfil público actualizados");
+      notifySuccess("Privacidad y perfil público actualizados");
       void utils.user.fullMe.invalidate();
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
@@ -159,7 +161,7 @@ export function Perfil() {
     if (!user) return;
     const link = `${window.location.origin}/register?ref=${user.id}`;
     navigator.clipboard.writeText(link);
-    alert("¡Link de invitación copiado!");
+    notifySuccess("¡Link de invitación copiado!");
   };
 
   if (isLoading || !user) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
@@ -185,7 +187,7 @@ export function Perfil() {
                 <UploadButton
                   endpoint="avatar"
                   onClientUploadComplete={() => {
-                    alert("Foto de perfil actualizada");
+                    notifySuccess("Foto de perfil actualizada");
                     utils.user.fullMe.invalidate();
                   }}
                   content={{
@@ -201,9 +203,18 @@ export function Perfil() {
             <CardContent className="pt-4 text-center">
               <h2 className="text-xl font-black uppercase truncate">{user.name}</h2>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">{user.id}</p>
-              <Badge className={cn("font-black uppercase py-1 px-4 mb-4", TIER_BADGES[tier].color)}>
+              <Badge className={cn("font-black uppercase py-1 px-4 mb-2", TIER_BADGES[tier].color)}>
                 <TierIcon className="w-3 h-3 mr-2" /> {TIER_BADGES[tier].label}
               </Badge>
+              {user.isVerified ? (
+                <Badge className="bg-green-100 text-green-700 border-green-200 font-black uppercase text-[10px] mb-4">
+                  <ShieldCheck className="w-3 h-3 mr-1" /> Identidad verificada
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="font-black uppercase text-[10px] mb-4">
+                  Identidad pendiente de validar
+                </Badge>
+              )}
               <div className="flex justify-center bg-white p-4 rounded-2xl border-2 border-border mb-4 shadow-neo-sm">
                 <QRCodeSVG value={user.id} size={150} />
               </div>

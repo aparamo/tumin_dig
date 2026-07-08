@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Pencil, Trash2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFeedback } from "@/components/FeedbackProvider";
+import { useConfirm } from "@/hooks/use-confirm";
 
 export interface ProductCommentsProps {
   productId: string;
@@ -28,6 +30,8 @@ function formatCommentDate(d: Date) {
 export function ProductComments({ productId }: ProductCommentsProps) {
   const { data: session, status: sessionStatus } = useSession();
   const utils = trpc.useUtils();
+  const { notifySuccess, notifyError } = useFeedback();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { data: comments, isLoading } = trpc.bazar.getComments.useQuery({ productId });
 
   const [draft, setDraft] = useState("");
@@ -39,7 +43,7 @@ export function ProductComments({ productId }: ProductCommentsProps) {
       setDraft("");
       void utils.bazar.getComments.invalidate({ productId });
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const editMutation = trpc.bazar.editComment.useMutation({
@@ -48,12 +52,15 @@ export function ProductComments({ productId }: ProductCommentsProps) {
       setEditBody("");
       void utils.bazar.getComments.invalidate({ productId });
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => notifyError(e.message),
   });
 
   const deleteMutation = trpc.bazar.deleteComment.useMutation({
-    onSuccess: () => void utils.bazar.getComments.invalidate({ productId }),
-    onError: (e) => alert(e.message),
+    onSuccess: () => {
+      notifySuccess("Comentario eliminado.");
+      void utils.bazar.getComments.invalidate({ productId });
+    },
+    onError: (e) => notifyError(e.message),
   });
 
   const currentUserId = session?.user?.id;
@@ -66,6 +73,7 @@ export function ProductComments({ productId }: ProductCommentsProps) {
 
   return (
     <div className="space-y-4 border-t-2 border-border pt-6">
+      <ConfirmDialog />
       <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Preguntas y comentarios</h3>
 
       {sessionStatus === "authenticated" && (
@@ -196,10 +204,14 @@ export function ProductComments({ productId }: ProductCommentsProps) {
                       size="sm"
                       className="h-8 font-black uppercase text-[10px] text-destructive hover:text-destructive"
                       disabled={deleteMutation.isPending}
-                      onClick={() => {
-                        if (confirm("¿Eliminar este comentario?")) {
-                          deleteMutation.mutate({ commentId: c.id });
-                        }
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Eliminar comentario",
+                          description: "¿Quieres quitar este comentario? Esta acción no se puede deshacer.",
+                          confirmText: "Eliminar",
+                          variant: "destructive",
+                        });
+                        if (ok) deleteMutation.mutate({ commentId: c.id });
                       }}
                     >
                       <Trash2 className="mr-1 h-3 w-3" /> Quitar

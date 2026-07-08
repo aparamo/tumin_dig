@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { users, transactions, dailyMining, products } from "../../db/schema";
 import { eq, desc, and, count, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { ensureSystemUser } from "../../lib/system-user";
 
 export const miningRouter = createTRPCRouter({
   claimMining: protectedProcedure.mutation(async ({ ctx }) => {
@@ -30,17 +31,7 @@ export const miningRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar." });
       }
 
-      // Ensure SYSTEM user exists
-      await tx.insert(users).values({
-        id: "SYSTEM",
-        name: "Sistema Tumin",
-        phone: "SYSTEM_PHONE",
-        nip: "SYSTEM_NIP", 
-        region: "SISTEMA",
-        status: "ACTIVO",
-        role: "COORDINADOR",
-        accountTier: "NORMAL",
-      }).onConflictDoNothing({ target: users.id });
+      await ensureSystemUser(tx);
 
       // Get last mining record
       const [lastMining] = await tx

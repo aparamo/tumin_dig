@@ -1,6 +1,6 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Zap, Gift, Coins, TrendingUp, Users, Megaphone } from "lucide-react";
+import { Zap, Gift, TrendingUp, Users, Megaphone } from "lucide-react";
 
 export default function MotorAbundanciaPage() {
   return (

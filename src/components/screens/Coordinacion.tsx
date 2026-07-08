@@ -5,59 +5,95 @@ import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, X, MapPin, UserCheck, ImageIcon, Briefcase, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, Check, X, MapPin, UserCheck, ImageIcon, Briefcase, ThumbsUp, ThumbsDown, Megaphone, ShieldCheck } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
-import {
-  formatEnrollmentDisplay,
-  formatPublicLocation,
-} from "@/lib/location";
+import { formatEnrollmentDisplay, formatPublicLocation } from "@/lib/location";
+import { useFeedback } from "@/components/FeedbackProvider";
+import { useConfirm } from "@/hooks/use-confirm";
+import { SmartAdsPanel } from "@/components/SmartAdsPanel";
 
 export function Coordinacion() {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
-  
-  // Queries
+  const { notifySuccess, notifyError } = useFeedback();
+  const { confirm, ConfirmDialog } = useConfirm();
+
   const { data: jobs, isLoading: isLoadingJobs } = trpc.jobs.getPendingJobs.useQuery();
   const { data: unverifiedUsers, isLoading: isLoadingUsers } = trpc.user.getUnverifiedUsers.useQuery();
   const { data: pendingAds, isLoading: isLoadingAds } = trpc.ads.getPendingAds.useQuery();
+  const { data: pendingValidations, isLoading: isLoadingValidations } = trpc.audit.getPendingAuditorValidations.useQuery();
 
-  // Mutations
+  const validateAuditorMutation = trpc.audit.validateAuditor.useMutation({
+    onSuccess: () => {
+      notifySuccess("Auditoría de par validada correctamente.");
+      utils.audit.getPendingAuditorValidations.invalidate();
+      utils.audit.getAuditRewardStatus.invalidate();
+    },
+    onError: (error) => notifyError(error.message),
+  });
+
   const verifyJobMutation = trpc.jobs.verifyJob.useMutation({
     onSuccess: (data) => {
-      alert(data.status === "PAGADO" ? "Pago autorizado con éxito." : "Trabajo rechazado.");
+      notifySuccess(data.status === "PAGADO" ? "Pago autorizado con éxito." : "Trabajo rechazado.");
       utils.jobs.getPendingJobs.invalidate();
     },
-    onError: (error) => alert(error.message),
+    onError: (error) => notifyError(error.message),
   });
 
   const verifyUserMutation = trpc.user.verifyUserIdentity.useMutation({
     onSuccess: () => {
-      alert("Identidad de socio verificada.");
+      notifySuccess("Identidad de socio verificada.");
       utils.user.getUnverifiedUsers.invalidate();
     },
-    onError: (error) => alert(error.message),
+    onError: (error) => notifyError(error.message),
   });
 
   const adMutation = trpc.ads.approveAd.useMutation({
     onSuccess: () => {
-      alert("Anuncio aprobado.");
+      notifySuccess("Anuncio aprobado.");
       utils.ads.getPendingAds.invalidate();
     },
+    onError: (e) => notifyError(e.message),
   });
 
   const rejectAdMutation = trpc.ads.rejectAd.useMutation({
     onSuccess: () => {
-      alert("Anuncio rechazado.");
+      notifySuccess("Anuncio rechazado.");
       utils.ads.getPendingAds.invalidate();
     },
+    onError: (e) => notifyError(e.message),
   });
+
+  const handleVerifyJob = (jobId: string, status: "PAGADO" | "RECHAZADO") => async () => {
+    if (status === "RECHAZADO") {
+      const ok = await confirm({
+        title: "Rechazar labor",
+        description: "El solicitante no recibirá pago. ¿Continuar?",
+        confirmText: "Rechazar",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    verifyJobMutation.mutate({ jobId, status });
+  };
+
+  const handleRejectAd = async (adId: string) => {
+    const ok = await confirm({
+      title: "Rechazar anuncio",
+      description: "El anuncio pasará a inactivo. ¿Continuar?",
+      confirmText: "Rechazar",
+      variant: "destructive",
+    });
+    if (ok) rejectAdMutation.mutate({ adId });
+  };
 
   if (!session?.user) return null;
 
   return (
     <div className="flex flex-col gap-6 p-4 max-w-5xl mx-auto w-full pb-20">
+      <ConfirmDialog />
       <div className="space-y-1">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Panel de Coordinación</h1>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -66,15 +102,21 @@ export function Coordinacion() {
       </div>
 
       <Tabs defaultValue="labores" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-14 bg-muted/50 p-1 rounded-xl border-2 border-border shadow-neo-sm">
-          <TabsTrigger value="labores" className="rounded-lg font-black uppercase text-[10px] gap-2">
+        <TabsList className="grid w-full grid-cols-5 h-14 bg-muted/50 p-1 rounded-xl border-2 border-border shadow-neo-sm">
+          <TabsTrigger value="labores" className="rounded-lg font-black uppercase text-[10px] gap-1 md:gap-2">
             <Briefcase className="w-4 h-4" /> Labores
           </TabsTrigger>
-          <TabsTrigger value="socios" className="rounded-lg font-black uppercase text-[10px] gap-2">
+          <TabsTrigger value="socios" className="rounded-lg font-black uppercase text-[10px] gap-1 md:gap-2">
             <UserCheck className="w-4 h-4" /> Socios
           </TabsTrigger>
-          <TabsTrigger value="publicidad" className="rounded-lg font-black uppercase text-[10px] gap-2">
+          <TabsTrigger value="publicidad" className="rounded-lg font-black uppercase text-[10px] gap-1 md:gap-2">
             <ImageIcon className="w-4 h-4" /> Publicidad
+          </TabsTrigger>
+          <TabsTrigger value="avisos" className="rounded-lg font-black uppercase text-[10px] gap-1 md:gap-2">
+            <Megaphone className="w-4 h-4" /> Avisos
+          </TabsTrigger>
+          <TabsTrigger value="auditorias" className="rounded-lg font-black uppercase text-[10px] gap-1 md:gap-2">
+            <ShieldCheck className="w-4 h-4" /> Pares
           </TabsTrigger>
         </TabsList>
 
@@ -107,18 +149,18 @@ export function Coordinacion() {
                         {item.job.amount} Ŧ
                       </div>
                       <div className="flex gap-3">
-                        <Button 
+                        <Button
                           variant="default"
                           className="flex-1 h-12 shadow-neo-sm"
-                          onClick={() => verifyJobMutation.mutate({ jobId: item.job.id, status: "PAGADO" })}
+                          onClick={handleVerifyJob(item.job.id, "PAGADO")}
                           disabled={verifyJobMutation.isPending}
                         >
                           <Check className="w-5 h-5 mr-2" /> Aprobar
                         </Button>
-                        <Button 
+                        <Button
                           variant="destructive"
                           className="flex-1 h-12 shadow-neo-sm"
-                          onClick={() => verifyJobMutation.mutate({ jobId: item.job.id, status: "RECHAZADO" })}
+                          onClick={handleVerifyJob(item.job.id, "RECHAZADO")}
                           disabled={verifyJobMutation.isPending}
                         >
                           <X className="w-5 h-5 mr-2" /> Rechazar
@@ -171,7 +213,7 @@ export function Coordinacion() {
                         <div className="flex justify-between"><span className="text-muted-foreground uppercase font-bold">Email:</span> <span className="font-black">{u.email || "N/A"}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground uppercase font-bold">Registro:</span> <span className="font-black">{new Date(u.createdAt).toLocaleDateString()}</span></div>
                       </div>
-                      <Button 
+                      <Button
                         className="w-full h-12 bg-purple-600 hover:bg-purple-700 shadow-neo-sm uppercase font-black"
                         onClick={() => verifyUserMutation.mutate({ userId: u.id, verified: true })}
                         disabled={verifyUserMutation.isPending}
@@ -206,18 +248,18 @@ export function Coordinacion() {
                       <CardDescription className="text-[10px] font-bold uppercase">Mes de anuncio gratis</CardDescription>
                     </CardHeader>
                     <CardContent className="flex gap-2">
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         className="flex-1 h-10 uppercase font-black text-xs"
                         onClick={() => adMutation.mutate({ adId: ad.id })}
                         disabled={adMutation.isPending}
                       >
                         <ThumbsUp className="w-4 h-4 mr-2" /> Aprobar
                       </Button>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         className="flex-1 h-10 uppercase font-black text-xs"
-                        onClick={() => rejectAdMutation.mutate({ adId: ad.id })}
+                        onClick={() => handleRejectAd(ad.id)}
                         disabled={rejectAdMutation.isPending}
                       >
                         <ThumbsDown className="w-4 h-4 mr-2" /> Rechazar
@@ -229,6 +271,63 @@ export function Coordinacion() {
             ) : (
               <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm tracking-widest">
                 No hay anuncios pendientes.
+              </div>
+            )}
+          </StaggerContainer>
+        </TabsContent>
+
+        <TabsContent value="avisos" className="mt-6">
+          <SmartAdsPanel />
+        </TabsContent>
+
+        <TabsContent value="auditorias" className="mt-6">
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {isLoadingValidations ? (
+              <div className="col-span-full flex justify-center p-12">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              </div>
+            ) : pendingValidations && pendingValidations.length > 0 ? (
+              pendingValidations.map((v) => (
+                <StaggerItem key={v.id}>
+                  <Card className="h-full border-l-8 border-l-emerald-500">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {v.region}
+                        </Badge>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                          {new Date(v.lastActivityAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <CardTitle className="text-xl mt-4 leading-tight">{v.name}</CardTitle>
+                      <CardDescription className="font-mono text-[10px]">{v.id}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground font-bold uppercase mb-4">
+                        Tiene actividad de coordinación este mes y espera validación de un par.
+                      </p>
+                      <Button
+                        variant="default"
+                        className="w-full h-12 shadow-neo-sm"
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: "Validar auditoría de par",
+                            description: `¿Confirmas que ${v.name} realizó trabajo de coordinación este mes?`,
+                            confirmText: "Validar",
+                          });
+                          if (ok) validateAuditorMutation.mutate({ targetUserId: v.id });
+                        }}
+                        disabled={validateAuditorMutation.isPending}
+                      >
+                        <ShieldCheck className="w-5 h-5 mr-2" /> Validar Auditoría
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </StaggerItem>
+              ))
+            ) : (
+              <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm tracking-widest">
+                No hay coordinadores con actividad pendiente de validar.
               </div>
             )}
           </StaggerContainer>

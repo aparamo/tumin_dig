@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Loader2, Users, Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Loader2, Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
@@ -15,13 +15,34 @@ import {
   formatEnrollmentDisplay,
   formatPublicLocation,
 } from "@/lib/location";
+import { useFeedback } from "@/components/FeedbackProvider";
+import { useConfirm } from "@/hooks/use-confirm";
+import { Badge } from "@/components/ui/badge";
 
 type SortOption = "name_asc" | "name_desc" | "date_asc" | "date_desc";
 type UserRole = "SOCIO" | "COORDINADOR_LOCAL" | "COORDINADOR" | "COORDINADOR_GENERAL";
 
+const ROLE_LABELS: Record<UserRole, string> = {
+  SOCIO: "Socio",
+  COORDINADOR_LOCAL: "Coordinador Local",
+  COORDINADOR: "Coordinador",
+  COORDINADOR_GENERAL: "Coordinador General",
+};
+
+function assignableRolesFor(callerRole: UserRole): UserRole[] {
+  if (callerRole === "COORDINADOR_LOCAL") return ["SOCIO"];
+  if (callerRole === "COORDINADOR") return ["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR"];
+  if (callerRole === "COORDINADOR_GENERAL") {
+    return ["SOCIO", "COORDINADOR_LOCAL", "COORDINADOR"];
+  }
+  return [];
+}
+
 export function GestionRoles() {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
+  const { notifySuccess, notifyError } = useFeedback();
+  const { confirm, ConfirmDialog } = useConfirm();
   
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Todos");
@@ -33,7 +54,9 @@ export function GestionRoles() {
 
   const debouncedSearch = useDebounce(search, 500);
 
-  const isGlobal = session?.user?.role === "COORDINADOR_GENERAL";
+  const callerRole = (session?.user?.role ?? "SOCIO") as UserRole;
+  const isGlobal = callerRole === "COORDINADOR" || callerRole === "COORDINADOR_GENERAL";
+  const assignableRoles = assignableRolesFor(callerRole);
 
   const { data, isLoading } = trpc.user.getUsersAdvanced.useQuery({
     search: debouncedSearch,
@@ -47,10 +70,10 @@ export function GestionRoles() {
 
   const updateRole = trpc.user.updateRole.useMutation({
     onSuccess: () => {
-      alert("Rol actualizado con éxito.");
+      notifySuccess("Rol actualizado con éxito.");
       utils.user.getUsersAdvanced.invalidate();
     },
-    onError: (error) => alert(error.message),
+    onError: (error) => notifyError(error.message),
   });
 
   const regions = [...ENROLLMENT_REGION_FILTER_OPTIONS];
@@ -59,6 +82,7 @@ export function GestionRoles() {
 
   return (
     <div className="flex flex-col gap-6 p-4 max-w-5xl mx-auto w-full pb-20">
+      <ConfirmDialog />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-2">
@@ -173,23 +197,37 @@ export function GestionRoles() {
                   </div>
                   
                   <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Select 
-                      defaultValue={user.role} 
-                      onValueChange={(val: UserRole | null) => {
-                        if (val) updateRole.mutate({ userId: user.id, role: val });
-                      }}
-                      disabled={user.id === session.user.id}
-                    >
-                      <SelectTrigger className="w-full md:w-[180px] h-10 text-[10px] font-black uppercase border-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SOCIO">Socio</SelectItem>
-                        <SelectItem value="COORDINADOR_LOCAL">Coordinador Local</SelectItem>
-                        <SelectItem value="COORDINADOR">Coordinador</SelectItem>
-                        <SelectItem value="COORDINADOR_GENERAL">Coordinador General</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {user.role === "COORDINADOR_GENERAL" ? (
+                      <Badge variant="secondary" className="h-10 px-3 text-[10px] font-black uppercase tracking-wider">
+                        CG (solo ops)
+                      </Badge>
+                    ) : (
+                      <Select
+                        defaultValue={user.role}
+                        onValueChange={async (val: UserRole | null) => {
+                          if (!val) return;
+                          const ok = await confirm({
+                            title: "Cambiar rol",
+                            description: `¿Asignar ${ROLE_LABELS[val]} a ${user.name}?`,
+                            confirmText: "Cambiar",
+                            variant: "destructive",
+                          });
+                          if (ok) updateRole.mutate({ userId: user.id, role: val });
+                        }}
+                        disabled={user.id === session.user.id}
+                      >
+                        <SelectTrigger className="w-full md:w-[180px] h-10 text-[10px] font-black uppercase border-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assignableRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {ROLE_LABELS[role]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </CardContent>
               </Card>

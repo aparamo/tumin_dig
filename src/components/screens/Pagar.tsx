@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Send, CheckCircle2, X, ShoppingBag, AlertTriangle, UserCircle2 } from "lucide-react";
+import Image from "next/image";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,13 @@ function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, 
     >
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-muted">
         {avatarUrl ? (
-          <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+          <Image
+            src={avatarUrl}
+            alt={displayName}
+            fill
+            sizes="40px"
+            className="object-cover"
+          />
         ) : (
           <span className="text-xs font-black text-muted-foreground">{initials}</span>
         )}
