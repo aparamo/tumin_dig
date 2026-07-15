@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { Inicio } from "./screens/Inicio";
 import { Pagar } from "./screens/Pagar";
@@ -12,12 +13,30 @@ import { Auditoria } from "./screens/Auditoria";
 import { GestionRoles } from "./screens/GestionRoles";
 import { GestionProductos } from "./screens/GestionProductos";
 import { GestorMedios } from "./screens/GestorMedios";
+import { MiRed } from "./screens/MiRed";
+import { GestionAnuncios } from "./screens/GestionAnuncios";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence } from "motion/react";
 import { DashboardShell } from "./DashboardShell";
 
 export function Dashboard() {
   const { currentScreen, setCurrentScreen } = useStore();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pending = sessionStorage.getItem("tumin_pending_screen");
+    if (pending) {
+      sessionStorage.removeItem("tumin_pending_screen");
+      const validScreens = [
+        "inicio", "pagar", "bazar", "comunidad", "coordinacion", "perfil",
+        "historial", "auditoria", "gestion-roles", "gestion-productos",
+        "medios", "anuncios", "mi-red",
+      ] as const;
+      if (validScreens.includes(pending as typeof validScreens[number])) {
+        setCurrentScreen(pending as typeof validScreens[number]);
+      }
+    }
+  }, [setCurrentScreen]);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -32,6 +51,8 @@ export function Dashboard() {
       case "gestion-roles": return <GestionRoles />;
       case "gestion-productos": return <GestionProductos />;
       case "medios": return <GestorMedios />;
+      case "mi-red": return <MiRed />;
+      case "anuncios": return <GestionAnuncios />;
       default: return <div className="p-4">Pantalla en construcción: {currentScreen}</div>;
     }
   };

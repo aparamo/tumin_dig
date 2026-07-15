@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 function LoginForm() {
   const [identifier, setIdentifier] = useState("");
@@ -50,12 +51,12 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(result.error === "CredentialsSignin" ? "Credenciales incorrectas" : result.error);
+        setError(result.error === "CredentialsSignin" ? "Credenciales incorrectas" : parseErrorMessage(result.error));
       } else {
         router.push("/");
       }
-    } catch {
-      setError("Ocurrió un error al iniciar sesión");
+    } catch (err) {
+      setError(parseErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

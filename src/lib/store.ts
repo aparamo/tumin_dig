@@ -21,7 +21,9 @@ export type Screen =
   | "auditoria"
   | "gestion-roles"
   | "gestion-productos"
-  | "medios";
+  | "medios"
+  | "anuncios"
+  | "mi-red";
 
 interface AppState {
   currentScreen: Screen;

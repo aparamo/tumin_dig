@@ -7,8 +7,8 @@ import {
 } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, media, products } from "../../db/schema";
-import { eq, or, and, sql, desc, ilike, count } from "drizzle-orm";
+import { users, media, products, inviteTokens } from "../../db/schema";
+import { eq, or, and, sql, desc, ilike, count, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import {
@@ -31,27 +31,57 @@ import {
   type UserRole,
 } from "../../lib/trpc/authorization";
 import { logAdminAction } from "../../lib/admin-log";
+import { generateInviteToken, getTokenExpiry } from "../../lib/token";
 
 export const userRouter = createTRPCRouter({
   register: rateLimitedPublicProcedure
     .input(registerLocationSchema)
     .mutation(async ({ input }) => {
-      // 1. Verify referrer exists if provided
-      if (input.referrerId) {
-        const [referrer] = await db
+      // 0. Resolve referrer from invite token if needed
+      let referrerId = input.referrerId;
+      if (input.inviteToken && !referrerId) {
+        const now = new Date();
+        const [tokenRow] = await db
           .select()
-          .from(users)
-          .where(eq(users.id, input.referrerId))
+          .from(inviteTokens)
+          .where(
+            and(
+              eq(inviteTokens.token, input.inviteToken),
+              gt(inviteTokens.expiresAt, now)
+            )
+          )
           .limit(1);
-        if (!referrer) {
+        if (!tokenRow) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Referrer not found",
+            message: "El enlace de invitación expiró o no es válido.",
           });
         }
+        referrerId = tokenRow.userId;
       }
 
-      // 2. Check if phone already exists
+      // 1. A closed network requires a valid invitation
+      if (!referrerId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Se requiere una invitación válida para registrarse.",
+        });
+      }
+
+      // 2. Verify referrer exists
+      const [referrer] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, referrerId))
+        .limit(1);
+      if (!referrer) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El usuario que te invitó no existe.",
+        });
+      }
+
+      // 3. Check if phone already exists
       const [existingUser] = await db
         .select()
         .from(users)
@@ -96,7 +126,7 @@ export const userRouter = createTRPCRouter({
           residenceCity: residence.residenceCity,
           residencePostalCode: residence.residencePostalCode,
           nip: hashedNip,
-          referrerId: input.referrerId || null,
+          referrerId: referrerId || null,
         })
         .returning();
 
@@ -336,7 +366,15 @@ export const userRouter = createTRPCRouter({
     }),
 
   updateNip: protectedProcedure
-    .input(z.object({ nip: z.string().min(4).max(6) }))
+    .input(
+      z.object({
+        nip: z
+          .string()
+          .min(4, "El NIP debe tener entre 4 y 6 caracteres")
+          .max(6, "El NIP debe tener entre 4 y 6 caracteres")
+          .regex(/^[a-zA-Z0-9]+$/, "El NIP solo puede contener letras y números"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const hashedNip = await bcrypt.hash(input.nip, 10);
       await db.update(users).set({ nip: hashedNip }).where(eq(users.id, ctx.session.user.id));
@@ -574,6 +612,55 @@ export const userRouter = createTRPCRouter({
         nextCursor,
       };
     }),
+
+  getAvatar: protectedProcedure.query(async ({ ctx }) => {
+    const [user] = await db
+      .select({ avatarUrl: users.avatarUrl })
+      .from(users)
+      .where(eq(users.id, ctx.session.user.id))
+      .limit(1);
+    return { avatarUrl: user?.avatarUrl ?? null };
+  }),
+
+  getMyNetwork: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    return await db
+      .select({
+        id: users.id,
+        name: users.name,
+        publicName: users.publicName,
+        region: users.region,
+        residenceState: users.residenceState,
+        residenceCity: users.residenceCity,
+        residenceCountry: users.residenceCountry,
+        isVerified: users.isVerified,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.referrerId, userId))
+      .orderBy(desc(users.createdAt));
+  }),
+
+  getOrCreateInviteToken: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const now = new Date();
+
+    const [existing] = await db
+      .select()
+      .from(inviteTokens)
+      .where(and(eq(inviteTokens.userId, userId), gt(inviteTokens.expiresAt, now)))
+      .limit(1);
+
+    if (existing) {
+      return { token: existing.token, expiresAt: existing.expiresAt };
+    }
+
+    const token = generateInviteToken();
+    const expiresAt = getTokenExpiry();
+    await db.insert(inviteTokens).values({ userId, token, expiresAt });
+
+    return { token, expiresAt };
+  }),
 
   getRegionalSupportContact: publicProcedure
     .input(z.object({ region: z.string(), state: z.string().optional() }))

@@ -3,7 +3,7 @@
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, ShieldAlert, UserCog, Search } from "lucide-react";
+import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, ShieldAlert, UserCog, Search, AlertCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { useFeedback } from "@/components/FeedbackProvider";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
@@ -61,7 +62,7 @@ export function Inicio() {
       utils.wallet.getHistory.invalidate();
     },
     onError: (error) => {
-      notifyError(error.message);
+      notifyError(parseErrorMessage(error));
     },
   });
 
@@ -72,29 +73,6 @@ export function Inicio() {
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
-      {isCoordinator && showAuditBanner && (
-        <div className="md:col-span-12">
-          <Link href={auditBanner.href} className="block">
-            <div className="rounded-xl overflow-hidden border-2 border-amber-500 bg-amber-500/10 p-4 shadow-neo-sm hover:bg-amber-500/15 transition-colors">
-              <div className="flex items-center gap-3">
-                <ShieldAlert className="w-6 h-6 text-amber-600 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-tight text-amber-700">
-                    {auditBanner.title}
-                  </p>
-                  <p className="text-xs font-bold text-amber-700/80">
-                    {auditBanner.body}
-                  </p>
-                </div>
-                <Button variant="secondary" size="sm" className="h-8 text-[10px] font-black uppercase">
-                  Revisar
-                </Button>
-              </div>
-            </div>
-          </Link>
-        </div>
-      )}
-
       {activeAds && activeAds.length > 0 && (
         <div className="md:col-span-12">
           <div className="relative w-full aspect-21/9 md:aspect-32/9 rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
@@ -133,19 +111,10 @@ export function Inicio() {
               {isLoadingBalance ? <Loader2 className="animate-spin inline" /> : `${balanceData?.balance ?? 0} Ŧ`}
             </div>
             <div className="mb-6">
-              {session?.user?.isVerified ? (
+              {session?.user?.isVerified && (
                 <Badge className="bg-green-100 text-green-700 border-green-200 font-black uppercase text-[10px]">
                   <ShieldCheck className="w-3 h-3 mr-1" /> Socio verificado
                 </Badge>
-              ) : (
-                <div className="space-y-1">
-                  <Badge variant="secondary" className="font-black uppercase text-[10px]">
-                    Identidad pendiente de validar
-                  </Badge>
-                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                    Máx. transferencia: 100 Ŧ hasta ser verificado.
-                  </p>
-                </div>
               )}
             </div>
             <div className="flex flex-col gap-4 w-full">
@@ -185,6 +154,30 @@ export function Inicio() {
             <ShoppingBag className="w-8 h-8" />
             <span className="uppercase text-xs font-black">Bazar</span>
           </Button>
+        </div>
+
+        {/* Estado e información importante */}
+        <div className="flex flex-col gap-3">
+          {!session?.user?.isVerified && (
+            <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-3">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-black uppercase text-amber-700">Identidad pendiente de validar</p>
+                <p className="text-[10px] font-bold text-amber-600/80">Máx. transferencia: 100 Ŧ hasta ser verificado.</p>
+              </div>
+            </div>
+          )}
+          {isCoordinator && showAuditBanner && (
+            <Link href={auditBanner.href} className="block">
+              <div className="flex items-start gap-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-3 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
+                <ShieldAlert className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-black uppercase text-orange-700">{auditBanner.title}</p>
+                  <p className="text-[10px] font-bold text-orange-600/80">{auditBanner.body}</p>
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
 
         <Link href="/manual" className="w-full">

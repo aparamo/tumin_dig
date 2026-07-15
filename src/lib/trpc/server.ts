@@ -14,8 +14,15 @@ import {
 export const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    // Prefer Zod issue messages (Spanish when schema defines them) over raw JSON dumps
+    const zodMessage =
+      error.cause instanceof ZodError
+        ? error.cause.issues.map((issue) => issue.message).filter(Boolean).join(". ")
+        : null;
+
     return {
       ...shape,
+      message: zodMessage || shape.message,
       data: {
         ...shape.data,
         // Only expose field-level Zod details in development

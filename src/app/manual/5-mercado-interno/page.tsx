@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShoppingBag, MessageSquare, Repeat, Eye, ToggleRight, Star, Pencil, ExternalLink, Send, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShoppingBag, MessageSquare, Repeat, Eye, ToggleRight, Star, Pencil, ExternalLink, Send, CheckCircle2, AlertTriangle, Megaphone, ImageIcon, Calendar } from "lucide-react";
 
 export default function MercadoInternoPage() {
   return (
@@ -156,6 +156,44 @@ export default function MercadoInternoPage() {
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Editar o eliminar el tuyo</h4>
               <p className="text-sm text-foreground/70">Solo tú puedes editar o borrar los comentarios que hayas escrito.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Promocionar en la app: Gestión de Anuncios
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          Además del Bazar, puedes solicitar que tu producto, servicio o actividad aparezca en el <strong>banner de anuncios</strong> de la pantalla de inicio. Es una promoción comunitaria gratuita para socios activos.
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <Megaphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Solicitar un anuncio</h4>
+              <p className="text-sm text-foreground/70">
+                Ve a <strong>Gestión de Anuncios</strong> en el menú lateral. Puedes elegir uno de tus productos o dejar el campo vacío para promocionar una actividad general. Escribe un mensaje corto, sube una imagen (o reusa la primera foto del producto) y, si quieres, indica hasta cuándo deseas que esté activo.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <ImageIcon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Imagen del anuncio</h4>
+              <p className="text-sm text-foreground/70">
+                La imagen puede ser nueva o tomada directamente de tu producto. Si cambias de opinión, puedes quitarla antes de enviar la solicitud.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <Calendar className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Estados y aprobación</h4>
+              <p className="text-sm text-foreground/70">
+                Tu solicitud nace en estado <strong>Pendiente</strong>. Un coordinador de tu región la revisa y la puede aprobar (<strong>Activo</strong>) o rechazar (<strong>Inactivo</strong>). Cuando está activo, aparece en el banner del inicio durante el tiempo aprobado.
+              </p>
             </div>
           </div>
         </div>

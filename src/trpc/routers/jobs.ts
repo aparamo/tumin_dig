@@ -5,7 +5,7 @@ import {
 } from "../../lib/trpc/server";
 import { db } from "../../db";
 import { jobs, users, transactions } from "../../db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, lte, desc } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
@@ -16,6 +16,7 @@ import {
 } from "../../lib/trpc/authorization";
 import { ensureSystemUser } from "../../lib/system-user";
 import { logAdminAction } from "../../lib/admin-log";
+import { formatPublicLocation } from "../../lib/location";
 
 export const jobsRouter = createTRPCRouter({
   requestJob: protectedProcedure
@@ -144,5 +145,66 @@ export const jobsRouter = createTRPCRouter({
 
         return updatedJob;
       });
+    }),
+
+  getJobsHistory: protectedProcedure
+    .input(
+      z.object({
+        allRegions: z.boolean().default(false),
+        cursor: z.string().uuid().optional(),
+        limit: z.number().min(1).max(20).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const userRegion = ctx.session.user.region;
+      const isGlobal = isGlobalCoordinator(ctx.session.user.role as UserRole);
+
+      const conditions = [];
+      if (!input.allRegions || !isGlobal) {
+        conditions.push(eq(users.region, userRegion));
+      }
+      if (input.cursor) {
+        conditions.push(lte(jobs.id, input.cursor));
+      }
+
+      const rows = await db
+        .select({
+          id: jobs.id,
+          description: jobs.description,
+          minutes: jobs.minutes,
+          amount: jobs.amount,
+          status: jobs.status,
+          createdAt: jobs.createdAt,
+          requesterName: users.name,
+          requesterPublicName: users.publicName,
+          requesterRegion: users.region,
+          residenceState: users.residenceState,
+          residenceCity: users.residenceCity,
+          residenceCountry: users.residenceCountry,
+          isVerified: users.isVerified,
+        })
+        .from(jobs)
+        .innerJoin(users, eq(jobs.requesterId, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(jobs.createdAt))
+        .limit(input.limit + 1);
+
+      const hasMore = rows.length > input.limit;
+      const items = hasMore ? rows.slice(0, input.limit) : rows;
+      const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+
+      return {
+        items: items.map((item) => ({
+          ...item,
+          displayName: item.requesterPublicName?.trim() || item.requesterName.split(" ")[0],
+          location: formatPublicLocation({
+            residenceCountry: item.residenceCountry,
+            residenceState: item.residenceState,
+            residenceCity: item.residenceCity,
+            residencePostalCode: null,
+          }),
+        })),
+        nextCursor,
+      };
     }),
 });

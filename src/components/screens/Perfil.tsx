@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -21,6 +21,7 @@ import { UploadButton } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFeedback } from "@/components/FeedbackProvider";
+import { parseErrorMessage } from "@/lib/parse-error";
 import {
   ENROLLMENT_OTHER,
   MEXICO_STATES,
@@ -77,7 +78,7 @@ export function Perfil() {
       notifySuccess("Perfil actualizado correctamente");
       utils.user.fullMe.invalidate();
     },
-    onError: (e) => notifyError(e.message)
+    onError: (e) => notifyError(parseErrorMessage(e))
   });
 
   const updateNip = trpc.user.updateNip.useMutation({
@@ -85,7 +86,7 @@ export function Perfil() {
       notifySuccess("NIP actualizado");
       setNipData({ current: "", new: "", confirm: "" });
     },
-    onError: (e) => notifyError(e.message)
+    onError: (e) => notifyError(parseErrorMessage(e))
   });
 
   const updateLocation = trpc.user.updateLocation.useMutation({
@@ -93,7 +94,7 @@ export function Perfil() {
       notifySuccess("Ubicación actualizada correctamente");
       void utils.user.fullMe.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const updatePrivacySettings = trpc.user.updatePrivacySettings.useMutation({
@@ -101,7 +102,7 @@ export function Perfil() {
       notifySuccess("Privacidad y perfil público actualizados");
       void utils.user.fullMe.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
@@ -157,12 +158,15 @@ export function Perfil() {
   const needsResidence =
     user && !user.residenceCountry && !user.residenceState;
 
-  const copyLink = () => {
-    if (!user) return;
-    const link = `${window.location.origin}/register?ref=${user.id}`;
-    navigator.clipboard.writeText(link);
-    notifySuccess("¡Link de invitación copiado!");
-  };
+  const getOrCreateInviteToken = trpc.user.getOrCreateInviteToken.useMutation({
+    onSuccess: (data) => {
+      const link = `${window.location.origin}/register?token=${data.token}`;
+      navigator.clipboard.writeText(link);
+      const expiry = new Date(data.expiresAt).toLocaleDateString();
+      notifySuccess(`¡Link de invitación copiado! Vence el ${expiry}`);
+    },
+    onError: (e) => notifyError(parseErrorMessage(e)),
+  });
 
   if (isLoading || !user) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
 
@@ -235,12 +239,29 @@ export function Perfil() {
                 🤝 Invitar
               </CardTitle>
               <CardDescription className="text-muted-foreground font-bold uppercase text-[9px] tracking-widest">
-                Solo con tu link pueden registrarse
+                Link seguro que se renueva cada semana
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button onClick={copyLink} variant="secondary" className="w-full h-10 font-black uppercase text-xs border-2 shadow-neo-sm">
-                <Copy className="w-4 h-4 mr-2" /> Copiar Link
+            <CardContent className="space-y-3">
+              <Button
+                onClick={() => getOrCreateInviteToken.mutate()}
+                disabled={getOrCreateInviteToken.isPending}
+                variant="secondary"
+                className="w-full h-10 font-black uppercase text-xs border-2 shadow-neo-sm"
+              >
+                {getOrCreateInviteToken.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Copy className="w-4 h-4 mr-2" />
+                )}
+                Copiar Link
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-10 border-2 font-black uppercase text-xs"
+                onClick={() => setCurrentScreen("mi-red")}
+              >
+                <Network className="w-4 h-4 mr-2" /> Ver mi Red
               </Button>
             </CardContent>
           </Card>
@@ -595,8 +616,10 @@ export function Perfil() {
                   <Input 
                     type="password"
                     placeholder="****"
+                    maxLength={6}
+                    autoComplete="new-password"
                     value={nipData.new} 
-                    onChange={e => setNipData({...nipData, new: e.target.value})}
+                    onChange={e => setNipData({...nipData, new: e.target.value.slice(0, 6)})}
                     className="bg-background border-2 h-12"
                   />
                 </div>
@@ -605,8 +628,10 @@ export function Perfil() {
                   <Input 
                     type="password"
                     placeholder="****"
+                    maxLength={6}
+                    autoComplete="new-password"
                     value={nipData.confirm} 
-                    onChange={e => setNipData({...nipData, confirm: e.target.value})}
+                    onChange={e => setNipData({...nipData, confirm: e.target.value.slice(0, 6)})}
                     className="bg-background border-2 h-12"
                   />
                 </div>
@@ -614,8 +639,22 @@ export function Perfil() {
               <Button 
                 variant="secondary"
                 className="w-full md:w-auto px-8 h-12 font-black uppercase border-2 shadow-neo-sm"
-                disabled={!nipData.new || nipData.new !== nipData.confirm || nipData.new.length < 4 || updateNip.isPending}
-                onClick={() => updateNip.mutate({ nip: nipData.new })}
+                disabled={!nipData.new || nipData.new !== nipData.confirm || nipData.new.length < 4 || nipData.new.length > 6 || updateNip.isPending}
+                onClick={() => {
+                  if (nipData.new.length < 4 || nipData.new.length > 6) {
+                    notifyError("El NIP debe tener entre 4 y 6 caracteres");
+                    return;
+                  }
+                  if (nipData.new !== nipData.confirm) {
+                    notifyError("Los NIP no coinciden");
+                    return;
+                  }
+                  if (!/^[a-zA-Z0-9]+$/.test(nipData.new)) {
+                    notifyError("El NIP solo puede contener letras y números");
+                    return;
+                  }
+                  updateNip.mutate({ nip: nipData.new });
+                }}
               >
                 {updateNip.isPending ? <Loader2 className="animate-spin mr-2" /> : <Key className="w-5 h-5 mr-2" />}
                 Actualizar NIP

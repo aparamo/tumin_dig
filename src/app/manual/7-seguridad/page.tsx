@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw, Mail } from "lucide-react";
+import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw, Mail, Link2, Network, Timer } from "lucide-react";
 
 export default function SeguridadPage() {
   return (
@@ -162,6 +162,52 @@ export default function SeguridadPage() {
             </ul>
             <p className="text-xs text-foreground/50 italic pt-1">
               Por default, el teléfono está habilitado para el botón de contacto. Si no lo deseas, desactívalo en esta sección.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Links de invitación rotativos
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Para proteger la red de invitaciones robadas o compartidas masivamente, cada link de invitación tiene una <strong>vida útil de 7 días</strong> y un token único.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
+            <Link2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Token único</h4>
+              <p className="text-sm text-foreground/70">El link incluye un código aleatorio que el sistema asocia a quien te invita. No es un enlace estático que pueda reutilizarse indefinidamente.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
+            <Timer className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Renovación automática</h4>
+              <p className="text-sm text-foreground/70">Si tu link actual venció, quien te invitó puede generar uno nuevo desde <strong>Perfil</strong> con un solo clic. El sistema reutiliza un token vigente o crea otro.</p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Nunca compartas tu link de invitación en foros públicos. Si alguien más lo usa, quedará vinculado a tu red de referidos.
+        </p>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Mi Red de referidos
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Desde <strong>Perfil → Ver mi Red</strong> puedes ver quién se ha registrado usando tu código de invitación. Es una herramienta de transparencia, no de competencia.
+        </p>
+        <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <Network className="w-8 h-8 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <h4 className="font-black uppercase tracking-tight">Qué información ves</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              La lista muestra el nombre completo de tus referidos, su región de inscripción, ubicación aproximada (si la comparten), estado de verificación y fecha de alta. Solo tú puedes ver esta lista de quienes usaron tu invitación.
             </p>
           </div>
         </div>

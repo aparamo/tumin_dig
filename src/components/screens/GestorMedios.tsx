@@ -18,6 +18,7 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 const TIER_CONFIG = {
   NORMAL: { limit: 30 * 1024 * 1024, label: "Gratuito", color: "bg-slate-500" },
@@ -36,13 +37,15 @@ export function GestorMedios() {
     onSuccess: () => {
       utils.user.listMedia.invalidate();
       utils.user.getMediaUsage.invalidate();
-    }
+    },
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
   const addLinkMutation = trpc.user.addExternalLink.useMutation({
     onSuccess: () => {
       utils.user.listMedia.invalidate();
       setLinkData({ url: "", name: "" });
-    }
+    },
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const [linkData, setLinkData] = useState({ url: "", name: "" });
@@ -115,7 +118,7 @@ export function GestorMedios() {
                     utils.user.listMedia.invalidate();
                     utils.user.getMediaUsage.invalidate();
                   }}
-                  onUploadError={(e) => notifyError(e.message)}
+                  onUploadError={(e) => notifyError(parseErrorMessage(e))}
                   content={{
                     button({ ready }) {
                       if (ready) return "Seleccionar Archivo";

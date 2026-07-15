@@ -17,6 +17,7 @@ import {
 } from "@/lib/location";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 import { Badge } from "@/components/ui/badge";
 
 type SortOption = "name_asc" | "name_desc" | "date_asc" | "date_desc";
@@ -73,7 +74,7 @@ export function GestionRoles() {
       notifySuccess("Rol actualizado con éxito.");
       utils.user.getUsersAdvanced.invalidate();
     },
-    onError: (error) => notifyError(error.message),
+    onError: (error) => notifyError(parseErrorMessage(error)),
   });
 
   const regions = [...ENROLLMENT_REGION_FILTER_OPTIONS];
@@ -203,9 +204,9 @@ export function GestionRoles() {
                       </Badge>
                     ) : (
                       <Select
-                        defaultValue={user.role}
+                        value={user.role}
                         onValueChange={async (val: UserRole | null) => {
-                          if (!val) return;
+                          if (!val || val === user.role) return;
                           const ok = await confirm({
                             title: "Cambiar rol",
                             description: `¿Asignar ${ROLE_LABELS[val]} a ${user.name}?`,
@@ -214,7 +215,7 @@ export function GestionRoles() {
                           });
                           if (ok) updateRole.mutate({ userId: user.id, role: val });
                         }}
-                        disabled={user.id === session.user.id}
+                        disabled={user.id === session.user.id || updateRole.isPending}
                       >
                         <SelectTrigger className="w-full md:w-[180px] h-10 text-[10px] font-black uppercase border-2">
                           <SelectValue />

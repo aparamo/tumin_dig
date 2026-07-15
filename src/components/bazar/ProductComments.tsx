@@ -11,6 +11,7 @@ import { Loader2, Pencil, Trash2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 export interface ProductCommentsProps {
   productId: string;
@@ -43,7 +44,7 @@ export function ProductComments({ productId }: ProductCommentsProps) {
       setDraft("");
       void utils.bazar.getComments.invalidate({ productId });
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const editMutation = trpc.bazar.editComment.useMutation({
@@ -52,7 +53,7 @@ export function ProductComments({ productId }: ProductCommentsProps) {
       setEditBody("");
       void utils.bazar.getComments.invalidate({ productId });
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const deleteMutation = trpc.bazar.deleteComment.useMutation({
@@ -60,7 +61,7 @@ export function ProductComments({ productId }: ProductCommentsProps) {
       notifySuccess("Comentario eliminado.");
       void utils.bazar.getComments.invalidate({ productId });
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const currentUserId = session?.user?.id;

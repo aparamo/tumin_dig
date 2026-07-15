@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Smartphone, Monitor, CheckCircle2, ShieldCheck, Eye, UserCheck } from "lucide-react";
+import { Smartphone, Monitor, CheckCircle2, ShieldCheck, Eye, UserCheck, UserPlus, Timer } from "lucide-react";
 
 export default function PrimerosPasosPage() {
   return (
@@ -45,6 +45,38 @@ export default function PrimerosPasosPage() {
             <p className="text-sm text-foreground/70">Simplemente guarda la dirección en tus &quot;Favoritos&quot; o &quot;Marcadores&quot; para acceso rápido.</p>
           </Card>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Cómo unirte: invitación segura
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          El Túmin Digital es una <strong>red cerrada y de confianza</strong>. Para registrarte necesitas un link de invitación generado por un socio o socia que ya esté dentro.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+            <UserPlus className="w-8 h-8 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h4 className="font-black uppercase tracking-tight">Pide tu invitación</h4>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Desde la sección <strong>Perfil</strong> cualquier socix puede generar su link de invitación. El botón <strong>“Copiar Link”</strong> crea una URL única con un token seguro.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+            <Timer className="w-8 h-8 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h4 className="font-black uppercase tracking-tight">Vence en 7 días</h4>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Cada link es válido <strong>una semana</strong>. Si expira, la persona que te invitó puede generar uno nuevo desde su Perfil con un solo clic.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          Cuando abras el link verás un aviso de “Invitación detectada”. Sin invitación activa no es posible crear cuenta.
+        </p>
       </section>
 
       <section className="space-y-6">

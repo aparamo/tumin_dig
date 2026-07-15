@@ -16,6 +16,7 @@ declare module "next-auth" {
     residenceState?: string | null;
     residenceCountry?: string | null;
     isVerified: boolean;
+    avatarUrl?: string | null;
   }
   interface Session {
     user: {
@@ -28,6 +29,7 @@ declare module "next-auth" {
       residenceState?: string | null;
       residenceCountry?: string | null;
       isVerified: boolean;
+      avatarUrl?: string | null;
     };
   }
 }
@@ -40,6 +42,7 @@ declare module "next-auth/jwt" {
     residenceState?: string | null;
     residenceCountry?: string | null;
     isVerified: boolean;
+    avatarUrl?: string | null;
   }
 }
 
@@ -145,6 +148,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           residenceState: user.residenceState,
           residenceCountry: user.residenceCountry,
           isVerified: user.isVerified,
+          avatarUrl: user.avatarUrl,
         };
       },
     }),
@@ -158,6 +162,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.residenceState = user.residenceState ?? null;
         token.residenceCountry = user.residenceCountry ?? null;
         token.isVerified = user.isVerified;
+        token.avatarUrl = user.avatarUrl ?? null;
       }
       return token;
     },
@@ -169,6 +174,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.residenceState = (token.residenceState as string | null) ?? null;
         session.user.residenceCountry = (token.residenceCountry as string | null) ?? null;
         session.user.isVerified = token.isVerified as boolean;
+        session.user.avatarUrl = (token.avatarUrl as string | null) ?? null;
       }
       return session;
     },

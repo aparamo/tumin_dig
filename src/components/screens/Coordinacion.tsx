@@ -12,6 +12,7 @@ import Image from "next/image";
 import { formatEnrollmentDisplay, formatPublicLocation } from "@/lib/location";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 import { SmartAdsPanel } from "@/components/SmartAdsPanel";
 
 export function Coordinacion() {
@@ -31,7 +32,7 @@ export function Coordinacion() {
       utils.audit.getPendingAuditorValidations.invalidate();
       utils.audit.getAuditRewardStatus.invalidate();
     },
-    onError: (error) => notifyError(error.message),
+    onError: (error) => notifyError(parseErrorMessage(error)),
   });
 
   const verifyJobMutation = trpc.jobs.verifyJob.useMutation({
@@ -39,7 +40,7 @@ export function Coordinacion() {
       notifySuccess(data.status === "PAGADO" ? "Pago autorizado con éxito." : "Trabajo rechazado.");
       utils.jobs.getPendingJobs.invalidate();
     },
-    onError: (error) => notifyError(error.message),
+    onError: (error) => notifyError(parseErrorMessage(error)),
   });
 
   const verifyUserMutation = trpc.user.verifyUserIdentity.useMutation({
@@ -47,7 +48,7 @@ export function Coordinacion() {
       notifySuccess("Identidad de socio verificada.");
       utils.user.getUnverifiedUsers.invalidate();
     },
-    onError: (error) => notifyError(error.message),
+    onError: (error) => notifyError(parseErrorMessage(error)),
   });
 
   const adMutation = trpc.ads.approveAd.useMutation({
@@ -55,7 +56,7 @@ export function Coordinacion() {
       notifySuccess("Anuncio aprobado.");
       utils.ads.getPendingAds.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const rejectAdMutation = trpc.ads.rejectAd.useMutation({
@@ -63,7 +64,7 @@ export function Coordinacion() {
       notifySuccess("Anuncio rechazado.");
       utils.ads.getPendingAds.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const handleVerifyJob = (jobId: string, status: "PAGADO" | "RECHAZADO") => async () => {

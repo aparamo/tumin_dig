@@ -348,8 +348,12 @@ export const registerLocationSchema = z
     residenceState: z.string().trim().max(80).optional().nullable(),
     residenceCity: z.string().trim().max(120).optional().nullable(),
     residencePostalCode: z.string().trim().max(24).optional().nullable(),
-    nip: z.string().min(4).max(6),
+    nip: z
+      .string()
+      .min(4, "El NIP debe tener entre 4 y 6 caracteres")
+      .max(6, "El NIP debe tener entre 4 y 6 caracteres"),
     referrerId: z.string().optional(),
+    inviteToken: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     refineEnrollment(data, ctx);

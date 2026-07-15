@@ -20,6 +20,7 @@ import { products } from "@/db/schema";
 import { useStore } from "@/lib/store";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 type ProductRow = InferSelectModel<typeof products>;
 
@@ -56,7 +57,7 @@ export function GestionProductos() {
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const updateMutation = trpc.bazar.updateProduct.useMutation({
@@ -66,7 +67,7 @@ export function GestionProductos() {
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const deleteMutation = trpc.bazar.deleteProduct.useMutation({
@@ -74,7 +75,7 @@ export function GestionProductos() {
       notifySuccess("Producto eliminado");
       utils.bazar.getMyProducts.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const toggleShowInProfileMutation = trpc.bazar.toggleShowInProfile.useMutation({
@@ -82,7 +83,7 @@ export function GestionProductos() {
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const categories = [
@@ -424,7 +425,7 @@ export function GestionProductos() {
                         utils.user.listMedia.invalidate();
                         utils.user.getMediaUsage.invalidate();
                       }}
-                      onUploadError={(e) => notifyError(e.message)}
+                      onUploadError={(e) => notifyError(parseErrorMessage(e))}
                       content={{
                         button: "Subir Imagen",
                         allowedContent: "Imágenes permitidas"

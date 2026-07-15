@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useFeedback } from "@/components/FeedbackProvider";
+import { parseErrorMessage } from "@/lib/parse-error";
 import {
   ENROLLMENT_REGIONS,
   ENROLLMENT_REGION_HINTS,
@@ -34,7 +35,8 @@ function RegisterForm() {
   const registerMutation = trpc.user.register.useMutation();
 
   const referrerId = searchParams.get("ref") ?? "";
-  const isReferralValid = referrerId.length > 0;
+  const inviteToken = searchParams.get("token") ?? "";
+  const isReferralValid = referrerId.length > 0 || inviteToken.length > 0;
 
   const [residenceMode, setResidenceMode] = useState<ResidenceMode>("mexico");
   const [enrollmentMethod, setEnrollmentMethod] = useState<EnrollmentMethod>("REGION");
@@ -50,6 +52,7 @@ function RegisterForm() {
     residenceCountry: "",
     nip: "",
     referrerId,
+    inviteToken,
   });
 
   const [error, setError] = useState("");
@@ -107,12 +110,12 @@ function RegisterForm() {
         residencePostalCode: formData.residencePostalCode.trim() || undefined,
         nip: formData.nip,
         referrerId: formData.referrerId || undefined,
+        inviteToken: formData.inviteToken || undefined,
       });
       notifySuccess("¡Cuenta creada con éxito!");
       router.push("/login");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al registrarse";
-      setError(message);
+      setError(parseErrorMessage(err));
     }
   };
 

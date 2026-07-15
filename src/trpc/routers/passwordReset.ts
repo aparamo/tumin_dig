@@ -108,7 +108,10 @@ export const passwordResetRouter = createTRPCRouter({
       z.object({
         identifier: z.string().trim().min(3).max(120),
         code: z.string().trim().min(4).max(10),
-        newNip: z.string().min(4).max(6),
+        newNip: z
+          .string()
+          .min(4, "El NIP debe tener entre 4 y 6 caracteres")
+          .max(6, "El NIP debe tener entre 4 y 6 caracteres"),
       })
     )
     .mutation(async ({ input }) => {

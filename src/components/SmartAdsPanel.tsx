@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Megaphone, Trash2, ExternalLink, ImageIcon } from "lucide-react";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 import { ENROLLMENT_REGIONS, MEXICO_STATES } from "@/lib/location";
 import Image from "next/image";
 
@@ -48,7 +49,7 @@ export function SmartAdsPanel() {
       });
       utils.smartAds.list.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const deleteMutation = trpc.smartAds.delete.useMutation({
@@ -56,7 +57,7 @@ export function SmartAdsPanel() {
       notifySuccess("Aviso eliminado.");
       utils.smartAds.list.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

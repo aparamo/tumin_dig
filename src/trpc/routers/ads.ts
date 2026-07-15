@@ -7,7 +7,7 @@ import {
 } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { ads, users } from "../../db/schema";
+import { ads, users, products } from "../../db/schema";
 import { eq, and, desc, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
@@ -18,15 +18,55 @@ import {
 
 export const adsRouter = createTRPCRouter({
   createAd: protectedProcedure
-    .input(z.object({ imageUrl: z.string().url() }))
+    .input(z.object({
+      imageUrl: z.string().url("URL de imagen no válida"),
+      productId: z.string().uuid().optional(),
+      description: z.string().max(120, "La descripción no puede tener más de 120 caracteres").optional(),
+      requestedUntil: z.date().optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      return await db.insert(ads).values({
+
+      if (input.productId) {
+        const [product] = await db
+          .select({ sellerId: products.sellerId })
+          .from(products)
+          .where(and(eq(products.id, input.productId), eq(products.sellerId, userId)))
+          .limit(1);
+        if (!product) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Producto no encontrado o no te pertenece" });
+        }
+      }
+
+      const [ad] = await db.insert(ads).values({
         userId,
         imageUrl: input.imageUrl,
+        productId: input.productId ?? null,
+        description: input.description ?? null,
+        requestedUntil: input.requestedUntil ?? null,
         status: "PENDIENTE",
       }).returning();
+
+      return ad;
     }),
+
+  getMyAds: protectedProcedure.query(async ({ ctx }) => {
+    return await db
+      .select({
+        id: ads.id,
+        imageUrl: ads.imageUrl,
+        description: ads.description,
+        status: ads.status,
+        expiresAt: ads.expiresAt,
+        requestedUntil: ads.requestedUntil,
+        createdAt: ads.createdAt,
+        productName: products.name,
+      })
+      .from(ads)
+      .leftJoin(products, eq(ads.productId, products.id))
+      .where(eq(ads.userId, ctx.session.user.id))
+      .orderBy(desc(ads.createdAt));
+  }),
 
   getPendingAds: regionalCoordinatorProcedure
     .input(z.object({ region: z.string().optional() }).optional())

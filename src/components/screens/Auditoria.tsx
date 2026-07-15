@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, ShieldAlert, UserMinus, Trash2, CheckCircle, Flame, Star, AlertTriangle, UserCheck, Users, Bot, TrendingDown } from "lucide-react";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 interface ConcentrationPatternRow {
   id: string;
@@ -46,7 +47,7 @@ export function Auditoria() {
       utils.audit.getAuditReport.invalidate();
       utils.audit.getAuditRewardStatus.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const deactivateProductMutation = trpc.bazar.deactivateProduct.useMutation({
@@ -54,7 +55,7 @@ export function Auditoria() {
       notifySuccess("Producto desactivado.");
       utils.audit.getAuditReport.invalidate();
     },
-    onError: (e) => notifyError(e.message),
+    onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const claimReward = trpc.audit.claimAuditReward.useMutation({
@@ -64,7 +65,7 @@ export function Auditoria() {
       utils.audit.getAuditRewardStatus.invalidate();
       utils.audit.getPendingAuditorValidations.invalidate();
     },
-    onError: (error) => notifyError(error.message),
+    onError: (error) => notifyError(parseErrorMessage(error)),
   });
 
   const handleFreeze = async (userId: string, status: "ACTIVO" | "CONGELADO") => {

@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Home, MapPin, UserPlus, Briefcase, UserCheck, Megaphone, Globe } from "lucide-react";
+import { Users, Home, MapPin, UserPlus, Briefcase, UserCheck, Megaphone, Globe, Handshake, Clock } from "lucide-react";
 
 export default function GobernanzaPage() {
   return (
@@ -96,7 +96,7 @@ export default function GobernanzaPage() {
           Panel de Coordinación
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Los coordinadores acceden a un panel con tres pestañas de trabajo:
+          Los coordinadores acceden a un panel con cuatro pestañas de trabajo:
         </p>
         <div className="space-y-4">
           <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
@@ -119,6 +119,15 @@ export default function GobernanzaPage() {
             </div>
           </div>
           <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
+            <Handshake className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-black uppercase text-sm tracking-widest mb-1">Pares</h4>
+              <p className="text-sm text-foreground/70">
+                Muestra a otros coordinadores que tienen actividad administrativa reciente y aún no han sido validados por un par. Cada coordinador puede validar a otro una vez al mes, lo que le permite al validado reclamar su bono de auditoría correspondiente.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
             <Megaphone className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest mb-1">Publicidad</h4>
@@ -127,6 +136,26 @@ export default function GobernanzaPage() {
               </p>
               <p className="text-xs text-foreground/50 mt-1 italic">
                 La política general de publicidad — qué formas, frecuencia e integración se permiten — se sigue definiendo de forma consensuada con la comunidad.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Pantalla Comunidad
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          La sección <strong>Comunidad</strong> es el punto de encuentro para registrar y consultar trabajo comunitario. Al final de la pantalla se muestra un <strong>historial paginado</strong> de las últimas actividades.
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
+            <Clock className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-black uppercase text-sm tracking-widest mb-1">Historial de actividades</h4>
+              <p className="text-sm text-foreground/70">
+                Cada entrada muestra el nombre del socix, una descripción resumida, el estado (<strong>Pendiente</strong>, <strong>Pagado</strong> o <strong>Rechazado</strong>), el tiempo estimado que tomó la labor y la fecha de registro. Puedes avanzar página por página para revisar actividades anteriores.
               </p>
             </div>
           </div>

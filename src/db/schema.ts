@@ -101,6 +101,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   media: many(media),
   ads: many(ads),
   passwordResets: many(passwordResets),
+  inviteTokens: many(inviteTokens),
 }));
 
 export const passwordResets = pgTable("TUMIN_password_resets", {
@@ -279,7 +280,10 @@ export const mediaRelations = relations(media, ({ one }) => ({
 export const ads = pgTable("TUMIN_ads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").references(() => users.id).notNull(),
+  productId: uuid("product_id").references(() => products.id),
   imageUrl: text("image_url").notNull(),
+  description: text("description"),
+  requestedUntil: timestamp("requested_until"),
   status: adStatusEnum("status").default("PENDIENTE").notNull(),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -289,6 +293,10 @@ export const adsRelations = relations(ads, ({ one }) => ({
   user: one(users, {
     fields: [ads.userId],
     references: [users.id],
+  }),
+  product: one(products, {
+    fields: [ads.productId],
+    references: [products.id],
   }),
 }));
 
@@ -360,6 +368,23 @@ export const smartAds = pgTable("TUMIN_smart_ads", {
 export const smartAdsRelations = relations(smartAds, ({ one }) => ({
   creator: one(users, {
     fields: [smartAds.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const inviteTokens = pgTable("TUMIN_invite_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const inviteTokensRelations = relations(inviteTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [inviteTokens.userId],
     references: [users.id],
   }),
 }));

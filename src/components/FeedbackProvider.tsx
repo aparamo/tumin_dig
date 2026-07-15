@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { parseErrorMessage } from "@/lib/parse-error";
 
 interface FeedbackContextValue {
   notifySuccess: (message: string) => void;
@@ -29,7 +30,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const notifyError = useCallback((message: string) => {
-    setErrorMessage(message);
+    setErrorMessage(parseErrorMessage(message));
   }, []);
 
   const closeError = () => setErrorMessage(null);
