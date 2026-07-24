@@ -70,11 +70,31 @@ function parseZodIssues(raw: string): string | null {
   }
 }
 
+type UploadThingErrorData = {
+  cause?: unknown;
+  zodError?: unknown;
+};
+
+function getUploadThingCause(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const data = (err as { data?: UploadThingErrorData }).data;
+  if (!data || typeof data !== "object") return null;
+  const cause = data.cause;
+  if (typeof cause === "string" && cause.trim()) return cause.trim();
+  if (cause instanceof Error && cause.message) return cause.message;
+  return null;
+}
+
 /**
- * Convierte cualquier error de tRPC/Zod/mensaje raw en un texto legible
+ * Convierte cualquier error de tRPC/Zod/UploadThing/mensaje raw en un texto legible
  * y seguro para mostrar en la UI.
  */
 export function parseErrorMessage(err: unknown): string {
+  const utCause = getUploadThingCause(err);
+  if (utCause) {
+    return toFriendlyErrorMessage(utCause);
+  }
+
   if (typeof err === "string") {
     if (looksLikeZodIssues(err)) {
       return parseZodIssues(err) ?? toFriendlyErrorMessage(err);

@@ -1,10 +1,39 @@
 /**
+ * Turns UploadThing FileSizeMismatch cause / message into Spanish.
+ * Cause shape: "You uploaded a image file that was 5.20MB, but the limit for that type is 4MB"
+ */
+function friendlyUploadThingSizeMessage(raw: string): string | null {
+  const sizeMismatch = raw.match(
+    /uploaded a (\S+) file that was ([^,]+), but the limit for that type is (\S+)/i,
+  );
+  if (sizeMismatch) {
+    const [, type, actual, limit] = sizeMismatch;
+    const typeLabel =
+      type === "image" ? "imagen" : type === "video" ? "video" : type;
+    return `El archivo (${typeLabel}) pesa ${actual} y el máximo permitido es ${limit}. Elige uno más ligero o comprímelo.`;
+  }
+
+  if (/FileSizeMismatch/i.test(raw) || /Invalid config:\s*FileSizeMismatch/i.test(raw)) {
+    return "El archivo excede el tamaño máximo permitido (imágenes hasta 4 MB; avatar hasta 1 MB; videos según tu plan).";
+  }
+
+  if (/FileCountMismatch/i.test(raw) || /Invalid config:\s*FileCountMismatch/i.test(raw)) {
+    return "Seleccionaste más archivos de los permitidos para este tipo de subida.";
+  }
+
+  return null;
+}
+
+/**
  * Turns tRPC / Zod / raw JSON error strings into a short Spanish message
  * safe to show in UI dialogs.
  */
 export function toFriendlyErrorMessage(message: unknown): string {
   const raw = typeof message === "string" ? message.trim() : "";
   if (!raw) return "Algo salió mal. Intenta de nuevo.";
+
+  const uploadThingMsg = friendlyUploadThingSizeMessage(raw);
+  if (uploadThingMsg) return uploadThingMsg;
 
   // Zod issue arrays sometimes arrive as JSON string in error.message
   if (raw.startsWith("[") || raw.startsWith("{")) {

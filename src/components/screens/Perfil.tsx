@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useStore } from "@/lib/store";
-import { UploadButton } from "@/lib/uploadthing";
+import { UploadButton, createUploadBeginHandlers, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFeedback } from "@/components/FeedbackProvider";
@@ -71,6 +71,17 @@ export function Perfil() {
   const { setCurrentScreen } = useStore();
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
+  const avatarUploadHandlers = useMemo(
+    () =>
+      createUploadBeginHandlers(
+        { notifyError, notifySuccess },
+        {
+          imageMaxBytes: UPLOAD_LIMIT_BYTES.avatarImage,
+          label: "foto de perfil",
+        },
+      ),
+    [notifyError, notifySuccess],
+  );
   const { data: user, isLoading } = trpc.user.fullMe.useQuery();
   
   const updateProfile = trpc.user.updateProfile.useMutation({
@@ -190,12 +201,15 @@ export function Perfil() {
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <UploadButton
                   endpoint="avatar"
+                  onBeforeUploadBegin={avatarUploadHandlers.onBeforeUploadBegin}
                   onClientUploadComplete={() => {
                     notifySuccess("Foto de perfil actualizada");
                     utils.user.fullMe.invalidate();
                   }}
+                  onUploadError={avatarUploadHandlers.onUploadError}
                   content={{
-                    button: "Cambiar Foto"
+                    button: "Cambiar Foto",
+                    allowedContent: `Máx. ${UPLOAD_LIMITS.avatarImage} (se optimiza si pesa de más)`,
                   }}
                   appearance={{
                     button: "neo-btn bg-primary text-primary-foreground uppercase text-[10px] h-8 px-4",
@@ -548,7 +562,7 @@ export function Perfil() {
                   placeholder="Cuéntale a la comunidad quién eres…"
                   value={privacy.bio}
                   onChange={(e) => setPrivacy((p) => ({ ...p, bio: e.target.value.slice(0, 300) }))}
-                  className="min-h-[88px] border-2 bg-background"
+                  className="min-h-22 border-2 bg-background"
                   maxLength={300}
                 />
               </div>

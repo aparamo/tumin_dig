@@ -48,7 +48,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="uppercase font-black tracking-tight">Algo salió mal</DialogTitle>
-            <DialogDescription className="font-bold uppercase text-xs tracking-wide">
+            <DialogDescription className="text-sm font-medium leading-relaxed text-foreground/80 normal-case tracking-normal">
               {errorMessage}
             </DialogDescription>
           </DialogHeader>

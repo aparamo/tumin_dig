@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, startTransition } from "react";
+import { useState, useEffect, useCallback, startTransition, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Edit2, Trash2, X, ExternalLink } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
-import { UploadButton } from "@/lib/uploadthing";
+import { UploadButton, createUploadBeginHandlers, getUploadedFileUrl, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
 import type { InferSelectModel } from "drizzle-orm";
 import { products } from "@/db/schema";
 import { useStore } from "@/lib/store";
@@ -41,6 +41,18 @@ export function GestionProductos() {
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
   const { confirm, ConfirmDialog } = useConfirm();
+  const uploadHandlers = useMemo(
+    () =>
+      createUploadBeginHandlers(
+        { notifyError, notifySuccess },
+        {
+          imageMaxBytes: UPLOAD_LIMIT_BYTES.userMediaImage,
+          videoMaxBytes: UPLOAD_LIMIT_BYTES.userMediaVideo,
+          label: "imágenes de producto",
+        },
+      ),
+    [notifyError, notifySuccess],
+  );
   const openGestionProductCreate = useStore((s) => s.openGestionProductCreate);
   const setOpenGestionProductCreate = useStore((s) => s.setOpenGestionProductCreate);
   const { data: myProducts, isLoading } = trpc.bazar.getMyProducts.useQuery();
@@ -299,7 +311,7 @@ export function GestionProductos() {
       </StaggerContainer>
 
       {isModalOpen && editingProduct && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-background/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-100verflow-y-auto bg-background/80 backdrop-blur-md">
           <div className="flex min-h-full justify-center p-4 py-8 sm:p-6 sm:py-12">
             <Card className="relative my-auto flex w-full max-w-2xl flex-col overflow-hidden border-2 shadow-2xl md:max-w-4xl lg:max-w-5xl max-h-[min(100dvh-2.5rem,920px)]">
             <Button variant="ghost" size="icon" className="absolute right-3 top-3 z-10 neo-btn bg-background h-10 w-10 sm:right-4 sm:top-4" onClick={() => setIsModalOpen(false)}>
@@ -393,7 +405,7 @@ export function GestionProductos() {
                     <Textarea
                       value={editingProduct.description}
                       onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                      className="min-h-[100px] border-2 bg-background"
+                      className="min-h-25 border-2 bg-background"
                       required
                       maxLength={8000}
                     />
@@ -405,7 +417,7 @@ export function GestionProductos() {
                     <Textarea
                       value={editingProduct.extraInfo}
                       onChange={(e) => setEditingProduct({ ...editingProduct, extraInfo: e.target.value })}
-                      className="min-h-[72px] border-2 bg-background"
+                      className="min-h-18 border-2 bg-background"
                       maxLength={16000}
                     />
                   </div>
@@ -416,8 +428,11 @@ export function GestionProductos() {
                     <Label className="font-black uppercase text-base">Imágenes del Producto</Label>
                     <UploadButton
                       endpoint="userMedia"
+                      onBeforeUploadBegin={uploadHandlers.onBeforeUploadBegin}
                       onClientUploadComplete={(res) => {
-                        const newFiles = res.map(r => r.url);
+                        const newFiles = res
+                          .map((r) => getUploadedFileUrl(r))
+                          .filter(Boolean);
                         setEditingProduct({
                           ...editingProduct,
                           imgUrls: [...(editingProduct.imgUrls || []), ...newFiles]
@@ -425,10 +440,10 @@ export function GestionProductos() {
                         utils.user.listMedia.invalidate();
                         utils.user.getMediaUsage.invalidate();
                       }}
-                      onUploadError={(e) => notifyError(parseErrorMessage(e))}
+                      onUploadError={uploadHandlers.onUploadError}
                       content={{
                         button: "Subir Imagen",
-                        allowedContent: "Imágenes permitidas"
+                        allowedContent: `Hasta ${UPLOAD_LIMITS.userMediaImage} (se optimiza si pesa de más)`,
                       }}
                       appearance={{
                         button:
@@ -461,7 +476,7 @@ export function GestionProductos() {
                   {/* Media Gallery Selector */}
                   <div className="space-y-2">
                     <Label className="font-black uppercase text-md text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
-                    <div className="flex gap-2 overflow-x-auto pb-2 min-h-[4rem]">
+                    <div className="flex gap-2 overflow-x-auto pb-2 min-h-16">
                       {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
                         const isSelected = editingProduct.imgUrls?.includes(m.url);
                         return (

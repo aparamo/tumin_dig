@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UploadButton } from "@/lib/uploadthing";
+import { UploadButton, createUploadBeginHandlers, getUploadedFileUrl, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { Loader2, Megaphone, ImageIcon, Info, Calendar } from "lucide-react";
@@ -25,6 +25,18 @@ const STATUS_BADGE = {
 export function GestionAnuncios() {
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
+  const uploadHandlers = useMemo(
+    () =>
+      createUploadBeginHandlers(
+        { notifyError, notifySuccess },
+        {
+          imageMaxBytes: UPLOAD_LIMIT_BYTES.userMediaImage,
+          videoMaxBytes: UPLOAD_LIMIT_BYTES.userMediaVideo,
+          label: "la imagen del anuncio",
+        },
+      ),
+    [notifyError, notifySuccess],
+  );
 
   const { data: myAds, isLoading: isLoadingAds } = trpc.ads.getMyAds.useQuery();
   const { data: myProducts, isLoading: isLoadingProducts } = trpc.bazar.getMyProducts.useQuery();
@@ -152,16 +164,17 @@ export function GestionAnuncios() {
                 <div className="flex flex-wrap gap-2 justify-center">
                   <UploadButton
                     endpoint="userMedia"
+                    onBeforeUploadBegin={uploadHandlers.onBeforeUploadBegin}
                     onClientUploadComplete={(res) => {
-                      const url = res[0]?.url;
+                      const url = getUploadedFileUrl(res[0] ?? {});
                       if (url) setImageUrl(url);
                       utils.user.listMedia.invalidate();
                       utils.user.getMediaUsage.invalidate();
                     }}
-                    onUploadError={(e) => notifyError(parseErrorMessage(e))}
+                    onUploadError={uploadHandlers.onUploadError}
                     content={{
                       button: imageUrl ? "Cambiar imagen" : "Subir imagen",
-                      allowedContent: "Imágenes permitidas",
+                      allowedContent: `Hasta ${UPLOAD_LIMITS.userMediaImage} (se optimiza si pesa de más)`,
                     }}
                     appearance={{
                       button: "neo-btn bg-primary text-primary-foreground font-black uppercase text-xs h-10 px-4",
@@ -192,7 +205,7 @@ export function GestionAnuncios() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value.slice(0, 120))}
                 placeholder="Ej. Taller de tés medicinales este sábado"
-                className="min-h-[80px] border-2 bg-background"
+                className="min-h-20 border-2 bg-background"
               />
             </div>
 

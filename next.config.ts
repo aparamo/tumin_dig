@@ -7,9 +7,10 @@ const cspDirectives = [
   // Next.js needs unsafe-inline for styles and scripts; unsafe-eval only in dev
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://utfs.io https://lh3.googleusercontent.com",
-  "media-src 'self' https://utfs.io",
-  "connect-src 'self' https://*.uploadthing.com https://uploadthing.com wss://*.uploadthing.com",
+  // UploadThing v7 serves from <appId>.ufs.sh; utfs.io kept for legacy URLs
+  "img-src 'self' data: blob: https://utfs.io https://*.ufs.sh https://lh3.googleusercontent.com",
+  "media-src 'self' https://utfs.io https://*.ufs.sh",
+  "connect-src 'self' https://*.uploadthing.com https://uploadthing.com https://*.ufs.sh https://api.uploadthing.com wss://*.uploadthing.com",
   "font-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -22,6 +23,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "utfs.io" },
+      { protocol: "https", hostname: "*.ufs.sh" },
+      { protocol: "https", hostname: "eqc4vmui7f.ufs.sh" },
       // Google Drive previews / avatars
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],

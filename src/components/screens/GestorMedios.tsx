@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   Loader2, Trash2, Link as LinkIcon, Image as ImageIcon, 
   Video, ExternalLink, HardDrive 
 } from "lucide-react";
-import { UploadButton } from "@/lib/uploadthing";
+import { UploadButton, createUploadBeginHandlers, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "@/components/FeedbackProvider";
@@ -31,6 +31,18 @@ export function GestorMedios() {
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
   const { confirm, ConfirmDialog } = useConfirm();
+  const uploadHandlers = useMemo(
+    () =>
+      createUploadBeginHandlers(
+        { notifyError, notifySuccess },
+        {
+          imageMaxBytes: UPLOAD_LIMIT_BYTES.userMediaImage,
+          videoMaxBytes: UPLOAD_LIMIT_BYTES.userMediaVideo,
+          label: "esta subida",
+        },
+      ),
+    [notifyError, notifySuccess],
+  );
   const { data: usage } = trpc.user.getMediaUsage.useQuery();
   const { data: mediaList, isLoading: loadingMedia } = trpc.user.listMedia.useQuery();
   const deleteMutation = trpc.user.deleteMedia.useMutation({
@@ -113,18 +125,19 @@ export function GestorMedios() {
               <div className="border-2 border-dashed border-border rounded-xl p-6 bg-muted/20 flex flex-col items-center justify-center text-center">
                 <UploadButton
                   endpoint="userMedia"
+                  onBeforeUploadBegin={uploadHandlers.onBeforeUploadBegin}
                   onClientUploadComplete={() => {
                     notifySuccess("Archivo subido con éxito");
                     utils.user.listMedia.invalidate();
                     utils.user.getMediaUsage.invalidate();
                   }}
-                  onUploadError={(e) => notifyError(parseErrorMessage(e))}
+                  onUploadError={uploadHandlers.onUploadError}
                   content={{
                     button({ ready }) {
                       if (ready) return "Seleccionar Archivo";
                       return "Cargando...";
                     },
-                    allowedContent: "Imágenes y videos permitidos",
+                    allowedContent: `Imágenes hasta ${UPLOAD_LIMITS.userMediaImage} (se optimizan solas si pesan de más); videos según tu plan (máx. ${UPLOAD_LIMITS.userMediaVideo})`,
                   }}
                   appearance={{
                     button: "neo-btn bg-primary text-primary-foreground font-black uppercase text-xs h-12 px-6",
