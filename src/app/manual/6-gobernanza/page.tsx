@@ -132,7 +132,7 @@ export default function GobernanzaPage() {
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest mb-1">Publicidad</h4>
               <p className="text-sm text-foreground/70">
-                Revisa las solicitudes de anuncio gratuito enviadas por socios de su región. Puede aprobar o rechazar cada imagen antes de que aparezca en el banner del Dashboard.
+                Revisa las solicitudes de anuncio gratuito enviadas por socios de su región. Puede aprobar o rechazar cada imagen. Los anuncios activos se muestran al azar en Inicio solo a socios cuya región de adscripción coincida con el alcance del anuncio, o a toda la red si el alcance es GENERAL.
               </p>
               <p className="text-xs text-foreground/50 mt-1 italic">
                 La política general de publicidad — qué formas, frecuencia e integración se permiten — se sigue definiendo de forma consensuada con la comunidad.

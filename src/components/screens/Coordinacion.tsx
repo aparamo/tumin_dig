@@ -245,7 +245,12 @@ export function Coordinacion() {
                        <Image src={ad.imageUrl} alt="Ad content" fill className="object-cover" />
                     </div>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-black uppercase truncate">{ad.userName}</CardTitle>
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-sm font-black uppercase truncate">{ad.userName}</CardTitle>
+                        <Badge variant="secondary" className="text-[10px] font-black uppercase shrink-0">
+                          {ad.targetRegion === "GENERAL" ? "Toda la red" : ad.targetRegion}
+                        </Badge>
+                      </div>
                       <CardDescription className="text-[10px] font-bold uppercase">Mes de anuncio gratis</CardDescription>
                     </CardHeader>
                     <CardContent className="flex gap-2">

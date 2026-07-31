@@ -68,6 +68,7 @@ export function GestionProductos() {
       setIsModalOpen(false);
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
+      void utils.user.getGamificationState.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
   });
@@ -78,6 +79,7 @@ export function GestionProductos() {
       setIsModalOpen(false);
       void utils.bazar.getMyProducts.invalidate();
       void utils.bazar.getProducts.invalidate();
+      void utils.user.getGamificationState.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
   });
@@ -86,6 +88,7 @@ export function GestionProductos() {
     onSuccess: () => {
       notifySuccess("Producto eliminado");
       utils.bazar.getMyProducts.invalidate();
+      void utils.user.getGamificationState.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
   });

@@ -14,6 +14,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
+import { GamificationTips } from "@/components/GamificationTips";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
@@ -26,7 +27,7 @@ export function Inicio() {
   
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = trpc.wallet.getBalance.useQuery();
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
-  const { data: activeAds } = trpc.ads.getActiveAds.useQuery();
+  const { data: activeAd } = trpc.ads.getActiveAds.useQuery();
   const { data: rewardStatus } = trpc.audit.getAuditRewardStatus.useQuery(undefined, {
     enabled: isCoordinator,
   });
@@ -73,11 +74,11 @@ export function Inicio() {
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
-      {activeAds && activeAds.length > 0 && (
+      {activeAd && (
         <div className="md:col-span-12">
           <div className="relative w-full aspect-21/9 md:aspect-32/9 rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
             <Image 
-              src={activeAds[0].imageUrl} 
+              src={activeAd.imageUrl} 
               alt="Anuncio Comunitario" 
               fill 
               className="object-cover transition-transform group-hover:scale-105 duration-700" 
@@ -85,7 +86,9 @@ export function Inicio() {
             <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent flex items-end p-6">
               <div className="text-white">
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Mes de anuncio gratis</div>
-                <div className="text-xl font-black uppercase">¡Descubre algo nuevo hoy!</div>
+                <div className="text-xl font-black uppercase">
+                  {activeAd.description?.trim() ? activeAd.description : "¡Descubre algo nuevo hoy!"}
+                </div>
               </div>
             </div>
             <Button 
@@ -167,6 +170,7 @@ export function Inicio() {
               </div>
             </div>
           )}
+          <GamificationTips />
           {isCoordinator && showAuditBanner && (
             <Link href={auditBanner.href} className="block">
               <div className="flex items-start gap-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-3 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">

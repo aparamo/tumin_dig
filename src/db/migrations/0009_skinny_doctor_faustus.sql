@@ -1,0 +1,1 @@
+ALTER TABLE "TUMIN_ads" ADD COLUMN "target_region" text DEFAULT 'GENERAL' NOT NULL;

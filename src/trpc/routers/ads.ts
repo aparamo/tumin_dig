@@ -1,6 +1,5 @@
 import {
   createTRPCRouter,
-  publicProcedure,
   protectedProcedure,
   coordinatorProcedure,
   regionalCoordinatorProcedure,
@@ -8,7 +7,7 @@ import {
 import { z } from "zod";
 import { db } from "../../db";
 import { ads, users, products } from "../../db/schema";
-import { eq, and, desc, gte } from "drizzle-orm";
+import { eq, and, desc, gte, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   buildJurisdictionCondition,
@@ -23,9 +22,20 @@ export const adsRouter = createTRPCRouter({
       productId: z.string().uuid().optional(),
       description: z.string().max(120, "La descripción no puede tener más de 120 caracteres").optional(),
       requestedUntil: z.date().optional(),
+      /** GENERAL = toda la red; omitir o enviar la región de adscripción del socio */
+      targetRegion: z.string().min(1).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      const userRegion = ctx.session.user.region;
+      const resolvedRegion = input.targetRegion ?? userRegion;
+
+      if (resolvedRegion !== "GENERAL" && resolvedRegion !== userRegion) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El alcance del anuncio solo puede ser tu región o toda la red",
+        });
+      }
 
       if (input.productId) {
         const [product] = await db
@@ -44,6 +54,7 @@ export const adsRouter = createTRPCRouter({
         productId: input.productId ?? null,
         description: input.description ?? null,
         requestedUntil: input.requestedUntil ?? null,
+        targetRegion: resolvedRegion,
         status: "PENDIENTE",
       }).returning();
 
@@ -57,6 +68,7 @@ export const adsRouter = createTRPCRouter({
         imageUrl: ads.imageUrl,
         description: ads.description,
         status: ads.status,
+        targetRegion: ads.targetRegion,
         expiresAt: ads.expiresAt,
         requestedUntil: ads.requestedUntil,
         createdAt: ads.createdAt,
@@ -95,6 +107,7 @@ export const adsRouter = createTRPCRouter({
           id: ads.id,
           imageUrl: ads.imageUrl,
           createdAt: ads.createdAt,
+          targetRegion: ads.targetRegion,
           userName: users.name,
           userId: users.id,
         })
@@ -165,20 +178,31 @@ export const adsRouter = createTRPCRouter({
         .returning({ id: ads.id, status: ads.status });
     }),
 
-  getActiveAds: publicProcedure.query(async () => {
+  getActiveAds: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
-    return await db
+    const viewerRegion = ctx.session.user.region;
+
+    const [ad] = await db
       .select({
         id: ads.id,
         imageUrl: ads.imageUrl,
+        description: ads.description,
+        productId: ads.productId,
         userId: ads.userId,
+        targetRegion: ads.targetRegion,
       })
       .from(ads)
       .where(and(
         eq(ads.status, "ACTIVO"),
-        gte(ads.expiresAt, now)
+        gte(ads.expiresAt, now),
+        or(
+          eq(ads.targetRegion, "GENERAL"),
+          eq(ads.targetRegion, viewerRegion)
+        )
       ))
-      .orderBy(desc(ads.createdAt))
-      .limit(5);
+      .orderBy(sql`RANDOM()`)
+      .limit(1);
+
+    return ad ?? null;
   }),
 });

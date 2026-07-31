@@ -30,11 +30,11 @@ export default function MotorAbundanciaPage() {
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className="text-sm font-bold">Día 1 al 3</TableCell>
+                <TableCell className="text-sm font-bold">Día 1 al 2</TableCell>
                 <TableCell className="text-sm font-black text-primary text-right">1 Ŧ</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="text-sm font-bold">Día 4 al 6</TableCell>
+                <TableCell className="text-sm font-bold">Día 3 al 6</TableCell>
                 <TableCell className="text-sm font-black text-primary text-right">3 Ŧ</TableCell>
               </TableRow>
               <TableRow>
@@ -65,21 +65,21 @@ export default function MotorAbundanciaPage() {
           Bonificaciones de Bienvenida
         </h2>
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
-          Al publicar tu primer producto en el Bazar, el sistema activa automáticamente dos recompensas de bienvenida que suman <strong>30 Ŧ</strong>.
+          Al activarte en la red recibes dos bonos independientes: <strong>25 Ŧ</strong> al publicar tu primer producto y <strong>25 Ŧ</strong> adicionales la primera vez que alguien te paga una venta.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 border-2 border-primary/20 rounded-xl space-y-3 bg-primary/5">
             <Gift className="w-6 h-6 text-primary" />
-            <h4 className="font-black uppercase text-md tracking-widest">Bono de Activación</h4>
+            <h4 className="font-black uppercase text-md tracking-widest">Bono Primer Producto</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              <strong>25 Ŧ</strong> al activar tu cuenta publicando tu primer producto.
+              <strong>25 Ŧ</strong> al publicar tu primer producto o servicio en Mis Productos. Así se activa tu cuenta para minar y recibir pagos.
             </p>
           </div>
           <div className="p-6 border-2 border-primary/20 rounded-xl space-y-3 bg-primary/5">
             <TrendingUp className="w-6 h-6 text-primary" />
-            <h4 className="font-black uppercase text-md tracking-widest">Bono de Publicación</h4>
+            <h4 className="font-black uppercase text-md tracking-widest">Bono Primera Venta</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              <strong>5 Ŧ</strong> adicionales por publicar ese primer artículo. En total: <strong>30 Ŧ</strong> de bienvenida.
+              <strong>25 Ŧ</strong> la primera vez que recibes una transferencia de otro socio por una venta. Independiente del bono de publicar.
             </p>
           </div>
         </div>
@@ -162,20 +162,20 @@ export default function MotorAbundanciaPage() {
             <h3 className="text-xl font-black uppercase tracking-tight">1 mes de visibilidad en el Dashboard</h3>
           </div>
           <p className="text-sm text-foreground/70 leading-relaxed">
-            Al publicar tu primer producto, obtienes derecho a solicitar <strong>1 mes de anuncio gratuito</strong> en el banner superior del Dashboard que todos los socios ven al entrar. Es una forma de darte a conocer en la red.
+            Al publicar tu primer producto, obtienes derecho a solicitar <strong>1 mes de anuncio gratuito</strong> en el banner de Inicio. Puedes elegir alcance <strong>regional</strong> (solo socios de tu región de adscripción) o <strong>toda la red</strong>. Cada vez que alguien entra, el sistema muestra al azar uno de los anuncios activos que le corresponden.
           </p>
           <div className="space-y-3">
             <div className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0 text-xs">1</span>
-              <p className="text-foreground/70 pt-0.5">Prepara la imagen de tu anuncio y súbela desde <strong>Mis Archivos</strong>.</p>
+              <p className="text-foreground/70 pt-0.5">Prepara la imagen de tu anuncio y súbela desde <strong>Mis Archivos</strong> o desde Gestión de Anuncios.</p>
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0 text-xs">2</span>
-              <p className="text-foreground/70 pt-0.5">Envíala a revisión — tu Bantúmin la aprueba o rechaza desde el Panel de Coordinación.</p>
+              <p className="text-foreground/70 pt-0.5">Elige el alcance (tu región o toda la red) y envíala a revisión — tu Bantúmin la aprueba o rechaza desde Coordinación.</p>
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black shrink-0 text-xs">3</span>
-              <p className="text-foreground/70 pt-0.5">Aprobado, tu anuncio aparece en el banner rotativo durante 30 días.</p>
+              <p className="text-foreground/70 pt-0.5">Aprobado, tu anuncio entra al sorteo del banner durante ~30 días para quienes puedan verlo según el alcance.</p>
             </div>
           </div>
           <div className="bg-muted/40 border border-border rounded-lg p-4 mt-2">

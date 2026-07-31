@@ -174,7 +174,7 @@ export default function MercadoInternoPage() {
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Solicitar un anuncio</h4>
               <p className="text-sm text-foreground/70">
-                Ve a <strong>Gestión de Anuncios</strong> en el menú lateral. Puedes elegir uno de tus productos o dejar el campo vacío para promocionar una actividad general. Escribe un mensaje corto, sube una imagen (o reusa la primera foto del producto) y, si quieres, indica hasta cuándo deseas que esté activo.
+                Ve a <strong>Gestión de Anuncios</strong> en el menú lateral. Puedes elegir uno de tus productos o dejar el campo vacío para promocionar una actividad general. Escribe un mensaje corto, sube una imagen (o reusa la primera foto del producto), elige el <strong>alcance</strong> (tu región de adscripción o toda la red) y, si quieres, indica hasta cuándo deseas que esté activo.
               </p>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function MercadoInternoPage() {
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Estados y aprobación</h4>
               <p className="text-sm text-foreground/70">
-                Tu solicitud nace en estado <strong>Pendiente</strong>. Un coordinador de tu región la revisa y la puede aprobar (<strong>Activo</strong>) o rechazar (<strong>Inactivo</strong>). Cuando está activo, aparece en el banner del inicio durante el tiempo aprobado.
+                Tu solicitud nace en estado <strong>Pendiente</strong>. Un coordinador de tu región la revisa y la puede aprobar (<strong>Activo</strong>) o rechazar (<strong>Inactivo</strong>). Cuando está activo, entra al sorteo del banner de Inicio: lo ven socios de tu región o de toda la red según el alcance que elegiste, durante el tiempo aprobado.
               </p>
             </div>
           </div>

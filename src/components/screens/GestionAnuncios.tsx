@@ -15,6 +15,9 @@ import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { Loader2, Megaphone, ImageIcon, Info, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+
+type TargetScope = "REGION" | "GENERAL";
 
 const STATUS_BADGE = {
   PENDIENTE: { label: "Pendiente", className: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -24,6 +27,7 @@ const STATUS_BADGE = {
 
 export function GestionAnuncios() {
   const utils = trpc.useUtils();
+  const { data: session } = useSession();
   const { notifySuccess, notifyError } = useFeedback();
   const uploadHandlers = useMemo(
     () =>
@@ -45,8 +49,10 @@ export function GestionAnuncios() {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [requestedUntil, setRequestedUntil] = useState<string>("");
+  const [targetScope, setTargetScope] = useState<TargetScope>("REGION");
 
   const selectedProduct = myProducts?.find((p) => p.id === productId);
+  const userRegion = session?.user?.region ?? "";
 
   const createAd = trpc.ads.createAd.useMutation({
     onSuccess: () => {
@@ -55,6 +61,7 @@ export function GestionAnuncios() {
       setImageUrl("");
       setDescription("");
       setRequestedUntil("");
+      setTargetScope("REGION");
       utils.ads.getMyAds.invalidate();
       utils.user.listMedia.invalidate();
       utils.user.getMediaUsage.invalidate();
@@ -73,6 +80,7 @@ export function GestionAnuncios() {
       productId: productId || undefined,
       description: description.trim() || undefined,
       requestedUntil: requestedUntil ? new Date(requestedUntil) : undefined,
+      targetRegion: targetScope === "GENERAL" ? "GENERAL" : userRegion,
     });
   };
 
@@ -221,10 +229,31 @@ export function GestionAnuncios() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase">Alcance del anuncio</Label>
+              <Select
+                value={targetScope}
+                onValueChange={(v) => setTargetScope((v as TargetScope) ?? "REGION")}
+              >
+                <SelectTrigger className="h-12 border-2 bg-background text-xs font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="REGION">
+                    Mi región{userRegion ? ` (${userRegion})` : ""}
+                  </SelectItem>
+                  <SelectItem value="GENERAL">Toda la red</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] font-bold text-muted-foreground">
+                Por defecto solo socios de tu región lo verán en Inicio.
+              </p>
+            </div>
+
             <Button
               type="submit"
               className="w-full md:w-auto h-12 font-black uppercase"
-              disabled={createAd.isPending || !imageUrl}
+              disabled={createAd.isPending || !imageUrl || (targetScope === "REGION" && !userRegion)}
             >
               {createAd.isPending ? <Loader2 className="animate-spin mr-2" /> : <Megaphone className="w-4 h-4 mr-2" />}
               Enviar Solicitud
@@ -239,7 +268,7 @@ export function GestionAnuncios() {
         </h4>
         <ul className="text-xs text-muted-foreground font-medium space-y-1 list-disc pl-4">
           <li>Tu solicitud es revisada por un coordinador de tu región.</li>
-          <li>Si se aprueba, tu anuncio aparece en la pantalla de inicio por 1 mes.</li>
+          <li>Si se aprueba, tu anuncio aparece al azar en Inicio por 1 mes (según el alcance elegido).</li>
           <li>Es completamente gratis para los socios.</li>
         </ul>
       </div>
@@ -268,6 +297,9 @@ export function GestionAnuncios() {
                         {new Date(ad.createdAt).toLocaleDateString("es-MX")}
                       </span>
                     </div>
+                    <Badge variant="secondary" className="font-black uppercase text-[10px]">
+                      {ad.targetRegion === "GENERAL" ? "Toda la red" : ad.targetRegion}
+                    </Badge>
                     {ad.productName && (
                       <p className="text-xs font-black uppercase text-primary truncate">
                         {ad.productName}

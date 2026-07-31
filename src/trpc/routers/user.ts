@@ -32,6 +32,7 @@ import {
 } from "../../lib/trpc/authorization";
 import { logAdminAction } from "../../lib/admin-log";
 import { generateInviteToken, getTokenExpiry } from "../../lib/token";
+import { LIMITS } from "../../lib/limits";
 
 export const userRouter = createTRPCRouter({
   register: rateLimitedPublicProcedure
@@ -209,6 +210,28 @@ export const userRouter = createTRPCRouter({
       .limit(1);
     if (!user) throw new TRPCError({ code: "NOT_FOUND" });
     return user;
+  }),
+
+  getGamificationState: protectedProcedure.query(async ({ ctx }) => {
+    const [row] = await db
+      .select({
+        productOk: users.productOk,
+        firstSaleOk: users.firstSaleOk,
+        duplicatorBonus: users.duplicatorBonus,
+      })
+      .from(users)
+      .where(eq(users.id, ctx.session.user.id))
+      .limit(1);
+
+    if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+
+    const duplicatorUsed = Number(row.duplicatorBonus) || 0;
+    return {
+      productOk: row.productOk,
+      firstSaleOk: row.firstSaleOk,
+      duplicatorUsed,
+      duplicatorRemaining: Math.max(0, LIMITS.DUPLICATOR_CAP - duplicatorUsed),
+    };
   }),
 
   getPublicProfile: publicProcedure

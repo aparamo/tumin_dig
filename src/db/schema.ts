@@ -283,6 +283,8 @@ export const ads = pgTable("TUMIN_ads", {
   productId: uuid("product_id").references(() => products.id),
   imageUrl: text("image_url").notNull(),
   description: text("description"),
+  /** GENERAL = visible network-wide; otherwise matches viewer enrollment region */
+  targetRegion: text("target_region").default("GENERAL").notNull(),
   requestedUntil: timestamp("requested_until"),
   status: adStatusEnum("status").default("PENDIENTE").notNull(),
   expiresAt: timestamp("expires_at"),

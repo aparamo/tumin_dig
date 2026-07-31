@@ -106,7 +106,7 @@ export default function PrimerosPasosPage() {
             </div>
             <div className="bg-background/10 p-4 rounded-lg">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Paso 4</span>
-              <p className="text-sm font-bold mt-1">Recibe <strong>30 Ŧ</strong>, desbloquea el minado y poder recibir pagos</p>
+              <p className="text-sm font-bold mt-1">Recibe <strong>25 Ŧ</strong> al publicar; en tu primera venta recibes otros <strong>25 Ŧ</strong>. Desbloqueas el minado y poder recibir pagos</p>
             </div>
           </div>
         </div>

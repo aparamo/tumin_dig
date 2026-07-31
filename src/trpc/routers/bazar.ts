@@ -18,6 +18,7 @@ import {
 import { isInJurisdiction, type UserRole } from "../../lib/trpc/authorization";
 import { ensureSystemUser } from "../../lib/system-user";
 import { logAdminAction } from "../../lib/admin-log";
+import { LIMITS } from "../../lib/limits";
 
 type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -418,12 +419,11 @@ export const bazarRouter = createTRPCRouter({
         if (userBefore && !userBefore.productOk) {
           await ensureSystemUser(tx);
 
-          // Give Welcome Bonus: 25 (Activation) + 5 (First product) = 30 Tumin
           await tx.insert(transactions).values({
             fromId: "SYSTEM",
             toId: userId,
-            amount: 30,
-            concept: "Bono de Bienvenida y Activación",
+            amount: LIMITS.FIRST_PRODUCT_BONUS,
+            concept: "Bono Primer Producto",
             type: "BONO",
           });
 

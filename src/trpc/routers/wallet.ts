@@ -139,7 +139,7 @@ export const walletRouter = createTRPCRouter({
           await tx.insert(transactions).values({
             fromId: "SYSTEM",
             toId: input.toId,
-            amount: 25,
+            amount: LIMITS.FIRST_SALE_BONUS,
             concept: "Bono Primera Venta",
             type: "BONO",
           });
@@ -147,8 +147,8 @@ export const walletRouter = createTRPCRouter({
         }
 
         // 5. Bono Duplicador
-        if (recipient.duplicatorBonus < 10000) {
-          const bonusAmount = Math.min(input.amount, 10000 - recipient.duplicatorBonus);
+        if (recipient.duplicatorBonus < LIMITS.DUPLICATOR_CAP) {
+          const bonusAmount = Math.min(input.amount, LIMITS.DUPLICATOR_CAP - recipient.duplicatorBonus);
           if (bonusAmount > 0) {
             await tx.insert(transactions).values({
               fromId: "SYSTEM",
