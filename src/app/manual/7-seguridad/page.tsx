@@ -44,22 +44,25 @@ export default function SeguridadPage() {
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
           Si olvidaste tu NIP, puedes recuperarlo desde la pantalla de inicio de sesión con el enlace <strong>¿Olvidaste tu NIP?</strong>. El sistema te enviará un código de verificación de 6 dígitos que expira en <strong>10 minutos</strong>.
         </p>
+        <p className="text-sm leading-relaxed text-foreground/70 font-medium">
+          Orden de envío: primero <strong>correo electrónico</strong> (si tu cuenta tiene email); si no es posible, <strong>WhatsApp</strong>; y en última instancia <strong>SMS</strong> al teléfono registrado.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
-            <KeyRound className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <Mail className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-black uppercase text-sm tracking-widest">Con teléfono registrado</h4>
+              <h4 className="font-black uppercase text-sm tracking-widest">1. Correo (prioridad)</h4>
               <p className="text-sm text-foreground/70">
-                Recibirás el código por <strong>WhatsApp</strong> o, si no es posible, por <strong>SMS</strong> al número con el que te registraste.
+                Si tienes email registrado, el código llega ahí. Es el canal preferido.
               </p>
             </div>
           </div>
           <div className="flex gap-4 p-4 border rounded-xl bg-background/50 items-start">
-            <Mail className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <KeyRound className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-black uppercase text-sm tracking-widest">Solo con correo</h4>
+              <h4 className="font-black uppercase text-sm tracking-widest">2. WhatsApp → 3. SMS</h4>
               <p className="text-sm text-foreground/70">
-                Si tu cuenta no tiene teléfono válido pero sí correo electrónico, el código llegará a tu <strong>email</strong> registrado.
+                Si no hay email (o el correo no pudo enviarse), el código va por WhatsApp y, si falla, por SMS. El mensaje sale desde el servicio de Túmin (Twilio), no desde un celular personal.
               </p>
             </div>
           </div>

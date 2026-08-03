@@ -47,6 +47,89 @@ function hasRecoverablePhone(phone: string | null | undefined): phone is string 
   return Boolean(phone && phone !== "SYSTEM_INTERNAL");
 }
 
+/** Priority: email → WhatsApp → SMS. Returns true if any channel accepted the OTP send. */
+async function sendResetOtp(user: {
+  id: string;
+  email: string | null;
+  phone: string;
+}): Promise<boolean> {
+  // 1) Email first (preferred default)
+  if (user.email) {
+    const code = generateOtpCode();
+    const codeHash = await hashOtpCode(code);
+    const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60_000);
+
+    await db
+      .update(passwordResets)
+      .set({ consumedAt: new Date() })
+      .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt)));
+
+    await db.insert(passwordResets).values({
+      userId: user.id,
+      channel: "EMAIL",
+      codeHash,
+      expiresAt,
+    });
+
+    try {
+      await sendPasswordResetEmail(user.email, code);
+      return true;
+    } catch (err) {
+      // Invalidate the unused email OTP and fall through to phone channels
+      await db
+        .update(passwordResets)
+        .set({ consumedAt: new Date() })
+        .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt)));
+      console.error("[passwordReset] sendPasswordResetEmail failed, trying phone:", err);
+    }
+  }
+
+  // 2) WhatsApp, then 3) SMS (Twilio Verify handles the WhatsApp→SMS fallback)
+  if (hasRecoverablePhone(user.phone)) {
+    try {
+      await sendPhoneOtp(toE164(user.phone));
+      return true;
+    } catch (err) {
+      console.error("[passwordReset] sendPhoneOtp failed:", err);
+    }
+  }
+
+  return false;
+}
+
+async function verifyEmailOtp(userId: string, code: string): Promise<boolean> {
+  const [pending] = await db
+    .select()
+    .from(passwordResets)
+    .where(
+      and(
+        eq(passwordResets.userId, userId),
+        eq(passwordResets.channel, "EMAIL"),
+        isNull(passwordResets.consumedAt),
+        gt(passwordResets.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(passwordResets.createdAt))
+    .limit(1);
+
+  if (!pending || pending.attempts >= MAX_ATTEMPTS) return false;
+
+  const ok = await verifyOtpCode(code, pending.codeHash);
+  if (ok) {
+    await db
+      .update(passwordResets)
+      .set({ consumedAt: new Date() })
+      .where(eq(passwordResets.id, pending.id));
+    return true;
+  }
+
+  await db
+    .update(passwordResets)
+    .set({ attempts: pending.attempts + 1 })
+    .where(eq(passwordResets.id, pending.id));
+  return false;
+}
+
 export const passwordResetRouter = createTRPCRouter({
   request: rateLimitedPublicProcedure
     .input(z.object({ identifier: z.string().trim().min(3).max(120) }))
@@ -64,40 +147,12 @@ export const passwordResetRouter = createTRPCRouter({
         .limit(1);
 
       if (user && user.id !== "SYSTEM" && user.status !== "CONGELADO") {
-        if (hasRecoverablePhone(user.phone)) {
-          const phoneE164 = toE164(user.phone);
-          try {
-            await sendPhoneOtp(phoneE164);
-          } catch (err) {
-            // Swallow provider errors — never reveal internal failures to the client
-            console.error("[passwordReset] sendPhoneOtp failed:", err);
-          }
-        } else if (user.email) {
-          const code = generateOtpCode();
-          const codeHash = await hashOtpCode(code);
-          const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60_000);
-
-          await db
-            .update(passwordResets)
-            .set({ consumedAt: new Date() })
-            .where(
-              and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt))
-            );
-
-          await db.insert(passwordResets).values({
-            userId: user.id,
-            channel: "EMAIL",
-            codeHash,
-            expiresAt,
-          });
-
-          try {
-            await sendPasswordResetEmail(user.email, code);
-          } catch (err) {
-            // Swallow provider errors — never reveal internal failures to the client
-            console.error("[passwordReset] sendPasswordResetEmail failed:", err);
-          }
-        }
+        // Prefer email, then WhatsApp, then SMS — never reveal which channel was used
+        await sendResetOtp({
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+        });
       }
 
       return { message: GENERIC_MESSAGE };
@@ -125,42 +180,14 @@ export const passwordResetRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Código inválido o expirado." });
       }
 
-      let verified = false;
+      // Match send priority: try email OTP first, then Twilio (WhatsApp/SMS)
+      let verified = await verifyEmailOtp(user.id, input.code);
 
-      if (hasRecoverablePhone(user.phone)) {
+      if (!verified && hasRecoverablePhone(user.phone)) {
         try {
           verified = await checkPhoneOtp(toE164(user.phone), input.code);
         } catch {
           verified = false;
-        }
-      } else if (user.email) {
-        const [pending] = await db
-          .select()
-          .from(passwordResets)
-          .where(
-            and(
-              eq(passwordResets.userId, user.id),
-              eq(passwordResets.channel, "EMAIL"),
-              isNull(passwordResets.consumedAt),
-              gt(passwordResets.expiresAt, new Date())
-            )
-          )
-          .orderBy(desc(passwordResets.createdAt))
-          .limit(1);
-
-        if (pending && pending.attempts < MAX_ATTEMPTS) {
-          verified = await verifyOtpCode(input.code, pending.codeHash);
-          if (verified) {
-            await db
-              .update(passwordResets)
-              .set({ consumedAt: new Date() })
-              .where(eq(passwordResets.id, pending.id));
-          } else {
-            await db
-              .update(passwordResets)
-              .set({ attempts: pending.attempts + 1 })
-              .where(eq(passwordResets.id, pending.id));
-          }
         }
       }
 
