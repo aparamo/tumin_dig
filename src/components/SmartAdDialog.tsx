@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,7 +73,12 @@ function pickAd(ads: SmartAdRow[]): SmartAdRow | null {
 }
 
 export function SmartAdDialog() {
-  const { data: ads = [] } = trpc.smartAds.getForMe.useQuery();
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+  // Protected procedure — skip on public pages (/login, /recuperar, /manual, …)
+  const { data: ads = [] } = trpc.smartAds.getForMe.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const [tick, setTick] = useState(0);
   const [muteChecked, setMuteChecked] = useState(false);
 

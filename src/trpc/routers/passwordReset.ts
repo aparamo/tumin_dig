@@ -2,10 +2,10 @@ import { z } from "zod";
 import { createTRPCRouter, rateLimitedPublicProcedure } from "../../lib/trpc/server";
 import { db } from "../../db";
 import { users, passwordResets } from "../../db/schema";
-import { eq, or, and, isNull, gt, desc } from "drizzle-orm";
+import { eq, or, and, isNull, gt, desc, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
-import { toE164 } from "../../lib/phone";
+import { toE164, phoneLookupCandidates, looksLikePhone } from "../../lib/phone";
 import { sendPhoneOtp, checkPhoneOtp } from "../../lib/twilio";
 import { sendPasswordResetEmail } from "../../lib/resend";
 import { generateOtpCode, hashOtpCode, verifyOtpCode } from "../../lib/otp";
@@ -47,6 +47,49 @@ function hasRecoverablePhone(phone: string | null | undefined): phone is string 
   return Boolean(phone && phone !== "SYSTEM_INTERNAL");
 }
 
+/** Safe server-only diagnostics — never log OTP codes, NIPs, or full emails/phones. */
+function logReset(event: string, meta: Record<string, unknown>) {
+  console.info(`[passwordReset] ${event}`, meta);
+}
+
+async function findUserByIdentifier(identifier: string) {
+  const trimmed = identifier.trim();
+  const emailLower = trimmed.toLowerCase();
+
+  // 1) Exact phone OR exact email (case-sensitive email as stored)
+  const [exact] = await db
+    .select()
+    .from(users)
+    .where(or(eq(users.phone, trimmed), eq(users.email, trimmed)))
+    .limit(1);
+  if (exact) return exact;
+
+  // 2) Email case-insensitive
+  if (trimmed.includes("@")) {
+    const [byEmail] = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.email}) = ${emailLower}`)
+      .limit(1);
+    if (byEmail) return byEmail;
+  }
+
+  // 3) Phone with format variants (10-digit, +52, etc.)
+  if (looksLikePhone(trimmed)) {
+    const candidates = phoneLookupCandidates(trimmed);
+    if (candidates.length > 0) {
+      const [byPhone] = await db
+        .select()
+        .from(users)
+        .where(inArray(users.phone, candidates))
+        .limit(1);
+      if (byPhone) return byPhone;
+    }
+  }
+
+  return null;
+}
+
 /** Priority: email → WhatsApp → SMS. Returns true if any channel accepted the OTP send. */
 async function sendResetOtp(user: {
   id: string;
@@ -55,42 +98,69 @@ async function sendResetOtp(user: {
 }): Promise<boolean> {
   // 1) Email first (preferred default)
   if (user.email) {
-    const code = generateOtpCode();
-    const codeHash = await hashOtpCode(code);
-    const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60_000);
+    const hasResendKey = Boolean(process.env.RESEND_API_KEY);
+    if (!hasResendKey) {
+      logReset("email_skipped_missing_env", {
+        userId: user.id,
+        hasResendKey: false,
+        hasEmailFrom: Boolean(process.env.EMAIL_FROM),
+      });
+    } else {
+      const code = generateOtpCode();
+      const codeHash = await hashOtpCode(code);
+      const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60_000);
 
-    await db
-      .update(passwordResets)
-      .set({ consumedAt: new Date() })
-      .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt)));
-
-    await db.insert(passwordResets).values({
-      userId: user.id,
-      channel: "EMAIL",
-      codeHash,
-      expiresAt,
-    });
-
-    try {
-      await sendPasswordResetEmail(user.email, code);
-      return true;
-    } catch (err) {
-      // Invalidate the unused email OTP and fall through to phone channels
       await db
         .update(passwordResets)
         .set({ consumedAt: new Date() })
         .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt)));
-      console.error("[passwordReset] sendPasswordResetEmail failed, trying phone:", err);
+
+      await db.insert(passwordResets).values({
+        userId: user.id,
+        channel: "EMAIL",
+        codeHash,
+        expiresAt,
+      });
+
+      try {
+        await sendPasswordResetEmail(user.email, code);
+        logReset("email_sent", { userId: user.id });
+        return true;
+      } catch (err) {
+        await db
+          .update(passwordResets)
+          .set({ consumedAt: new Date() })
+          .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.consumedAt)));
+        logReset("email_failed", {
+          userId: user.id,
+          error: err instanceof Error ? err.message : "unknown",
+        });
+      }
     }
+  } else {
+    logReset("no_email_on_user", { userId: user.id });
   }
 
-  // 2) WhatsApp, then 3) SMS (Twilio Verify handles the WhatsApp→SMS fallback)
+  // 2) WhatsApp, then 3) SMS
   if (hasRecoverablePhone(user.phone)) {
+    const twilioConfigured = Boolean(
+      process.env.TWILIO_ACCOUNT_SID &&
+        process.env.TWILIO_AUTH_TOKEN &&
+        process.env.TWILIO_VERIFY_SERVICE_SID
+    );
+    if (!twilioConfigured) {
+      logReset("phone_skipped_missing_env", { userId: user.id });
+      return false;
+    }
     try {
-      await sendPhoneOtp(toE164(user.phone));
+      const { channel } = await sendPhoneOtp(toE164(user.phone));
+      logReset("phone_sent", { userId: user.id, channel });
       return true;
     } catch (err) {
-      console.error("[passwordReset] sendPhoneOtp failed:", err);
+      logReset("phone_failed", {
+        userId: user.id,
+        error: err instanceof Error ? err.message : "unknown",
+      });
     }
   }
 
@@ -137,23 +207,37 @@ export const passwordResetRouter = createTRPCRouter({
       const identifier = input.identifier;
 
       if (!checkIdentifierRateLimit(identifier.toLowerCase())) {
+        logReset("rate_limited", { kind: "identifier" });
         return { message: GENERIC_MESSAGE };
       }
 
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(or(eq(users.phone, identifier), eq(users.email, identifier)))
-        .limit(1);
+      const user = await findUserByIdentifier(identifier);
 
-      if (user && user.id !== "SYSTEM" && user.status !== "CONGELADO") {
-        // Prefer email, then WhatsApp, then SMS — never reveal which channel was used
-        await sendResetOtp({
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
+      if (!user) {
+        logReset("user_not_found", {
+          identifierKind: looksLikePhone(identifier) ? "phone" : identifier.includes("@") ? "email" : "other",
         });
+        return { message: GENERIC_MESSAGE };
       }
+
+      if (user.id === "SYSTEM" || user.status === "CONGELADO") {
+        logReset("user_blocked", { userId: user.id, status: user.status });
+        return { message: GENERIC_MESSAGE };
+      }
+
+      logReset("user_matched", {
+        userId: user.id,
+        hasEmail: Boolean(user.email),
+        hasPhone: hasRecoverablePhone(user.phone),
+      });
+
+      const sent = await sendResetOtp({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+      });
+
+      logReset("request_done", { userId: user.id, sent });
 
       return { message: GENERIC_MESSAGE };
     }),
@@ -170,17 +254,12 @@ export const passwordResetRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(or(eq(users.phone, input.identifier), eq(users.email, input.identifier)))
-        .limit(1);
+      const user = await findUserByIdentifier(input.identifier);
 
       if (!user || user.id === "SYSTEM" || user.status === "CONGELADO") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Código inválido o expirado." });
       }
 
-      // Match send priority: try email OTP first, then Twilio (WhatsApp/SMS)
       let verified = await verifyEmailOtp(user.id, input.code);
 
       if (!verified && hasRecoverablePhone(user.phone)) {
@@ -200,6 +279,8 @@ export const passwordResetRouter = createTRPCRouter({
         .update(users)
         .set({ nip: hashedNip, failedLoginAttempts: 0, lockedUntil: null })
         .where(eq(users.id, user.id));
+
+      logReset("nip_updated", { userId: user.id });
 
       return { success: true as const };
     }),
