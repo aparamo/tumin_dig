@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MapPin, ShieldCheck, Star, User } from "lucide-react";
 import type { DirectoryMemberListItem } from "@/lib/directory-types";
+import { CategoryBadges } from "@/components/directory/CategoryBadges";
 
 export interface MemberCardProps {
   member: DirectoryMemberListItem;
@@ -17,7 +17,7 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-xl border-2 border-border bg-card text-left shadow-neo-sm",
+        "flex w-full flex-col rounded-xl border-2 border-border bg-card text-left shadow-neo-sm",
         "transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       )}
     >
@@ -49,18 +49,7 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         {member.categories.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {member.categories.slice(0, 4).map((c) => (
-              <Badge key={c} variant="secondary" className="max-w-40 truncate text-sm font-bold uppercase md:text-base">
-                {c}
-              </Badge>
-            ))}
-            {member.categories.length > 4 && (
-              <Badge variant="outline" className="text-sm font-bold md:text-base">
-                +{member.categories.length - 4}
-              </Badge>
-            )}
-          </div>
+          <CategoryBadges categories={member.categories} max={3} />
         ) : (
           <p className="text-sm font-bold text-muted-foreground md:text-base">Sin categorías públicas</p>
         )}

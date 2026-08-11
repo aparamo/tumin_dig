@@ -585,7 +585,7 @@ export function Perfil() {
           </Card>
 
           {/* Privacidad y perfil público */}
-          <Card className="neo-card border-2">
+          <Card id="privacidad" className="neo-card scroll-mt-24 border-2">
             <CardHeader>
               <CardTitle className="text-2xl font-black uppercase tracking-tight">Privacidad y perfil público</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">

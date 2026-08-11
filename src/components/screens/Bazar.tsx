@@ -12,34 +12,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, 
-  Utensils, Coffee, Shirt, Hammer, HeartPulse, Briefcase, 
-  Palette, Home as HomeIcon, Sparkles, GraduationCap, 
-  Presentation, Music, Ticket, Leaf,
-  ShoppingBag, type LucideIcon
+  ShoppingBag, Sparkles, MapPin, ArrowUpDown
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
+import { CategoryFilterDialog } from "@/components/directory/CategoryFilterDialog";
 import { MEXICO_STATES } from "@/lib/location";
-import { PRODUCT_CATEGORIES } from "@/lib/product-categories";
+import { PRODUCT_CATEGORY_ICONS, isProductCategory } from "@/lib/product-categories";
 import { useFeedback } from "@/components/FeedbackProvider";
+import { cn } from "@/lib/utils";
 
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  "Alimentos": Utensils,
-  "Bebidas": Coffee,
-  "Ropa": Shirt,
-  "Artesanías": Hammer,
-  "Salud y Bienestar": HeartPulse,
-  "Servicios Profesionales": Briefcase,
-  "Arte": Palette,
-  "Hogar": HomeIcon,
-  "Cuidado Personal": Sparkles,
-  "Educación": GraduationCap,
-  "Talleres": Presentation,
-  "Cultura": Music,
-  "Entretenimiento": Ticket,
-  "Agroecología y Jardinería": Leaf
-};
+const FILTER_LABEL =
+  "mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-muted-foreground";
+
+const FILTER_TRIGGER =
+  "h-12 w-full min-w-0 justify-between gap-1.5 border-2 border-border bg-card px-2.5 text-sm font-bold shadow-none data-[size=default]:h-12";
 
 export function Bazar() {
   const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
@@ -70,14 +58,19 @@ export function Bazar() {
 
   const allProducts = productsData?.pages.flatMap(page => page.items) || [];
 
-  const categories = [...PRODUCT_CATEGORIES];
-
   const locationStates = ["Todas", ...MEXICO_STATES];
 
   const handleAddNewProduct = () => {
     setOpenGestionProductCreate(true);
     setCurrentScreen("gestion-productos");
   };
+
+  const sortLabel =
+    sortBy === "menor_precio"
+      ? "Menor precio"
+      : sortBy === "mayor_precio"
+        ? "Mayor precio"
+        : "Más recientes";
 
   return (
     <div className="flex flex-col gap-8 p-4 pb-12">
@@ -92,62 +85,70 @@ export function Bazar() {
         </Button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-1 w-full relative">
-          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 mb-1 block">Buscar</Label>
-          <Search className="absolute left-4 bottom-3 w-5 h-5 text-muted-foreground" />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-3">
+        <div className="relative min-w-0 w-full flex-1">
+          <Label className={FILTER_LABEL}>Buscar</Label>
+          <Search className="pointer-events-none absolute bottom-3.5 left-3.5 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Productos..." 
-            className="pl-12 bg-card h-12 border-2"
+            className="h-12 border-2 bg-card pl-10 text-sm font-bold"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="w-full md:w-48 space-y-1">
-          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Categoría</Label>
-          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-            <SelectTrigger className="h-12 bg-card border-2">
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-2">
-              <SelectItem value="Todas">Todas</SelectItem>
-              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[min(100%,42rem)] lg:shrink-0">
+          <CategoryFilterDialog
+            className="w-full"
+            value={category}
+            onChange={setCategory}
+            labelClassName={cn(FILTER_LABEL, "md:text-[10px]")}
+            triggerClassName="h-12 border-border bg-card text-sm font-bold md:text-sm data-[size=default]:h-12"
+            description="Filtra productos y servicios del Bazar por categoría."
+          />
 
-        <div className="w-full md:w-48 space-y-1">
-          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Ubicación</Label>
-          <Select value={locationState} onValueChange={(val) => val && setLocationState(val)}>
-            <SelectTrigger className="h-12 bg-card border-2">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-2 max-h-64">
-              {locationStates.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="min-w-0">
+            <Label className={FILTER_LABEL}>Ubicación</Label>
+            <Select value={locationState} onValueChange={(val) => val && setLocationState(val)}>
+              <SelectTrigger className={FILTER_TRIGGER}>
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                  <MapPin className="size-4 shrink-0 opacity-80" aria-hidden />
+                  <SelectValue placeholder="Estado" className="truncate font-bold" />
+                </span>
+              </SelectTrigger>
+              <SelectContent className="border-2 bg-card max-h-64">
+                {locationStates.map((r) => (
+                  <SelectItem key={r} value={r} className="font-bold">
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="w-full md:w-48 space-y-1">
-          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1 block">Ordenar Por</Label>
-          <Select 
-            value={sortBy} 
-            onValueChange={(val) => {
-              if (val === "recientes" || val === "menor_precio" || val === "mayor_precio") {
-                setSortBy(val);
-              }
-            }}
-          >
-            <SelectTrigger className="h-12 bg-card border-2">
-              <SelectValue placeholder="Ordenar" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-2">
-              <SelectItem value="recientes">Más Recientes</SelectItem>
-              <SelectItem value="menor_precio">Menor Precio</SelectItem>
-              <SelectItem value="mayor_precio">Mayor Precio</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="min-w-0">
+            <Label className={FILTER_LABEL}>Ordenar por</Label>
+            <Select 
+              value={sortBy} 
+              onValueChange={(val) => {
+                if (val === "recientes" || val === "menor_precio" || val === "mayor_precio") {
+                  setSortBy(val);
+                }
+              }}
+            >
+              <SelectTrigger className={FILTER_TRIGGER}>
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                  <ArrowUpDown className="size-4 shrink-0 opacity-80" aria-hidden />
+                  <span className="truncate font-bold">{sortLabel}</span>
+                </span>
+              </SelectTrigger>
+              <SelectContent className="border-2 bg-card">
+                <SelectItem value="recientes" className="font-bold">Más recientes</SelectItem>
+                <SelectItem value="menor_precio" className="font-bold">Menor precio</SelectItem>
+                <SelectItem value="mayor_precio" className="font-bold">Mayor precio</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -202,7 +203,9 @@ export function Bazar() {
 
                     <div className="absolute bottom-3 left-3 flex gap-1">
                       {item.product.categories.slice(0, 2).map(cat => {
-                        const Icon = CATEGORY_ICONS[cat] || Sparkles;
+                        const Icon = isProductCategory(cat)
+                          ? PRODUCT_CATEGORY_ICONS[cat]
+                          : Sparkles;
                         return (
                           <div key={cat} className="bg-background/90 backdrop-blur-sm p-1.5 rounded-lg border border-border shadow-sm" title={cat}>
                             <Icon className="w-4 h-4 text-primary" />

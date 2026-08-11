@@ -11,9 +11,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageCircle, ShieldCheck, Star, User, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CategoryBadges } from "@/components/directory/CategoryBadges";
 import { SaveContactButton } from "@/components/directory/SaveContactButton";
 
 export interface MemberDetailDialogProps {
@@ -97,13 +97,7 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
                   <p className="mb-2 text-sm font-black uppercase tracking-wide text-muted-foreground md:text-base">
                     Categorías
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {data.categories.map((c) => (
-                      <Badge key={c} variant="secondary" className="text-sm font-bold uppercase md:text-base">
-                        {c}
-                      </Badge>
-                    ))}
-                  </div>
+                  <CategoryBadges categories={data.categories} max={12} />
                 </div>
               )}
 

@@ -150,7 +150,7 @@ export default function MercadoInternoPage() {
           Directorio de miembros
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto cercanía). Al tocar un miembro se abre un detalle con opción de <strong>Contactar</strong> (WhatsApp si lo habilita) y <strong>Guardar contacto</strong>.
+          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto más recientes). Al tocar un miembro se abre un detalle con opción de <strong>Contactar</strong> (WhatsApp si lo habilita) y <strong>Guardar contacto</strong>.
         </p>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
           Tus contactos guardados están en la pestaña <strong>Mis contactos</strong>, también desde Perfil y al enviar Túmin (chips que rellenan teléfono o correo públicos). Desde el Bazar también puedes guardar al vendedor.

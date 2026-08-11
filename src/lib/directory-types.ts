@@ -10,7 +10,6 @@ export const directoryPageSizeSchema = z.union([
 export type DirectoryPageSize = z.infer<typeof directoryPageSizeSchema>;
 
 export const directorySortBySchema = z.enum([
-  "cercania",
   "nombre_asc",
   "nombre_desc",
   "recientes",
@@ -25,7 +24,7 @@ export const listMembersInputSchema = z.object({
   locationState: z.string().optional(),
   locationCountry: z.string().optional(),
   category: z.string().optional(),
-  sortBy: directorySortBySchema.default("cercania"),
+  sortBy: directorySortBySchema.default("recientes"),
   search: z.string().max(80).optional(),
 });
 

@@ -107,8 +107,6 @@ function aggregateProducts(
 export const directoryRouter = createTRPCRouter({
   listMembers: protectedProcedure.input(listMembersInputSchema).query(async ({ ctx, input }) => {
     const viewerId = ctx.session.user.id;
-    const viewerResidenceState = ctx.session.user.residenceState ?? null;
-    const viewerResidenceCountry = ctx.session.user.residenceCountry ?? null;
     const { cursor, pageSize, sortBy } = input;
     const offset = cursor;
 
@@ -161,18 +159,7 @@ export const directoryRouter = createTRPCRouter({
     }
 
     const orderBys = [];
-    if (sortBy === "cercania") {
-      if (viewerResidenceState) {
-        orderBys.push(
-          sql`CASE WHEN ${users.residenceState} = ${viewerResidenceState} THEN 0 ELSE 1 END ASC`
-        );
-      } else if (viewerResidenceCountry) {
-        orderBys.push(
-          sql`CASE WHEN ${users.residenceCountry} = ${viewerResidenceCountry} THEN 0 ELSE 1 END ASC`
-        );
-      }
-      orderBys.push(asc(sql`COALESCE(${users.publicName}, ${users.name})`));
-    } else if (sortBy === "nombre_asc") {
+    if (sortBy === "nombre_asc") {
       orderBys.push(asc(sql`COALESCE(${users.publicName}, ${users.name})`));
     } else if (sortBy === "nombre_desc") {
       orderBys.push(desc(sql`COALESCE(${users.publicName}, ${users.name})`));

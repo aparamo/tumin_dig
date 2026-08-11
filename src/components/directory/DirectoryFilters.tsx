@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ENROLLMENT_REGION_FILTER_OPTIONS, MEXICO_STATES } from "@/lib/location";
-import { PRODUCT_CATEGORIES } from "@/lib/product-categories";
 import type { DirectoryPageSize, DirectorySortBy, DirectoryViewMode } from "@/lib/directory-types";
+import { CategoryFilterDialog } from "@/components/directory/CategoryFilterDialog";
 import { LayoutGrid, List, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,8 +45,8 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
           </div>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="min-w-0">
             <Label className="mb-1 ml-1 block text-sm font-black uppercase tracking-wide text-muted-foreground md:text-base">
               Región
             </Label>
@@ -56,7 +56,7 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
                 if (v) onChange({ region: v });
               }}
             >
-              <SelectTrigger className="h-11 border-2 text-sm font-bold md:text-base">
+              <SelectTrigger className="h-11 w-full min-w-0 border-2 text-sm font-bold md:text-base">
                 <SelectValue placeholder="Región" />
               </SelectTrigger>
               <SelectContent>
@@ -69,7 +69,7 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
             </Select>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Label className="mb-1 ml-1 block text-sm font-black uppercase tracking-wide text-muted-foreground md:text-base">
               Ubicación
             </Label>
@@ -79,7 +79,7 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
                 if (v) onChange({ locationState: v });
               }}
             >
-              <SelectTrigger className="h-11 border-2 text-sm font-bold md:text-base">
+              <SelectTrigger className="h-11 w-full min-w-0 border-2 text-sm font-bold md:text-base">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
@@ -95,33 +95,15 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
             </Select>
           </div>
 
-          <div>
-            <Label className="mb-1 ml-1 block text-sm font-black uppercase tracking-wide text-muted-foreground md:text-base">
-              Categoría
-            </Label>
-            <Select
+          <div className="col-span-2 min-w-0 sm:col-span-1">
+            <CategoryFilterDialog
               value={filters.category}
-              onValueChange={(v) => {
-                if (v) onChange({ category: v });
-              }}
-            >
-              <SelectTrigger className="h-11 border-2 text-sm font-bold md:text-base">
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todas" className="text-sm md:text-base">
-                  Todas
-                </SelectItem>
-                {PRODUCT_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c} className="text-sm md:text-base">
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(category) => onChange({ category })}
+              description="Filtra socios por el tipo de producto o servicio que ofrecen."
+            />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Label className="mb-1 ml-1 block text-sm font-black uppercase tracking-wide text-muted-foreground md:text-base">
               Orden
             </Label>
@@ -131,21 +113,18 @@ export function DirectoryFilters({ filters, onChange, onClear }: DirectoryFilter
                 if (v) onChange({ sortBy: v as DirectorySortBy });
               }}
             >
-              <SelectTrigger className="h-11 border-2 text-sm font-bold md:text-base">
+              <SelectTrigger className="h-11 w-full min-w-0 border-2 text-sm font-bold md:text-base">
                 <SelectValue placeholder="Orden" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cercania" className="text-sm md:text-base">
-                  Cercanía
+                <SelectItem value="recientes" className="text-sm md:text-base">
+                  Más recientes
                 </SelectItem>
                 <SelectItem value="nombre_asc" className="text-sm md:text-base">
                   Nombre A–Z
                 </SelectItem>
                 <SelectItem value="nombre_desc" className="text-sm md:text-base">
                   Nombre Z–A
-                </SelectItem>
-                <SelectItem value="recientes" className="text-sm md:text-base">
-                  Más recientes
                 </SelectItem>
               </SelectContent>
             </Select>

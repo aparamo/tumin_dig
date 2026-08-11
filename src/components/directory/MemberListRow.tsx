@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MapPin, ShieldCheck, Star, User } from "lucide-react";
 import type { DirectoryMemberListItem } from "@/lib/directory-types";
+import { CategoryBadges } from "@/components/directory/CategoryBadges";
 
 export interface MemberListRowProps {
   member: DirectoryMemberListItem;
@@ -31,7 +31,7 @@ export function MemberListRow({ member, onClick }: MemberListRowProps) {
         )}
       </div>
 
-      <div className="min-w-0 flex-1 self-center">
+      <div className="min-w-0 flex-[1.2] self-center">
         <p className="flex items-center gap-1.5 truncate text-sm font-black uppercase tracking-tight md:text-base">
           {member.displayName}
           {member.isVerified && <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />}
@@ -42,22 +42,17 @@ export function MemberListRow({ member, onClick }: MemberListRowProps) {
         <p className="truncate text-sm font-bold text-muted-foreground md:text-base">
           {member.region}
         </p>
+        {/* Categories on mobile under name — avoids squeezed mid-column */}
+        <div className="mt-1.5 sm:hidden">
+          {member.categories.length > 0 ? (
+            <CategoryBadges categories={member.categories} max={2} />
+          ) : null}
+        </div>
       </div>
 
       <div className="hidden min-w-0 flex-1 self-center sm:block">
         {member.categories.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {member.categories.slice(0, 4).map((c) => (
-              <Badge key={c} variant="outline" className="max-w-36 truncate px-2 py-0.5 text-sm font-bold uppercase md:text-base">
-                {c}
-              </Badge>
-            ))}
-            {member.categories.length > 4 && (
-              <Badge variant="outline" className="px-2 py-0.5 text-sm font-bold md:text-base">
-                +{member.categories.length - 4}
-              </Badge>
-            )}
-          </div>
+          <CategoryBadges categories={member.categories} max={3} />
         ) : (
           <p className="text-sm font-medium text-muted-foreground md:text-base">—</p>
         )}

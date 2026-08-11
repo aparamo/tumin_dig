@@ -7,6 +7,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+
 import { DirectoryFilters, type DirectoryFiltersState } from "@/components/directory/DirectoryFilters";
 import { MemberCard } from "@/components/directory/MemberCard";
 import { MemberListRow } from "@/components/directory/MemberListRow";
@@ -27,7 +28,7 @@ function buildDefaults(): DirectoryFiltersState {
     region: "Todas",
     locationState: "Todas",
     category: "Todas",
-    sortBy: "cercania",
+    sortBy: "recientes",
     pageSize: 10,
     viewMode: "card",
   };
@@ -51,6 +52,14 @@ function contactToMember(c: SavedContactListItem): DirectoryMemberListItem {
 export function Directorio() {
   const directoryTab = useStore((s) => s.directoryTab);
   const setDirectoryTab = useStore((s) => s.setDirectoryTab);
+  const setCurrentScreen = useStore((s) => s.setCurrentScreen);
+
+  const goToPrivacySettings = () => {
+    setCurrentScreen("perfil");
+    window.setTimeout(() => {
+      document.getElementById("privacidad")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
 
   const [filters, setFilters] = useState<DirectoryFiltersState>(buildDefaults);
   const [cursor, setCursor] = useState(0);
@@ -89,7 +98,7 @@ export function Directorio() {
       region: "Todas",
       locationState: "Todas",
       category: "Todas",
-      sortBy: "cercania" as DirectorySortBy,
+      sortBy: "recientes" as DirectorySortBy,
       pageSize: filters.pageSize as DirectoryPageSize,
       viewMode: filters.viewMode,
     });
@@ -279,6 +288,18 @@ export function Directorio() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+
+      <p className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-muted-foreground md:text-base">
+        El directorio muestra miembros con perfil público. Puedes configurar la visibilidad en{" "}
+        <button
+          type="button"
+          onClick={goToPrivacySettings}
+          className="font-black uppercase text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Mi perfil (privacidad)
+        </button>
+        .
+      </p>
     </div>
   );
 }
