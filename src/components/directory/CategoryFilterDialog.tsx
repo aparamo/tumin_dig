@@ -83,15 +83,22 @@ export function CategoryFilterDialog({
         onClick={() => setOpen(true)}
       >
         <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-          <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-          <span className="truncate">{value}</span>
+          <Icon
+            className={cn("h-4 w-4 shrink-0 opacity-80", !isAll && triggerPastel.text)}
+            aria-hidden
+          />
+          <span className={cn("truncate", !isAll && triggerPastel.text)}>{value}</span>
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground opacity-70" aria-hidden />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="max-h-[min(90vh,36rem)] w-full max-w-[calc(100%-1.5rem)] overflow-y-auto border-2 border-border p-4 shadow-neo-sm sm:max-w-lg md:max-w-2xl"
+          className={cn(
+            "max-h-[min(90vh,36rem)] w-full max-w-[calc(100%-1.5rem)] overflow-y-auto",
+            "border-2 border-border bg-popover text-popover-foreground p-4 shadow-neo-sm",
+            "sm:max-w-lg md:max-w-2xl",
+          )}
           showCloseButton
         >
           <DialogHeader>
@@ -151,8 +158,8 @@ function CategoryTile({
         pastel.bg,
         pastel.border,
         pastel.text,
-        selected && "ring-2 ring-primary/40 shadow-neo-sm",
-        !selected && "hover:brightness-[0.98]"
+        selected && "ring-2 ring-primary/50 shadow-neo-sm",
+        !selected && "hover:brightness-[0.97] dark:hover:brightness-110"
       )}
     >
       <span
@@ -165,7 +172,9 @@ function CategoryTile({
       >
         <Icon className="h-5 w-5" aria-hidden />
       </span>
-      <span className="min-w-0 flex-1 text-sm font-black leading-snug md:text-base">{label}</span>
+      <span className={cn("min-w-0 flex-1 text-sm font-black leading-snug md:text-base", pastel.text)}>
+        {label}
+      </span>
     </button>
   );
 }

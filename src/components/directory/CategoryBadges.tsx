@@ -35,7 +35,7 @@ export function CategoryBadges({
             key={c}
             variant="outline"
             className={cn(
-              "h-auto max-w-full shrink whitespace-normal break-words rounded-lg border px-2 py-1",
+              "h-auto max-w-full shrink whitespace-normal wrap-break-word rounded-lg border px-2 py-1",
               "text-left text-sm font-bold leading-snug md:text-base",
               "overflow-visible",
               pastel.bg,
@@ -43,7 +43,7 @@ export function CategoryBadges({
               pastel.text
             )}
           >
-            {c}
+            <span className={cn(pastel.text)}>{c}</span>
           </Badge>
         );
       })}

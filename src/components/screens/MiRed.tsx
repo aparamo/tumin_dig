@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "@/lib/trpc/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Network, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Users, Network, ShieldCheck, QrCode } from "lucide-react";
 import { formatPublicLocation, formatEnrollmentDisplay } from "@/lib/location";
+import { InviteShareDialog } from "@/components/InviteShareDialog";
 
 function relativeDate(d: Date) {
   const now = new Date();
@@ -28,16 +31,27 @@ function initials(name: string) {
 
 export function MiRed() {
   const { data: network, isLoading } = trpc.user.getMyNetwork.useQuery();
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-8 p-4 max-w-3xl mx-auto w-full pb-12">
-      <div className="space-y-1">
-        <h1 className="text-4xl font-black uppercase tracking-tighter text-foreground flex items-center gap-3">
-          <Network className="w-10 h-10 text-primary" /> Mi Red
-        </h1>
-        <p className="text-base font-bold text-muted-foreground uppercase tracking-widest">
-          Socios que se unieron con tu invitación
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-black uppercase tracking-tighter text-foreground flex items-center gap-3">
+            <Network className="w-10 h-10 text-primary" /> Mi Red
+          </h1>
+          <p className="text-base font-bold text-muted-foreground uppercase tracking-widest">
+            Socios que se unieron con tu invitación
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          className="h-12 shrink-0 border-2 font-black uppercase text-xs shadow-neo-sm"
+          onClick={() => setInviteOpen(true)}
+        >
+          <QrCode className="mr-2 h-4 w-4" />
+          Invitar
+        </Button>
       </div>
 
       <Card className="bg-primary/10 border-primary shadow-neo">
@@ -114,11 +128,21 @@ export function MiRed() {
         <Card className="bg-muted/20 border-dashed border-2 shadow-none p-12 text-center text-muted-foreground font-bold uppercase text-sm">
           <Users className="w-10 h-10 mx-auto mb-3 opacity-50" />
           Aún no tienes referidos.
-          <p className="text-[10px] font-medium normal-case mt-2">
-            Comparte tu link de invitación desde tu perfil para empezar a construir tu red.
+          <p className="text-[10px] font-medium normal-case mt-2 mb-4">
+            Comparte tu link de invitación o el código QR para empezar a construir tu red.
           </p>
+          <Button
+            variant="secondary"
+            className="h-12 border-2 font-black uppercase text-xs shadow-neo-sm"
+            onClick={() => setInviteOpen(true)}
+          >
+            <QrCode className="mr-2 h-4 w-4" />
+            Invitar con QR o link
+          </Button>
         </Card>
       )}
+
+      <InviteShareDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </div>
   );
 }

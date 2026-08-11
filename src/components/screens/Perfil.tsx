@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
+import { InviteShareDialog } from "@/components/InviteShareDialog";
 import {
   ENROLLMENT_OTHER,
   MEXICO_STATES,
@@ -173,15 +174,7 @@ export function Perfil() {
   const needsResidence =
     user && !user.residenceCountry && !user.residenceState;
 
-  const getOrCreateInviteToken = trpc.user.getOrCreateInviteToken.useMutation({
-    onSuccess: (data) => {
-      const link = `${window.location.origin}/register?token=${data.token}`;
-      navigator.clipboard.writeText(link);
-      const expiry = new Date(data.expiresAt).toLocaleDateString();
-      notifySuccess(`¡Link de invitación copiado! Vence el ${expiry}`);
-    },
-    onError: (e) => notifyError(parseErrorMessage(e)),
-  });
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   if (isLoading || !user) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
 
@@ -262,17 +255,12 @@ export function Perfil() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                onClick={() => getOrCreateInviteToken.mutate()}
-                disabled={getOrCreateInviteToken.isPending}
+                onClick={() => setInviteOpen(true)}
                 variant="secondary"
                 className="w-full h-10 font-black uppercase text-xs border-2 shadow-neo-sm"
               >
-                {getOrCreateInviteToken.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Copy className="w-4 h-4 mr-2" />
-                )}
-                Copiar Link
+                <Copy className="w-4 h-4 mr-2" />
+                QR y link
               </Button>
               <Button
                 variant="outline"
@@ -733,6 +721,8 @@ export function Perfil() {
           </Card>
         </div>
       </div>
+
+      <InviteShareDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </div>
   );
 }
