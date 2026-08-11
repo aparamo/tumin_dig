@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { DirectoryTab } from "@/lib/directory-types";
 
 /** Snapshot when user taps Comprar in Bazar → prefills Enviar Túmin */
 export interface PendingPurchase {
@@ -10,13 +11,14 @@ export interface PendingPurchase {
   priceTumin: number;
 }
 
-export type Screen = 
-  | "inicio" 
-  | "pagar" 
-  | "bazar" 
-  | "comunidad" 
-  | "coordinacion" 
-  | "perfil" 
+export type Screen =
+  | "inicio"
+  | "pagar"
+  | "bazar"
+  | "directorio"
+  | "comunidad"
+  | "coordinacion"
+  | "perfil"
   | "historial"
   | "auditoria"
   | "gestion-roles"
@@ -35,6 +37,8 @@ interface AppState {
   setOpenGestionProductCreate: (open: boolean) => void;
   pendingPurchase: PendingPurchase | null;
   setPendingPurchase: (p: PendingPurchase | null) => void;
+  directoryTab: DirectoryTab;
+  setDirectoryTab: (tab: DirectoryTab) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -50,4 +54,6 @@ export const useStore = create<AppState>((set) => ({
   setOpenGestionProductCreate: (open) => set({ openGestionProductCreate: open }),
   pendingPurchase: null,
   setPendingPurchase: (p) => set({ pendingPurchase: p }),
+  directoryTab: "miembros",
+  setDirectoryTab: (tab) => set({ directoryTab: tab }),
 }));

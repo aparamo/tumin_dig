@@ -24,7 +24,7 @@ export default function MercadoInternoPage() {
           <div className="space-y-1">
             <h4 className="font-black uppercase text-sm tracking-widest">Detalle de un producto</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes contactarlo por WhatsApp o ver todos sus productos.
+              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes contactarlo por WhatsApp, <strong>guardar al vendedor como contacto</strong> o ver todos sus productos.
             </p>
           </div>
         </div>
@@ -35,7 +35,7 @@ export default function MercadoInternoPage() {
           Pagar con Túmin (Enviar)
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Para transferir Túmin a otra persona usa la pantalla <strong>Enviar Túmin</strong> del menú. También puedes llegar desde el Bazar: al tocar <strong>Comprar</strong> en el detalle de un producto, el formulario se autocompleta con el precio, el concepto y el contacto del vendedor.
+          Para transferir Túmin a otra persona usa la pantalla <strong>Enviar Túmin</strong> del menú. También puedes llegar desde el Bazar: al tocar <strong>Comprar</strong> en el detalle de un producto, el formulario se autocompleta con el precio, el concepto y el contacto del vendedor. Si tienes <strong>contactos guardados</strong> con teléfono o correo público, aparecen como atajos encima del campo destinatario.
         </p>
         <div className="space-y-4">
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
@@ -125,6 +125,15 @@ export default function MercadoInternoPage() {
             </div>
           </div>
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <Star className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-black uppercase text-sm tracking-widest">Producto estrella</h4>
+              <p className="text-sm text-foreground/70">
+                Puedes marcar hasta <strong>5 productos estrella</strong>. Aparecen destacados en el <strong>Directorio</strong>, el Bazar y tu perfil público.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
             <ShoppingBag className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest">Estado: Activo / Inactivo</h4>
@@ -134,6 +143,18 @@ export default function MercadoInternoPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Directorio de miembros
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto cercanía). Al tocar un miembro se abre un detalle con opción de <strong>Contactar</strong> (WhatsApp si lo habilita) y <strong>Guardar contacto</strong>.
+        </p>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          Tus contactos guardados están en la pestaña <strong>Mis contactos</strong>, también desde Perfil y al enviar Túmin (chips que rellenan teléfono o correo públicos). Desde el Bazar también puedes guardar al vendedor.
+        </p>
       </section>
 
       <section className="space-y-6">

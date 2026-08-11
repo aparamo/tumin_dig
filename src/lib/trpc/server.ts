@@ -10,6 +10,7 @@ import {
   isRegionalCoordinator,
   type UserRole,
 } from "./authorization";
+import { isSystemAccountId } from "@/lib/system-user";
 
 export const t = initTRPC.context<Context>().create({
   transformer: superjson,
@@ -43,6 +44,14 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
+  // Defense in depth: system ledger accounts can never hold an API session
+  if (isSystemAccountId(ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Cuenta de sistema no autorizada",
+    });
+  }
+
   // Revalidate current user state against the database on every protected call.
   // This ensures that sessions are invalidated immediately when a user is frozen
   // or when their role/region changes, even though the JWT itself may still be
@@ -62,6 +71,13 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Cuenta suspendida o eliminada",
+    });
+  }
+
+  if (isSystemAccountId(dbUser.id)) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Cuenta de sistema no autorizada",
     });
   }
 

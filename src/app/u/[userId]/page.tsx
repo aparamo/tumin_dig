@@ -63,7 +63,7 @@ export default async function PublicUserPage({ params }: PageProps) {
         eq(products.showInProfile, true)
       )
     )
-    .orderBy(desc(products.createdAt));
+    .orderBy(desc(products.isStarred), desc(products.createdAt));
 
   const [ratingRow] = await db
     .select({
@@ -102,7 +102,7 @@ export default async function PublicUserPage({ params }: PageProps) {
 
         <Card className="neo-card overflow-hidden border-2">
           <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-start">
-            <div className="relative mx-auto aspect-square w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl border-2 border-border bg-muted md:mx-0">
+            <div className="relative mx-auto aspect-square w-full max-w-55 shrink-0 overflow-hidden rounded-xl border-2 border-border bg-muted md:mx-0">
               {u.avatarUrl ? (
                 <Image src={u.avatarUrl} alt={displayName} fill sizes="220px" className="object-cover" />
               ) : (
@@ -175,6 +175,7 @@ export default async function PublicUserPage({ params }: PageProps) {
             priceTumin: p.priceTumin,
             imgUrls: p.imgUrls ?? [],
             imageUrl: p.imageUrl,
+            isStarred: p.isStarred,
           }))}
           sellerName={displayName}
           sellerPhone={phone}

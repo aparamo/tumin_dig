@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageCircle, ShoppingBag, ShoppingCart, Info } from "lucide-react";
+import { MessageCircle, ShoppingBag, ShoppingCart, Info, Star } from "lucide-react";
 
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export interface ProfileProduct {
   priceTumin: number;
   imgUrls: string[];
   imageUrl: string | null;
+  isStarred?: boolean;
 }
 
 export interface ProfileProductsSectionProps {
@@ -73,6 +74,11 @@ export function ProfileProductsSection({ products, sellerName, sellerPhone }: Pr
                   <div className="flex h-full items-center justify-center text-muted-foreground/40">
                     <ShoppingBag className="h-12 w-12" />
                   </div>
+                )}
+                {p.isStarred && (
+                  <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border-2 border-border bg-secondary px-2 py-0.5 text-[9px] font-black uppercase text-secondary-foreground shadow-neo-sm">
+                    <Star className="h-3 w-3 fill-current" /> Estrella
+                  </span>
                 )}
               </div>
               <CardContent className="space-y-3 p-4">

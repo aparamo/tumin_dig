@@ -21,6 +21,7 @@ import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 import { MEXICO_STATES } from "@/lib/location";
+import { PRODUCT_CATEGORIES } from "@/lib/product-categories";
 import { useFeedback } from "@/components/FeedbackProvider";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -69,11 +70,7 @@ export function Bazar() {
 
   const allProducts = productsData?.pages.flatMap(page => page.items) || [];
 
-  const categories = [
-    "Alimentos", "Bebidas", "Ropa", "Artesanías", "Salud y Bienestar", 
-    "Servicios Profesionales", "Arte", "Hogar", "Cuidado Personal", "Educación", 
-    "Talleres", "Cultura", "Entretenimiento", "Agroecología y Jardinería"
-  ];
+  const categories = [...PRODUCT_CATEGORIES];
 
   const locationStates = ["Todas", ...MEXICO_STATES];
 
@@ -192,7 +189,12 @@ export function Bazar() {
                       </div>
                     )}
                     
-                    <div className="absolute top-3 right-3 flex flex-col gap-2">
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                      {item.product.isStarred && (
+                        <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
+                          <Star className="mr-1 h-3 w-3 fill-current" /> Estrella
+                        </Badge>
+                      )}
                       <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
                         {item.product.locationLabel ?? item.seller.locationCompact ?? "—"}
                       </Badge>
@@ -235,7 +237,7 @@ export function Bazar() {
                       {item.seller.publicProfile ? (
                         <Link
                           href={`/u/${item.seller.id}`}
-                          className="max-w-[140px] truncate rounded border border-border bg-muted px-2 py-1 text-primary underline-offset-2 hover:underline"
+                          className="max-w-35 truncate rounded border border-border bg-muted px-2 py-1 text-primary underline-offset-2 hover:underline"
                           onClick={(e) => e.stopPropagation()}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -243,7 +245,7 @@ export function Bazar() {
                           {item.seller.displayName}
                         </Link>
                       ) : (
-                        <div className="max-w-[140px] truncate rounded border border-border bg-muted px-2 py-1">
+                        <div className="max-w-35 truncate rounded border border-border bg-muted px-2 py-1">
                           {item.seller.displayName}
                         </div>
                       )}

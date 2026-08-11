@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, CheckCircle2, X, ShoppingBag, AlertTriangle, UserCircle2 } from "lucide-react";
+import { Loader2, Send, CheckCircle2, X, ShoppingBag, AlertTriangle, UserCircle2, Bookmark } from "lucide-react";
 import Image from "next/image";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { useFeedback } from "@/components/FeedbackProvider";
 
 interface RecipientCardProps {
   name: string;
@@ -78,12 +79,21 @@ function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, 
 }
 
 export function Pagar() {
-  const { setCurrentScreen } = useStore();
+  const { setCurrentScreen, setDirectoryTab } = useStore();
   const pendingPurchase = useStore((s) => s.pendingPurchase);
   const utils = trpc.useUtils();
+  const { notifyError } = useFeedback();
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const appliedFromPurchaseRef = useRef(false);
+
+  const { data: savedContactsData } = trpc.directory.listSavedContacts.useQuery({
+    cursor: 0,
+    pageSize: 25,
+  });
+  const selectableContacts = (savedContactsData?.items ?? []).filter(
+    (c) => c.available && (c.phone || c.email)
+  );
 
   const [purchaseBanner, setPurchaseBanner] = useState<{
     productName: string;
@@ -187,6 +197,59 @@ export function Pagar() {
           <form onSubmit={handleSend} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-xs font-black uppercase">Teléfono o Correo del receptor</Label>
+              {(savedContactsData?.items.length ?? 0) > 0 && (
+                <div className="space-y-2 rounded-xl border-2 border-border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      <Bookmark className="h-3.5 w-3.5" /> Contactos guardados
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      className="font-black uppercase text-[9px]"
+                      onClick={() => {
+                        setDirectoryTab("contactos");
+                        setCurrentScreen("directorio");
+                      }}
+                    >
+                      Ver todos
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectableContacts.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="max-w-40 truncate rounded-lg border-2 border-border bg-background px-2.5 py-1.5 text-[10px] font-black uppercase shadow-neo-sm hover:bg-muted"
+                        onClick={() => {
+                          const dato = c.phone ?? c.email;
+                          if (!dato) return;
+                          setRecipientInput(dato);
+                          setSendError(null);
+                        }}
+                      >
+                        {c.displayName}
+                      </button>
+                    ))}
+                    {(savedContactsData?.items ?? [])
+                      .filter((c) => c.available && !c.phone && !c.email)
+                      .slice(0, 3)
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="max-w-40 truncate rounded-lg border-2 border-dashed border-border px-2.5 py-1.5 text-[10px] font-black uppercase text-muted-foreground opacity-70"
+                          onClick={() =>
+                            notifyError("Este contacto no comparte teléfono ni correo públicos.")
+                          }
+                        >
+                          {c.displayName}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
               <Input
                 placeholder="Ej. 9611234567"
                 value={recipientInput}

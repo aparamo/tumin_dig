@@ -123,7 +123,7 @@ export default function PrimerosPasosPage() {
           <Card className="p-5 space-y-2 border-2 border-primary/10">
             <h4 className="font-black uppercase text-sm tracking-widest text-primary">Inscripción comunitaria</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Indica en qué <strong>región comunitaria</strong> te inscribiste (Totonacapan, Tolteca, Chiapas, Oaxaca, Náhuatl, Huaxteca, Tenoxca) o describe tu proceso si eliges <strong>&quot;Otra región o proceso distinto&quot;</strong>. Esto ayuda a tu Bantúmin a verificarte. <strong>No tiene que coincidir con donde vives.</strong>
+              Indica en qué <strong>región comunitaria</strong> te inscribiste (Túmin Totonacapan, Chiapas, Oaxaca, Morelos, Huasteca, Tenoxca, Náhuatl, Tolteca) o describe tu proceso si eliges <strong>&quot;Otro&quot;</strong>. Esto ayuda a tu Bantúmin a verificarte. <strong>No tiene que coincidir con donde vives.</strong>
             </p>
           </Card>
           <Card className="p-5 space-y-2 border-2 border-primary/10">

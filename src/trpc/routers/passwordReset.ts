@@ -9,6 +9,7 @@ import { toE164, phoneLookupCandidates, looksLikePhone } from "../../lib/phone";
 import { sendPhoneOtp, checkPhoneOtp } from "../../lib/twilio";
 import { sendPasswordResetEmail } from "../../lib/resend";
 import { generateOtpCode, hashOtpCode, verifyOtpCode } from "../../lib/otp";
+import { isSystemAccountId } from "../../lib/system-user";
 
 const GENERIC_MESSAGE =
   "Si el teléfono o correo está registrado, te enviamos un código para recuperar tu NIP.";
@@ -220,7 +221,7 @@ export const passwordResetRouter = createTRPCRouter({
         return { message: GENERIC_MESSAGE };
       }
 
-      if (user.id === "SYSTEM" || user.status === "CONGELADO") {
+      if (isSystemAccountId(user.id) || user.status === "CONGELADO") {
         logReset("user_blocked", { userId: user.id, status: user.status });
         return { message: GENERIC_MESSAGE };
       }
@@ -256,7 +257,7 @@ export const passwordResetRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const user = await findUserByIdentifier(input.identifier);
 
-      if (!user || user.id === "SYSTEM" || user.status === "CONGELADO") {
+      if (!user || isSystemAccountId(user.id) || user.status === "CONGELADO") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Código inválido o expirado." });
       }
 

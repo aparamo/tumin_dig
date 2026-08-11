@@ -3,25 +3,39 @@ import { z } from "zod";
 /** Canonical country name for Mexico in residence fields */
 export const MEXICO_COUNTRY = "México" as const;
 
-/** Sentinel for "other" enrollment region */
+/** Sentinel for "other" enrollment region (DB + registration) */
 export const ENROLLMENT_OTHER = "Otro" as const;
 
-/** Community enrollment regions (adscripción) — canonical values stored in DB */
+/** Filter sentinel: núcleos emergentes / no consolidados */
+export const ENROLLMENT_FILTER_OTHERS = "Otras" as const;
+
+/**
+ * Regiones autónomas consolidadas + emergentes (valores canónicos en DB nueva).
+ * Orden: consolidadas históricas, luego emergentes, luego Otro.
+ */
 export const ENROLLMENT_REGIONS = [
-  "Totonacapan - Veracruz",
-  "Tolteca - Hidalgo",
-  "Chiapas",
-  "Oaxaca",
-  "Náhuatl - Morelos",
-  "Huaxteca - San Luis/Tamaulipas",
-  "Tenoxca - CDMX/EdoMex",
+  "Túmin Totonacapan",
+  "Túmin Chiapas",
+  "Túmin Oaxaca",
+  "Túmin Morelos",
+  "Túmin Huasteca",
+  "Túmin Tenoxca",
+  "Túmin Náhuatl",
+  "Túmin Tolteca",
   ENROLLMENT_OTHER,
 ] as const;
 
 export type EnrollmentRegion = (typeof ENROLLMENT_REGIONS)[number];
 
-/** Pre-migration region labels still valid for existing users and admin filters */
+/** Pre-migration / alternate labels still present in DB rows */
 export const LEGACY_ENROLLMENT_REGIONS = [
+  "Totonacapan - Veracruz",
+  "Tolteca - Hidalgo",
+  "Náhuatl - Morelos",
+  "Huaxteca - San Luis/Tamaulipas",
+  "Tenoxca - CDMX/EdoMex",
+  "Chiapas",
+  "Oaxaca",
   "Veracruz",
   "Hidalgo",
   "Morelos",
@@ -31,24 +45,35 @@ export const LEGACY_ENROLLMENT_REGIONS = [
   "Puebla",
   "Yucatán",
   "Espinal",
+  "Jalisco",
+  "Guerrero",
+  "Michoacán",
+  "Tabasco",
+  "Querétaro",
+  "Toluca",
 ] as const;
 
-/** Regions selectable in admin filters (current + legacy) */
+/**
+ * Filtros de región sin duplicados: Todas + consolidadas + Otras.
+ * No lista legacy (se resuelven vía alias en el backend).
+ */
 export const ENROLLMENT_REGION_FILTER_OPTIONS = [
   "Todas",
   ...ENROLLMENT_REGIONS.filter((r) => r !== ENROLLMENT_OTHER),
-  ...LEGACY_ENROLLMENT_REGIONS.filter(
-    (legacy) => !(ENROLLMENT_REGIONS as readonly string[]).includes(legacy)
-  ),
+  ENROLLMENT_FILTER_OTHERS,
 ] as const;
 
 /** Optional short hint shown under each region in register (key = canonical value) */
 export const ENROLLMENT_REGION_HINTS: Partial<Record<string, string>> = {
-  "Totonacapan - Veracruz": "Zona Totonaca, Veracruz",
-  "Tolteca - Hidalgo": "Zona Tolteca, Hidalgo",
-  "Náhuatl - Morelos": "Comunidad Náhuatl, Morelos",
-  "Huaxteca - San Luis/Tamaulipas": "Huasteca, SLP y Tamaulipas",
-  "Tenoxca - CDMX/EdoMex": "Ciudad de México y Estado de México",
+  "Túmin Totonacapan": "Sierra Norte de Veracruz y zonas limítrofes de Puebla",
+  "Túmin Chiapas": "Red autónoma en Chiapas",
+  "Túmin Oaxaca": "Oaxaca, Mazunte, Teotitlán del Valle",
+  "Túmin Morelos": "Estado de Morelos",
+  "Túmin Huasteca": "Huasteca Veracruzana, Tampico, SLP e Hidalgo",
+  "Túmin Tenoxca": "CDMX y Estado de México",
+  "Túmin Náhuatl": "Comunidades náhuatl (Puebla, Veracruz, Hidalgo)",
+  "Túmin Tolteca": "Estado de México (p. ej. Texcoco)",
+  [ENROLLMENT_OTHER]: "Otros núcleos (Jalisco, Guerrero, Michoacán, etc.)",
 };
 
 /** 32 Mexican states / entities */
@@ -124,17 +149,32 @@ export const MEXICO_STATE_LABELS: Record<string, string> = {
   "Zacatecas": "Zac",
 };
 
-/** Legacy aliases → canonical enrollment region names (display / recognition only) */
+/** Legacy / alternate labels → canonical enrollment region names */
 const ENROLLMENT_REGION_ALIASES: Record<string, string> = {
-  Veracruz: "Totonacapan - Veracruz",
-  Espinal: "Totonacapan - Veracruz",
-  Hidalgo: "Tolteca - Hidalgo",
-  Morelos: "Náhuatl - Morelos",
-  CDMX: "Tenoxca - CDMX/EdoMex",
-  "Ciudad de México": "Tenoxca - CDMX/EdoMex",
-  "Estado de México": "Tenoxca - CDMX/EdoMex",
-  "Ciudad de Mexico": "Tenoxca - CDMX/EdoMex",
-  "Estado de Mexico": "Tenoxca - CDMX/EdoMex",
+  // Consolidadas (nombres previos)
+  "Totonacapan - Veracruz": "Túmin Totonacapan",
+  Veracruz: "Túmin Totonacapan",
+  Espinal: "Túmin Totonacapan",
+  Chiapas: "Túmin Chiapas",
+  Oaxaca: "Túmin Oaxaca",
+  Morelos: "Túmin Morelos",
+  "Náhuatl - Morelos": "Túmin Morelos",
+  "Huaxteca - San Luis/Tamaulipas": "Túmin Huasteca",
+  Huasteca: "Túmin Huasteca",
+  "Tenoxca - CDMX/EdoMex": "Túmin Tenoxca",
+  CDMX: "Túmin Tenoxca",
+  "Ciudad de México": "Túmin Tenoxca",
+  "Ciudad de Mexico": "Túmin Tenoxca",
+  "Estado de México": "Túmin Tenoxca",
+  "Estado de Mexico": "Túmin Tenoxca",
+  "Tolteca - Hidalgo": "Túmin Tolteca",
+  Hidalgo: "Túmin Tolteca",
+  // Prefijos cortos / variantes
+  Totonacapan: "Túmin Totonacapan",
+  Tenoxca: "Túmin Tenoxca",
+  Tolteca: "Túmin Tolteca",
+  Náhuatl: "Túmin Náhuatl",
+  Nahuatl: "Túmin Náhuatl",
 };
 
 /** Residence / postal label aliases (not enrollment) */
@@ -156,7 +196,35 @@ export interface ResidenceLocation {
 
 export function normalizeEnrollmentRegion(value: string): string {
   const trimmed = value.trim();
+  if ((ENROLLMENT_REGIONS as readonly string[]).includes(trimmed)) return trimmed;
   return ENROLLMENT_REGION_ALIASES[trimmed] ?? trimmed;
+}
+
+/**
+ * All DB string values that belong to a consolidated region (canonical + aliases).
+ * Used for directory/admin filters so legacy rows still match.
+ */
+export function getEnrollmentRegionDbValues(canonicalOrFilter: string): string[] {
+  const canonical = normalizeEnrollmentRegion(canonicalOrFilter);
+  const values = new Set<string>([canonical]);
+  for (const [alias, target] of Object.entries(ENROLLMENT_REGION_ALIASES)) {
+    if (target === canonical) values.add(alias);
+  }
+  return Array.from(values);
+}
+
+/** Every DB value that maps to a consolidated (non-Otro) region */
+export function getAllConsolidatedEnrollmentDbValues(): string[] {
+  const values = new Set<string>();
+  for (const r of ENROLLMENT_REGIONS) {
+    if (r === ENROLLMENT_OTHER) continue;
+    for (const v of getEnrollmentRegionDbValues(r)) values.add(v);
+  }
+  return Array.from(values);
+}
+
+export function isEnrollmentFilterOthers(value: string): boolean {
+  return value === ENROLLMENT_FILTER_OTHERS || value === ENROLLMENT_OTHER;
 }
 
 export function normalizeRegionLabel(value: string): string {

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProductComments } from "@/components/bazar/ProductComments";
+import { SaveContactButton } from "@/components/directory/SaveContactButton";
 import type { PendingPurchase } from "@/lib/store";
 
 export interface ProductDetailDialogProps {
@@ -33,6 +34,15 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
     { id: productId ?? "" },
     { enabled: open && !!productId }
   );
+
+  const sellerId = data?.seller?.id;
+  const { data: savedContactsData } = trpc.directory.listSavedContacts.useQuery(
+    { cursor: 0, pageSize: 100 },
+    { enabled: open && !!sellerId && !!data?.seller?.publicProfile }
+  );
+  const isSellerSaved =
+    !!sellerId &&
+    (savedContactsData?.items.some((c) => c.contactUserId === sellerId) ?? false);
 
   useEffect(() => {
     if (!open) {
@@ -210,7 +220,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 {waHref ? (
                   <Button asChild variant="outline" className="h-12 flex-1 border-2 shadow-neo-sm">
                     <a href={waHref} target="_blank" rel="noopener noreferrer">
@@ -240,6 +250,13 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" /> Comprar
                 </Button>
+                {seller.publicProfile && (
+                  <SaveContactButton
+                    contactUserId={seller.id}
+                    isSaved={isSellerSaved}
+                    className="h-12 flex-1"
+                  />
+                )}
               </div>
 
               <ProductComments productId={product.id} />

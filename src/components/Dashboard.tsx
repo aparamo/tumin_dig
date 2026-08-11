@@ -15,6 +15,7 @@ import { GestionProductos } from "./screens/GestionProductos";
 import { GestorMedios } from "./screens/GestorMedios";
 import { MiRed } from "./screens/MiRed";
 import { GestionAnuncios } from "./screens/GestionAnuncios";
+import { Directorio } from "./screens/Directorio";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence } from "motion/react";
 import { DashboardShell } from "./DashboardShell";
@@ -28,7 +29,7 @@ export function Dashboard() {
     if (pending) {
       sessionStorage.removeItem("tumin_pending_screen");
       const validScreens = [
-        "inicio", "pagar", "bazar", "comunidad", "coordinacion", "perfil",
+        "inicio", "pagar", "bazar", "directorio", "comunidad", "coordinacion", "perfil",
         "historial", "auditoria", "gestion-roles", "gestion-productos",
         "medios", "anuncios", "mi-red",
       ] as const;
@@ -43,6 +44,7 @@ export function Dashboard() {
       case "inicio": return <Inicio />;
       case "pagar": return <Pagar />;
       case "bazar": return <Bazar />;
+      case "directorio": return <Directorio />;
       case "comunidad": return <Comunidad />;
       case "perfil": return <Perfil />;
       case "historial": return <Historial />;

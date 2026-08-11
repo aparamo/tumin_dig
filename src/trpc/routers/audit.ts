@@ -16,7 +16,7 @@ import {
   isCoordinator,
   type UserRole,
 } from "../../lib/trpc/authorization";
-import { ensureSystemUser } from "../../lib/system-user";
+import { issueFromSystem } from "../../lib/system-ledger";
 import { logAdminAction } from "../../lib/admin-log";
 import {
   AUDIT_REWARD_AMOUNT,
@@ -450,18 +450,12 @@ export const auditRouter = createTRPCRouter({
         });
       }
 
-      await ensureSystemUser(tx);
-
-      const [transaction] = await tx
-        .insert(transactions)
-        .values({
-          fromId: "SYSTEM",
-          toId: userId,
-          amount: AUDIT_REWARD_AMOUNT,
-          concept: AUDIT_REWARD_CONCEPT,
-          type: "BONO",
-        })
-        .returning();
+      const transaction = await issueFromSystem(tx, {
+        toId: userId,
+        amount: AUDIT_REWARD_AMOUNT,
+        concept: AUDIT_REWARD_CONCEPT,
+        type: "BONO",
+      });
 
       await logAdminAction(tx, {
         actorId: userId,

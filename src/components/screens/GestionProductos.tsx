@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Edit2, Trash2, X, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, X, ExternalLink, Star } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { UploadButton, createUploadBeginHandlers, getUploadedFileUrl, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
@@ -21,6 +21,7 @@ import { useStore } from "@/lib/store";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
 import { parseErrorMessage } from "@/lib/parse-error";
+import { PRODUCT_CATEGORIES, MAX_STARRED_PRODUCTS } from "@/lib/product-categories";
 
 type ProductRow = InferSelectModel<typeof products>;
 
@@ -35,6 +36,7 @@ type ProductForm = {
   imgUrls: string[];
   status: "ACTIVO" | "INACTIVO";
   showInProfile: boolean;
+  isStarred: boolean;
 };
 
 export function GestionProductos() {
@@ -101,11 +103,15 @@ export function GestionProductos() {
     onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
-  const categories = [
-    "Alimentos", "Bebidas", "Ropa", "Artesanías", "Salud y Bienestar", 
-    "Servicios Profesionales", "Arte", "Hogar", "Cuidado Personal", "Educación", 
-    "Talleres", "Cultura", "Entretenimiento", "Agroecología y Jardinería"
-  ];
+  const toggleIsStarredMutation = trpc.bazar.toggleIsStarred.useMutation({
+    onSuccess: () => {
+      void utils.bazar.getMyProducts.invalidate();
+      void utils.bazar.getProducts.invalidate();
+    },
+    onError: (e) => notifyError(parseErrorMessage(e)),
+  });
+
+  const categories = [...PRODUCT_CATEGORIES];
 
   const handleEdit = (product: ProductRow) => {
     setIsCreating(false);
@@ -120,6 +126,7 @@ export function GestionProductos() {
       imgUrls: product.imgUrls || [],
       status: product.status,
       showInProfile: product.showInProfile ?? true,
+      isStarred: product.isStarred ?? false,
     });
     setIsModalOpen(true);
   };
@@ -136,6 +143,7 @@ export function GestionProductos() {
       imgUrls: [],
       status: "ACTIVO",
       showInProfile: true,
+      isStarred: false,
     });
     setIsModalOpen(true);
   }, []);
@@ -173,6 +181,7 @@ export function GestionProductos() {
         categories: editingProduct.categories,
         imgUrls: editingProduct.imgUrls,
         showInProfile: editingProduct.showInProfile,
+        isStarred: editingProduct.isStarred,
       });
     } else {
       updateMutation.mutate({
@@ -186,6 +195,7 @@ export function GestionProductos() {
         imgUrls: editingProduct.imgUrls,
         status: editingProduct.status,
         showInProfile: editingProduct.showInProfile,
+        isStarred: editingProduct.isStarred,
       });
     }
   };
@@ -297,6 +307,28 @@ export function GestionProductos() {
                     />
                   </div>
 
+                  <div
+                    className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 text-base!important font-black uppercase tracking-wide text-foreground">
+                        <Star className="h-4 w-4 text-secondary" aria-hidden /> Producto estrella
+                      </p>
+                      <p className="text-base!important font-medium text-muted-foreground">
+                        Destacado en directorio (máx. {MAX_STARRED_PRODUCTS})
+                      </p>
+                    </div>
+                    <Switch
+                      checked={p.isStarred ?? false}
+                      disabled={toggleIsStarredMutation.isPending}
+                      onCheckedChange={(checked) => {
+                        toggleIsStarredMutation.mutate({ productId: p.id, isStarred: checked === true });
+                      }}
+                      className="shrink-0"
+                    />
+                  </div>
+
                   {p.imgUrls && p.imgUrls.length > 0 && (
                     <div className="text-[10px] font-bold text-primary uppercase flex items-center gap-1">
                       <ExternalLink className="w-3 h-3" /> {p.imgUrls.length} imágenes
@@ -377,6 +409,26 @@ export function GestionProductos() {
                         onCheckedChange={(checked) =>
                           setEditingProduct((prev) =>
                             prev ? { ...prev, showInProfile: checked === true } : null
+                          )
+                        }
+                        className="shrink-0"
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-3 rounded-lg border-2 border-border bg-muted/20 p-3">
+                      <div className="min-w-0">
+                        <Label htmlFor={`is-starred-${editingProduct.id ?? "new"}`} className="flex items-center gap-1.5 text-base font-black uppercase">
+                          <Star className="h-4 w-4 text-secondary" aria-hidden /> Producto estrella
+                        </Label>
+                        <p className="mt-1 text-[9px] font-medium text-muted-foreground">
+                          Destacado en el directorio (máx. {MAX_STARRED_PRODUCTS}).
+                        </p>
+                      </div>
+                      <Switch
+                        id={`is-starred-${editingProduct.id ?? "new"}`}
+                        checked={editingProduct.isStarred}
+                        onCheckedChange={(checked) =>
+                          setEditingProduct((prev) =>
+                            prev ? { ...prev, isStarred: checked === true } : null
                           )
                         }
                         className="shrink-0"

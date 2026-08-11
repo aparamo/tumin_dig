@@ -8,6 +8,7 @@ import {
   boolean,
   jsonb,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -102,6 +103,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   ads: many(ads),
   passwordResets: many(passwordResets),
   inviteTokens: many(inviteTokens),
+  savedContactsOwned: many(savedContacts, { relationName: "savedContactsOwner" }),
+  savedAsContact: many(savedContacts, { relationName: "savedAsContact" }),
 }));
 
 export const passwordResets = pgTable("TUMIN_password_resets", {
@@ -161,6 +164,8 @@ export const products = pgTable("TUMIN_products", {
   status: productStatusEnum("status").default("ACTIVO").notNull(),
   /** When false, product is hidden from bazar and public profile (still manageable as seller) */
   showInProfile: boolean("show_in_profile").default(true).notNull(),
+  /** Featured / “estrella” product highlighted in directory and profile (max 5 per seller) */
+  isStarred: boolean("is_starred").default(false).notNull(),
   imageUrl: text("image_url"),
   imgUrls: jsonb("img_urls").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -388,5 +393,34 @@ export const inviteTokensRelations = relations(inviteTokens, ({ one }) => ({
   user: one(users, {
     fields: [inviteTokens.userId],
     references: [users.id],
+  }),
+}));
+
+/** User-saved contacts for directory / pagar / bazar (IDs only; PII read live with privacy flags) */
+export const savedContacts = pgTable(
+  "TUMIN_saved_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    contactUserId: text("contact_user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique("saved_contacts_owner_contact_uid").on(t.ownerId, t.contactUserId)]
+);
+
+export const savedContactsRelations = relations(savedContacts, ({ one }) => ({
+  owner: one(users, {
+    fields: [savedContacts.ownerId],
+    references: [users.id],
+    relationName: "savedContactsOwner",
+  }),
+  contact: one(users, {
+    fields: [savedContacts.contactUserId],
+    references: [users.id],
+    relationName: "savedAsContact",
   }),
 }));

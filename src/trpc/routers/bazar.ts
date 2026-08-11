@@ -16,9 +16,10 @@ import {
   MEXICO_COUNTRY,
 } from "../../lib/location";
 import { isInJurisdiction, type UserRole } from "../../lib/trpc/authorization";
-import { ensureSystemUser } from "../../lib/system-user";
 import { logAdminAction } from "../../lib/admin-log";
 import { LIMITS } from "../../lib/limits";
+import { MAX_STARRED_PRODUCTS } from "../../lib/product-categories";
+import { issueFromSystem } from "../../lib/system-ledger";
 
 type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -373,6 +374,7 @@ export const bazarRouter = createTRPCRouter({
         imageUrl: z.string().optional(),
         imgUrls: z.array(z.string().url()).optional(),
         showInProfile: z.boolean().optional().default(true),
+        isStarred: z.boolean().optional().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -391,6 +393,20 @@ export const bazarRouter = createTRPCRouter({
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
+
+        const wantStarred = input.isStarred ?? false;
+        if (wantStarred) {
+          const [{ val: starredCount }] = await tx
+            .select({ val: count() })
+            .from(products)
+            .where(and(eq(products.sellerId, userId), eq(products.isStarred, true)));
+          if (Number(starredCount) >= MAX_STARRED_PRODUCTS) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Solo puedes marcar hasta ${MAX_STARRED_PRODUCTS} productos estrella`,
+            });
+          }
+        }
 
         const productRegion =
           userBefore?.residenceState ??
@@ -413,14 +429,12 @@ export const bazarRouter = createTRPCRouter({
             imgUrls: input.imgUrls || [],
             status: "ACTIVO",
             showInProfile: input.showInProfile ?? true,
+            isStarred: wantStarred,
           })
           .returning();
 
         if (userBefore && !userBefore.productOk) {
-          await ensureSystemUser(tx);
-
-          await tx.insert(transactions).values({
-            fromId: "SYSTEM",
+          await issueFromSystem(tx, {
             toId: userId,
             amount: LIMITS.FIRST_PRODUCT_BONUS,
             concept: "Bono Primer Producto",
@@ -447,6 +461,7 @@ export const bazarRouter = createTRPCRouter({
         imgUrls: z.array(z.string().url()),
         status: z.enum(["ACTIVO", "INACTIVO"]),
         showInProfile: z.boolean(),
+        isStarred: z.boolean(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -462,6 +477,19 @@ export const bazarRouter = createTRPCRouter({
           throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
         }
 
+        if (input.isStarred && !product.isStarred) {
+          const [{ val: starredCount }] = await tx
+            .select({ val: count() })
+            .from(products)
+            .where(and(eq(products.sellerId, userId), eq(products.isStarred, true)));
+          if (Number(starredCount) >= MAX_STARRED_PRODUCTS) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Solo puedes marcar hasta ${MAX_STARRED_PRODUCTS} productos estrella`,
+            });
+          }
+        }
+
         const [updated] = await tx
           .update(products)
           .set({
@@ -474,6 +502,7 @@ export const bazarRouter = createTRPCRouter({
             imgUrls: input.imgUrls,
             status: input.status,
             showInProfile: input.showInProfile,
+            isStarred: input.isStarred,
           })
           .where(eq(products.id, input.id))
           .returning();
@@ -509,6 +538,49 @@ export const bazarRouter = createTRPCRouter({
         .returning();
 
       return updated;
+    }),
+
+  toggleIsStarred: protectedProcedure
+    .input(
+      z.object({
+        productId: z.string().uuid(),
+        isStarred: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      return await db.transaction(async (tx) => {
+        const [product] = await tx
+          .select()
+          .from(products)
+          .where(and(eq(products.id, input.productId), eq(products.sellerId, userId)))
+          .limit(1);
+
+        if (!product) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado o no eres el dueño" });
+        }
+
+        if (input.isStarred && !product.isStarred) {
+          const [{ val: starredCount }] = await tx
+            .select({ val: count() })
+            .from(products)
+            .where(and(eq(products.sellerId, userId), eq(products.isStarred, true)));
+          if (Number(starredCount) >= MAX_STARRED_PRODUCTS) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Solo puedes marcar hasta ${MAX_STARRED_PRODUCTS} productos estrella`,
+            });
+          }
+        }
+
+        const [updated] = await tx
+          .update(products)
+          .set({ isStarred: input.isStarred })
+          .where(eq(products.id, input.productId))
+          .returning();
+
+        return updated;
+      });
     }),
 
   deleteProduct: protectedProcedure

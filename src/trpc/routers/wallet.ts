@@ -9,6 +9,7 @@ import { users, transactions, products } from "../../db/schema";
 import { eq, sql, and, desc, or, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { ensureSystemUser } from "../../lib/system-user";
+import { assertPeerTransferParties, issueFromSystem } from "../../lib/system-ledger";
 import { LIMITS } from "../../lib/limits";
 
 export const walletRouter = createTRPCRouter({
@@ -55,9 +56,7 @@ export const walletRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const meId = ctx.session.user.id;
 
-      if (input.toId === meId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No puedes enviarte a ti mismo" });
-      }
+      assertPeerTransferParties(meId, input.toId);
 
       return await db.transaction(async (tx) => {
         await ensureSystemUser(tx);
@@ -121,7 +120,7 @@ export const walletRouter = createTRPCRouter({
           throw new TRPCError({ code: "BAD_REQUEST", message: "El destinatario debe tener un producto activo" });
         }
 
-        // 3. Perform main transaction
+        // 3. Perform main transaction (peer only — fromId is always the authenticated user)
         const [mainTx] = await tx
           .insert(transactions)
           .values({
@@ -136,8 +135,7 @@ export const walletRouter = createTRPCRouter({
 
         // 4. Bono Primera Venta
         if (!recipient.firstSaleOk) {
-          await tx.insert(transactions).values({
-            fromId: "SYSTEM",
+          await issueFromSystem(tx, {
             toId: input.toId,
             amount: LIMITS.FIRST_SALE_BONUS,
             concept: "Bono Primera Venta",
@@ -150,8 +148,7 @@ export const walletRouter = createTRPCRouter({
         if (recipient.duplicatorBonus < LIMITS.DUPLICATOR_CAP) {
           const bonusAmount = Math.min(input.amount, LIMITS.DUPLICATOR_CAP - recipient.duplicatorBonus);
           if (bonusAmount > 0) {
-            await tx.insert(transactions).values({
-              fromId: "SYSTEM",
+            await issueFromSystem(tx, {
               toId: input.toId,
               amount: bonusAmount,
               concept: "Bono Duplicador",
@@ -172,10 +169,8 @@ export const walletRouter = createTRPCRouter({
             .where(and(eq(transactions.toId, input.toId), eq(transactions.type, "TRANSFERENCIA")));
 
           if (Number(salesCount.count) <= 3) {
-            // Including the one we just did
             const referralBonus = input.amount * 0.05;
-            await tx.insert(transactions).values({
-              fromId: "SYSTEM",
+            await issueFromSystem(tx, {
               toId: recipient.referrerId,
               amount: referralBonus,
               concept: `Bono Referido por venta de ${recipient.name}`,

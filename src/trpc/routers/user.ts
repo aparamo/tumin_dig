@@ -22,6 +22,7 @@ import {
   ENROLLMENT_OTHER,
   type EnrollmentMethod,
 } from "../../lib/location";
+import { isSystemAccountId } from "../../lib/system-user";
 import {
   buildJurisdictionCondition,
   assertCanUpdateUserRole,
@@ -156,6 +157,10 @@ export const userRouter = createTRPCRouter({
         .limit(1);
 
       if (!user) return null;
+
+      if (isSystemAccountId(user.id)) {
+        return null;
+      }
 
       const isSelf = user.id === callerId;
 

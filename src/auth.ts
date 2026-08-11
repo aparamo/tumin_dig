@@ -6,6 +6,7 @@ import { eq, or, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import "next-auth/jwt";
+import { isSystemAccountId } from "./lib/system-user";
 
 declare module "next-auth" {
   interface User {
@@ -74,7 +75,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!user) return null;
 
         // Block internal system accounts from ever logging in
-        if (user.id === "SYSTEM") {
+        if (isSystemAccountId(user.id)) {
           return null;
         }
 

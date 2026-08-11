@@ -17,6 +17,7 @@ import {
   FolderOpen,
   ShieldCheck,
   Megaphone,
+  BookUser,
   type LucideIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -139,6 +140,7 @@ export function DashboardShell({
     { id: "inicio", label: "Inicio", icon: Home },
     { id: "pagar", label: "Pagar", icon: Send },
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
+    { id: "directorio", label: "Directorio", icon: BookUser },
     { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
     { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "anuncios", label: "Mis Anuncios", icon: Megaphone },
@@ -152,6 +154,7 @@ export function DashboardShell({
     { id: "inicio", label: "Inicio", icon: Home },
     { id: "pagar", label: "Pagar", icon: Send },
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
+    { id: "directorio", label: "Directorio", icon: BookUser },
     { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
     { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "anuncios", label: "Mis Anuncios", icon: Megaphone },
@@ -317,7 +320,7 @@ export function DashboardShell({
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      className="absolute right-0 top-12 bg-card border-2 border-border rounded-xl shadow-neo p-2 flex flex-col gap-1 min-w-[160px] z-50"
+                      className="absolute right-0 top-12 bg-card border-2 border-border rounded-xl shadow-neo p-2 flex flex-col gap-1 min-w-40 z-50"
                     >
                       {coordinatorItems.map((item) => (
                         <Link

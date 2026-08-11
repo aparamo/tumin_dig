@@ -1,9 +1,9 @@
 import { createTRPCRouter, protectedProcedure } from "../../lib/trpc/server";
 import { db } from "../../db";
-import { users, transactions, dailyMining, products } from "../../db/schema";
+import { users, dailyMining, products } from "../../db/schema";
 import { eq, desc, and, count, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { ensureSystemUser } from "../../lib/system-user";
+import { issueFromSystem } from "../../lib/system-ledger";
 
 export const miningRouter = createTRPCRouter({
   claimMining: protectedProcedure.mutation(async ({ ctx }) => {
@@ -22,16 +22,16 @@ export const miningRouter = createTRPCRouter({
       const [productCount] = await tx
         .select({ val: count() })
         .from(products)
-        .where(and(
-          eq(products.sellerId, userId),
-          eq(products.status, "ACTIVO")
-        ));
+        .where(
+          and(eq(products.sellerId, userId), eq(products.status, "ACTIVO"))
+        );
 
       if (productCount.val === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar." });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar.",
+        });
       }
-
-      await ensureSystemUser(tx);
 
       // Get last mining record
       const [lastMining] = await tx
@@ -50,7 +50,7 @@ export const miningRouter = createTRPCRouter({
       if (lastMining) {
         const lastDate = new Date(lastMining.date);
         const lastDay = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
-        
+
         if (lastDay.getTime() === today.getTime()) {
           alreadyMined = true;
         } else {
@@ -76,8 +76,7 @@ export const miningRouter = createTRPCRouter({
       else if (newStreak >= 3) reward = 3;
       else reward = 1;
 
-      await tx.insert(transactions).values({
-        fromId: "SYSTEM",
+      await issueFromSystem(tx, {
         toId: userId,
         amount: reward,
         concept: `Minado Diario - Racha ${newStreak}`,

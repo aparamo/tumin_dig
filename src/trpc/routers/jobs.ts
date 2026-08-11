@@ -4,7 +4,7 @@ import {
   regionalCoordinatorProcedure,
 } from "../../lib/trpc/server";
 import { db } from "../../db";
-import { jobs, users, transactions } from "../../db/schema";
+import { jobs, users } from "../../db/schema";
 import { eq, and, ne, lte, desc } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -14,7 +14,7 @@ import {
   isGlobalCoordinator,
   type UserRole,
 } from "../../lib/trpc/authorization";
-import { ensureSystemUser } from "../../lib/system-user";
+import { issueFromSystem } from "../../lib/system-ledger";
 import { logAdminAction } from "../../lib/admin-log";
 import { formatPublicLocation } from "../../lib/location";
 
@@ -125,10 +125,7 @@ export const jobsRouter = createTRPCRouter({
           .returning();
 
         if (input.status === "PAGADO") {
-          await ensureSystemUser(tx);
-
-          await tx.insert(transactions).values({
-            fromId: "SYSTEM",
+          await issueFromSystem(tx, {
             toId: job.requesterId,
             amount: job.amount,
             concept: `Pago por Trabajo: ${job.description}`,

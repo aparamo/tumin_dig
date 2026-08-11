@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -68,7 +68,11 @@ const TIER_BADGES = {
 };
 
 export function Perfil() {
-  const { setCurrentScreen } = useStore();
+  const { setCurrentScreen, setDirectoryTab } = useStore();
+  const { data: savedContactsPreview } = trpc.directory.listSavedContacts.useQuery({
+    cursor: 0,
+    pageSize: 10,
+  });
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
   const avatarUploadHandlers = useMemo(
@@ -277,6 +281,58 @@ export function Perfil() {
               >
                 <Network className="w-4 h-4 mr-2" /> Ver mi Red
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="neo-card border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-black uppercase tracking-tight">Directorio y contactos</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-widest">
+                Explora socios públicos y tus contactos guardados
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!privacy.publicProfile && (
+                <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground">
+                  Activa tu perfil público abajo para aparecer en el Directorio.
+                </p>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  className="h-10 flex-1 border-2 font-black uppercase text-xs shadow-neo-sm"
+                  onClick={() => {
+                    setDirectoryTab("miembros");
+                    setCurrentScreen("directorio");
+                  }}
+                >
+                  <BookUser className="mr-2 h-4 w-4" /> Directorio
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="h-10 flex-1 border-2 font-black uppercase text-xs shadow-neo-sm"
+                  onClick={() => {
+                    setDirectoryTab("contactos");
+                    setCurrentScreen("directorio");
+                  }}
+                >
+                  <Bookmark className="mr-2 h-4 w-4" /> Ver contactos
+                </Button>
+              </div>
+              {(savedContactsPreview?.items.length ?? 0) > 0 && (
+                <ul className="space-y-1.5 border-t-2 border-border pt-3">
+                  {savedContactsPreview!.items.slice(0, 5).map((c) => (
+                    <li key={c.id} className="truncate text-xs font-bold">
+                      {c.displayName}
+                      {!c.available && (
+                        <span className="ml-2 text-[9px] font-black uppercase text-muted-foreground">
+                          no disponible
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
 
