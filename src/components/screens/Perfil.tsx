@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,14 @@ function PrivacyRow({
   description,
   checked,
   onCheckedChange,
+  disabled,
 }: {
   id: string;
   label: string;
   description?: string;
   checked: boolean;
   onCheckedChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -56,7 +58,13 @@ function PrivacyRow({
           <p className="text-[10px] font-medium leading-snug text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} className="shrink-0" />
+      <Switch
+        id={id}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+        className="shrink-0"
+      />
     </div>
   );
 }
@@ -114,18 +122,19 @@ export function Perfil() {
   });
 
   const updatePrivacySettings = trpc.user.updatePrivacySettings.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       notifySuccess("Privacidad y perfil público actualizados");
-      void utils.user.fullMe.invalidate();
+      await utils.user.fullMe.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
   const [nipData, setNipData] = useState({ current: "", new: "", confirm: "" });
+  /** Safe defaults until fullMe loads — never imply publicProfile is on before DB sync */
   const [privacy, setPrivacy] = useState({
-    publicProfile: true,
-    showPhone: true,
+    publicProfile: false,
+    showPhone: false,
     showEmail: false,
     showRegion: true,
     publicName: "",
@@ -138,11 +147,13 @@ export function Perfil() {
     residencePostalCode: "",
     residenceCountry: "",
   });
-  const [prevUserId, setPrevUserId] = useState<string | null>(null);
+  const [privacyHydrated, setPrivacyHydrated] = useState(false);
+  const hydratedForUserId = useRef<string | null>(null);
 
-  // Sync editData with user data when it first loads or changes
-  if (user && user.id !== prevUserId) {
-    setPrevUserId(user.id);
+  useEffect(() => {
+    if (!user) return;
+    if (hydratedForUserId.current === user.id) return;
+    hydratedForUserId.current = user.id;
     setEditData({
       name: user.name || "",
       email: user.email || "",
@@ -164,7 +175,8 @@ export function Perfil() {
       residencePostalCode: user.residencePostalCode ?? "",
       residenceCountry: intl ? (user.residenceCountry ?? "") : "",
     });
-  }
+    setPrivacyHydrated(true);
+  }, [user]);
 
   const needsEnrollmentFix =
     user &&
@@ -577,10 +589,16 @@ export function Perfil() {
             <CardHeader>
               <CardTitle className="text-2xl font-black uppercase tracking-tight">Privacidad y perfil público</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">
-                Controla qué datos se muestran en el bazar y en tu página pública
+                Controla qué datos se muestran en el bazar, el directorio y tu página pública. Pulsa Guardar para aplicar.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {!privacyHydrated ? (
+                <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Cargando preferencias…
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap gap-3">
                 <Button variant="outline" asChild className="h-10 border-2 font-black uppercase text-xs">
                   <a href={`/u/${user.id}`} target="_blank" rel="noopener noreferrer">
@@ -597,6 +615,7 @@ export function Perfil() {
                   onChange={(e) => setPrivacy((p) => ({ ...p, publicName: e.target.value }))}
                   className="bg-background border-2 h-12"
                   maxLength={80}
+                  disabled={!privacyHydrated}
                 />
               </div>
 
@@ -608,6 +627,7 @@ export function Perfil() {
                   onChange={(e) => setPrivacy((p) => ({ ...p, bio: e.target.value.slice(0, 300) }))}
                   className="min-h-22 border-2 bg-background"
                   maxLength={300}
+                  disabled={!privacyHydrated}
                 />
               </div>
 
@@ -615,9 +635,10 @@ export function Perfil() {
                 <PrivacyRow
                   id="publicProfile"
                   label="Perfil público visible"
-                  description="Permite que exista la página /u con tu información permitida."
+                  description="Necesario para aparecer en el Bazar y el Directorio. También habilita tu página /u."
                   checked={privacy.publicProfile}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, publicProfile: v }))}
+                  disabled={!privacyHydrated}
                 />
                 <PrivacyRow
                   id="showPhone"
@@ -625,12 +646,14 @@ export function Perfil() {
                   description="Habilita el botón de WhatsApp cuando publicas o vendes."
                   checked={privacy.showPhone}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
+                  disabled={!privacyHydrated}
                 />
                 <PrivacyRow
                   id="showEmail"
                   label="Mostrar correo en perfil público"
                   checked={privacy.showEmail}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showEmail: v }))}
+                  disabled={!privacyHydrated}
                 />
                 <PrivacyRow
                   id="showRegion"
@@ -638,12 +661,13 @@ export function Perfil() {
                   description="Muestra ciudad/estado o país en tu página pública y bazar."
                   checked={privacy.showRegion}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showRegion: v }))}
+                  disabled={!privacyHydrated}
                 />
               </div>
 
               <Button
                 className="w-full md:w-auto px-8 h-12 font-black uppercase"
-                disabled={updatePrivacySettings.isPending}
+                disabled={!privacyHydrated || updatePrivacySettings.isPending}
                 onClick={() =>
                   updatePrivacySettings.mutate({
                     publicProfile: privacy.publicProfile,

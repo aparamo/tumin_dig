@@ -129,6 +129,8 @@ export const userRouter = createTRPCRouter({
           residencePostalCode: residence.residencePostalCode,
           nip: hashedNip,
           referrerId: referrerId || null,
+          /** Visible in bazar/directorio by default; users can opt out in Perfil → Privacidad */
+          publicProfile: true,
         })
         .returning();
 
@@ -638,6 +640,121 @@ export const userRouter = createTRPCRouter({
       return {
         items: results,
         nextCursor,
+      };
+    }),
+
+  /**
+   * Diagnóstico de por qué un socio aparece (o no) en Bazar / Directorio.
+   * Solo coordinadores; respeta jurisdicción.
+   */
+  getVisibilityStatus: regionalCoordinatorProcedure
+    .input(z.object({ userId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const callerRole = ctx.session.user.role as UserRole;
+
+      const [target] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          publicName: users.publicName,
+          publicProfile: users.publicProfile,
+          status: users.status,
+          isVerified: users.isVerified,
+          region: users.region,
+          enrollmentMethod: users.enrollmentMethod,
+          enrollmentMethodOther: users.enrollmentMethodOther,
+          residenceCountry: users.residenceCountry,
+          residenceState: users.residenceState,
+          residenceCity: users.residenceCity,
+        })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!target) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+      }
+
+      if (!isInJurisdiction({ role: callerRole, region: ctx.session.user.region }, target)) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "El socio está fuera de tu jurisdicción",
+        });
+      }
+
+      const productRows = await db
+        .select({
+          id: products.id,
+          status: products.status,
+          showInProfile: products.showInProfile,
+        })
+        .from(products)
+        .where(eq(products.sellerId, target.id));
+
+      const productsTotal = productRows.length;
+      const productsActivos = productRows.filter((p) => p.status === "ACTIVO").length;
+      const productsVisibles = productRows.filter(
+        (p) => p.status === "ACTIVO" && p.showInProfile
+      ).length;
+
+      const systemHidden =
+        isSystemAccountId(target.id) ||
+        isSystemUserRegion(target.region) ||
+        target.region.trim().toUpperCase() === "GENERAL";
+
+      const motivos: string[] = [];
+      if (systemHidden) {
+        motivos.push("Cuenta de sistema o región técnica (no aparece en listados públicos).");
+      }
+      if (!target.publicProfile) {
+        motivos.push(
+          "Perfil público desactivado. Debe activarlo en Perfil → Privacidad y pulsar Guardar."
+        );
+      }
+      if (target.status !== "ACTIVO") {
+        motivos.push("Cuenta congelada: no aparece en el Directorio ni en el Bazar.");
+      }
+      if (productsVisibles === 0) {
+        if (productsTotal === 0) {
+          motivos.push("Sin productos: no aparece en el Bazar (sí puede aparecer en el Directorio).");
+        } else if (productsActivos === 0) {
+          motivos.push("Tiene productos pero ninguno está ACTIVO.");
+        } else {
+          motivos.push(
+            "Tiene productos activos pero con «mostrar en perfil» desactivado (showInProfile)."
+          );
+        }
+      }
+
+      const apareceDirectorio =
+        !systemHidden && target.publicProfile && target.status === "ACTIVO";
+      const apareceBazar = apareceDirectorio && productsVisibles > 0;
+
+      if (apareceBazar && apareceDirectorio) {
+        motivos.length = 0;
+        motivos.push("Visible en Bazar y Directorio.");
+      } else if (apareceDirectorio && !apareceBazar) {
+        // motivos already explain bazar gap
+      }
+
+      return {
+        userId: target.id,
+        displayName: (target.publicName?.trim() ? target.publicName.trim() : null) ?? target.name,
+        publicProfile: target.publicProfile,
+        status: target.status,
+        isVerified: target.isVerified,
+        region: target.region,
+        enrollmentMethod: target.enrollmentMethod,
+        enrollmentMethodOther: target.enrollmentMethodOther,
+        residenceCountry: target.residenceCountry,
+        residenceState: target.residenceState,
+        residenceCity: target.residenceCity,
+        productsTotal,
+        productsActivos,
+        productsVisibles,
+        apareceBazar,
+        apareceDirectorio,
+        motivos,
       };
     }),
 

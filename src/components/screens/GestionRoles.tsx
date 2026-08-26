@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Loader2, Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Users, Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { useState } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { Badge } from "@/components/ui/badge";
+import { VisibilityStatusDialog } from "@/components/coordination/VisibilityStatusDialog";
 
 type SortOption = "name_asc" | "name_desc" | "date_asc" | "date_desc";
 type UserRole = "SOCIO" | "COORDINADOR_LOCAL" | "COORDINADOR" | "COORDINADOR_GENERAL";
@@ -52,6 +53,8 @@ export function GestionRoles() {
   const [sortBy, setSortBy] = useState<SortOption>("date_desc");
   const [cursor, setCursor] = useState(0);
   const [limit, setLimit] = useState(10);
+  const [visibilityUserId, setVisibilityUserId] = useState<string | null>(null);
+  const [visibilityOpen, setVisibilityOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 500);
 
@@ -84,6 +87,14 @@ export function GestionRoles() {
   return (
     <div className="flex flex-col gap-6 p-4 max-w-5xl mx-auto w-full pb-20">
       <ConfirmDialog />
+      <VisibilityStatusDialog
+        userId={visibilityUserId}
+        open={visibilityOpen}
+        onOpenChange={(open) => {
+          setVisibilityOpen(open);
+          if (!open) setVisibilityUserId(null);
+        }}
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-2">
@@ -198,6 +209,20 @@ export function GestionRoles() {
                   </div>
                   
                   <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0 border-2 shadow-neo-sm"
+                      title="Diagnóstico de visibilidad"
+                      aria-label={`Ver visibilidad de ${user.name}`}
+                      onClick={() => {
+                        setVisibilityUserId(user.id);
+                        setVisibilityOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     {user.role === "COORDINADOR_GENERAL" ? (
                       <Badge variant="secondary" className="h-10 px-3 text-[10px] font-black uppercase tracking-wider">
                         CG (solo ops)
@@ -217,7 +242,7 @@ export function GestionRoles() {
                         }}
                         disabled={user.id === session.user.id || updateRole.isPending}
                       >
-                        <SelectTrigger className="w-full md:w-[180px] h-10 text-[10px] font-black uppercase border-2">
+                        <SelectTrigger className="w-full md:w-45 h-10 text-[10px] font-black uppercase border-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
