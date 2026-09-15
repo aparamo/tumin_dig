@@ -42,7 +42,7 @@ setInterval(() => {
   for (const [key, entry] of identifierLimitStore.entries()) {
     if (now - entry.windowStart > IDENTIFIER_WINDOW_MS * 2) identifierLimitStore.delete(key);
   }
-}, IDENTIFIER_WINDOW_MS * 2);
+}, IDENTIFIER_WINDOW_MS * 2).unref();
 
 function hasRecoverablePhone(phone: string | null | undefined): phone is string {
   return Boolean(phone && phone !== "SYSTEM_INTERNAL");

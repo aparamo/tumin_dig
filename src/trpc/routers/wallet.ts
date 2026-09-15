@@ -3,7 +3,6 @@ import {
   protectedProcedure,
   rateLimitedProtectedProcedure,
 } from "../../lib/trpc/server";
-import { z } from "zod";
 import { db } from "../../db";
 import { users, transactions, products } from "../../db/schema";
 import { eq, sql, and, desc, or, count } from "drizzle-orm";
@@ -11,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { ensureSystemUser } from "../../lib/system-user";
 import { assertPeerTransferParties, issueFromSystem } from "../../lib/system-ledger";
 import { LIMITS } from "../../lib/limits";
+import { transferSchema } from "../../lib/schemas/wallet";
 
 export const walletRouter = createTRPCRouter({
   getBalance: protectedProcedure.query(async ({ ctx }) => {
@@ -44,15 +44,7 @@ export const walletRouter = createTRPCRouter({
   }),
 
   sendTumin: rateLimitedProtectedProcedure
-    .input(
-      z.object({
-        toId: z.string(),
-        amount: z.number().positive(),
-        concept: z.string().min(1).max(500),
-        /** Client-generated UUID — pass the same key on retries to avoid duplicates */
-        idempotencyKey: z.string().uuid(),
-      })
-    )
+    .input(transferSchema)
     .mutation(async ({ ctx, input }) => {
       const meId = ctx.session.user.id;
 

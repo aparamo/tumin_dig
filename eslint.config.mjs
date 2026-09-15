@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["tests/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs,js}"],
+    rules: {
+      // Test helpers and scripts intentionally use flexible mocks / fixtures.
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

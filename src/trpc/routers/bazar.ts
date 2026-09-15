@@ -5,7 +5,7 @@ import {
   coordinatorProcedure,
 } from "../../lib/trpc/server";
 import { db } from "../../db";
-import { products, users, ratings, transactions, productComments } from "../../db/schema";
+import { products, users, ratings, productComments } from "../../db/schema";
 import { eq, and, ilike, sql, desc, count } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -20,6 +20,7 @@ import { logAdminAction } from "../../lib/admin-log";
 import { LIMITS } from "../../lib/limits";
 import { MAX_STARRED_PRODUCTS } from "../../lib/product-categories";
 import { issueFromSystem } from "../../lib/system-ledger";
+import { productCreateSchema, productUpdateSchema } from "../../lib/schemas/product";
 
 type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -363,20 +364,7 @@ export const bazarRouter = createTRPCRouter({
   }),
 
   createProduct: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(3),
-        description: z.string().max(8000).optional(),
-        extraInfo: z.string().max(16000).optional().nullable(),
-        priceMxn: z.number().min(0),
-        priceTumin: z.number().min(0),
-        categories: z.array(z.string()),
-        imageUrl: z.string().optional(),
-        imgUrls: z.array(z.string().url()).optional(),
-        showInProfile: z.boolean().optional().default(true),
-        isStarred: z.boolean().optional().default(false),
-      })
-    )
+    .input(productCreateSchema)
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -449,21 +437,7 @@ export const bazarRouter = createTRPCRouter({
     }),
 
   updateProduct: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        name: z.string().min(3),
-        description: z.string().max(8000).optional(),
-        extraInfo: z.string().max(16000).optional().nullable(),
-        priceMxn: z.number().min(0),
-        priceTumin: z.number().min(0),
-        categories: z.array(z.string()),
-        imgUrls: z.array(z.string().url()),
-        status: z.enum(["ACTIVO", "INACTIVO"]),
-        showInProfile: z.boolean(),
-        isStarred: z.boolean(),
-      })
-    )
+    .input(productUpdateSchema)
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       return await db.transaction(async (tx) => {

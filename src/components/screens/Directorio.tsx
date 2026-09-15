@@ -22,7 +22,7 @@ import type {
 } from "@/lib/directory-types";
 import type { SavedContactListItem } from "@/lib/directory-types";
 
-function buildDefaults(): DirectoryFiltersState {
+export function buildDefaults(): DirectoryFiltersState {
   return {
     search: "",
     region: "Todas",
@@ -34,7 +34,7 @@ function buildDefaults(): DirectoryFiltersState {
   };
 }
 
-function contactToMember(c: SavedContactListItem): DirectoryMemberListItem {
+export function contactToMember(c: SavedContactListItem): DirectoryMemberListItem {
   return {
     id: c.contactUserId,
     displayName: c.displayName,

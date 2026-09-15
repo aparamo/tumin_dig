@@ -13,7 +13,7 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "@/components/FeedbackProvider";
 
-interface RecipientCardProps {
+export interface RecipientCardProps {
   name: string;
   publicName: string | null;
   avatarUrl: string | null;
@@ -22,7 +22,7 @@ interface RecipientCardProps {
   isSelf: boolean;
 }
 
-function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, isSelf }: RecipientCardProps) {
+export function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, isSelf }: RecipientCardProps) {
   const displayName = publicName ?? name;
   const initials = displayName
     .split(" ")

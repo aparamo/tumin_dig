@@ -24,30 +24,35 @@ import {
   getCurrentMonthRange,
   type AuditRewardStatus,
 } from "../../lib/audit-month";
+import { toRows } from "../../lib/db-rows";
 
-interface ConcentrationPatternRow {
-  id: string;
-  name: string;
-  total_mined: number;
-  grand_total_sent: number;
-  primary_receiver_id: string;
-  primary_receiver_name: string;
-  last_activity: Date | null;
-}
+const concentrationPatternRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  total_mined: z.coerce.number(),
+  grand_total_sent: z.coerce.number(),
+  primary_receiver_id: z.string(),
+  primary_receiver_name: z.string(),
+  last_activity: z.coerce.date().nullable(),
+});
 
-interface NonSellerRow {
-  id: string;
-  name: string;
-  product_count: number;
-  total_mined: number | null;
-}
+const nonSellerRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  product_count: z.coerce.number(),
+  total_mined: z.coerce.number().nullable(),
+});
 
-interface PossibleBotRow {
-  id: string;
-  name: string;
-  mining_count: number;
-  total_mined: number | null;
-}
+const possibleBotRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  mining_count: z.coerce.number(),
+  total_mined: z.coerce.number().nullable(),
+});
+
+type ConcentrationPatternRow = z.infer<typeof concentrationPatternRowSchema>;
+type NonSellerRow = z.infer<typeof nonSellerRowSchema>;
+type PossibleBotRow = z.infer<typeof possibleBotRowSchema>;
 
 export const auditRouter = createTRPCRouter({
   getAuditRewardStatus: coordinatorProcedure.query(async ({ ctx }): Promise<AuditRewardStatus> => {
@@ -206,7 +211,9 @@ export const auditRouter = createTRPCRouter({
       `;
 
       const concentrationResult = await db.execute(concentrationQuery);
-      const concentrationPatterns = concentrationResult as unknown as ConcentrationPatternRow[];
+      const concentrationPatterns = z
+        .array(concentrationPatternRowSchema)
+        .parse(toRows(concentrationResult));
 
       // 3. Inactive users (no transactions in the last 30 days)
       const thirtyDaysAgo = new Date();
@@ -268,7 +275,7 @@ export const auditRouter = createTRPCRouter({
       `;
 
       const nonSellersResult = await db.execute(nonSellersQuery);
-      const nonSellers = nonSellersResult as unknown as NonSellerRow[];
+      const nonSellers = z.array(nonSellerRowSchema).parse(toRows(nonSellersResult));
 
       // 6. Possible bots: many mining records, no social interaction (ratings/comments)
       const possibleBotsQuery = sql<PossibleBotRow>`
@@ -293,7 +300,7 @@ export const auditRouter = createTRPCRouter({
       `;
 
       const possibleBotsResult = await db.execute(possibleBotsQuery);
-      const possibleBots = possibleBotsResult as unknown as PossibleBotRow[];
+      const possibleBots = z.array(possibleBotRowSchema).parse(toRows(possibleBotsResult));
 
       // 7. Product control quality list
       const productQuality = await db

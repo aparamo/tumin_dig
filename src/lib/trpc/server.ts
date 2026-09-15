@@ -37,6 +37,7 @@ export const t = initTRPC.context<Context>().create({
 });
 
 export const createTRPCRouter = t.router;
+export const createCallerFactory = t.createCallerFactory;
 export const publicProcedure = t.procedure;
 
 const isAuthed = t.middleware(async ({ ctx, next }) => {
@@ -167,13 +168,14 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Periodically purge stale entries to avoid memory leaks
+// Periodically purge stale entries to avoid memory leaks.
+// .unref() so the timer does not keep Node/Vitest workers alive.
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitStore.entries()) {
     if (now - entry.windowStart > WINDOW_MS * 2) rateLimitStore.delete(ip);
   }
-}, WINDOW_MS * 2);
+}, WINDOW_MS * 2).unref();
 
 /** Rate-limited public procedure — applies to sensitive unauthenticated endpoints */
 export const rateLimitedPublicProcedure = t.procedure.use(async ({ ctx, next }) => {
