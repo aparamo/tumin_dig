@@ -2,7 +2,8 @@ import { test as setup, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-const authDir = path.join(import.meta.dirname, ".auth");
+// Playwright transpiles specs to CJS, so `import.meta` is unavailable here.
+const authDir = path.join(__dirname, ".auth");
 
 setup("authenticate as socio", async ({ page }) => {
   fs.mkdirSync(authDir, { recursive: true });

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local Playwright browser downloads (see docs/project/testing-harness.md).
+    ".playwright-browsers/**",
   ]),
   {
     files: ["tests/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs,js}"],
