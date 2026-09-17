@@ -27,6 +27,7 @@ export function Inicio() {
   
   const { data: balanceData, isLoading: isLoadingBalance, refetch: refetchBalance } = trpc.wallet.getBalance.useQuery();
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
+  const { data: miningStatus } = trpc.mining.getMiningStatus.useQuery();
   const { data: activeAd } = trpc.ads.getActiveAds.useQuery();
   const { data: rewardStatus } = trpc.audit.getAuditRewardStatus.useQuery(undefined, {
     enabled: isCoordinator,
@@ -61,6 +62,7 @@ export function Inicio() {
       notifySuccess(`¡Felicidades! Ganaste ${data.reward} Ŧ — Racha: ${data.streak} días.`);
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
+      utils.mining.getMiningStatus.invalidate();
     },
     onError: (error) => {
       notifyError(parseErrorMessage(error));
@@ -68,9 +70,24 @@ export function Inicio() {
   });
 
   const handleMining = () => {
-    if (claimMining.isPending) return;
+    if (claimMining.isPending || !miningStatus?.canMine) return;
     claimMining.mutate();
   };
+
+  const miningButtonLabel = (() => {
+    if (claimMining.isPending) return "Minando...";
+    if (!miningStatus) return "Minar";
+    if (miningStatus.reason === "ALREADY_MINED") {
+      return `Ya minaste hoy · racha ${miningStatus.displayStreak}`;
+    }
+    if (miningStatus.reason === "NO_PRODUCT") {
+      return "Minar (publica un producto)";
+    }
+    if (miningStatus.displayStreak > 0) {
+      return `Minar · racha ${miningStatus.displayStreak}`;
+    }
+    return "Minar";
+  })();
 
   return (
     <div className="grid md:grid-cols-12 gap-8 pb-10">
@@ -132,9 +149,9 @@ export function Inicio() {
                 variant="secondary"
                 className="w-full h-12"
                 onClick={handleMining}
-                disabled={claimMining.isPending}
+                disabled={claimMining.isPending || !miningStatus?.canMine}
               >
-                <Pickaxe className="w-5 h-5 mr-2" /> {claimMining.isPending ? "Minando..." : "Minar"}
+                <Pickaxe className="w-5 h-5 mr-2 shrink-0" /> {miningButtonLabel}
               </Button>
             </div>
           </CardContent>
@@ -261,7 +278,12 @@ export function Inicio() {
                         {item.concept}
                       </div>
                       <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        {new Date(item.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Intl.DateTimeFormat("es-MX", {
+                          timeZone: "America/Mexico_City",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        }).format(new Date(item.createdAt))}
                       </div>
                     </div>
                   </div>

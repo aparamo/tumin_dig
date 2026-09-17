@@ -55,6 +55,12 @@ export default function MotorAbundanciaPage() {
         <p className="text-md text-destructive font-bold uppercase tracking-widest text-center italic">
           ⚠️ Si olvidas minar un solo día, la racha vuelve a 1.
         </p>
+        <p className="text-sm text-foreground/80 leading-relaxed">
+          Puedes minar <strong>una sola vez por día calendario</strong>, según la hora de{" "}
+          <strong>México (00:00, zona Ciudad de México)</strong> — no son 24 horas desde el último clic.
+          Si minas a las 23:50 y vuelves a la 01:00 del día siguiente, sí puedes minar de nuevo y tu racha
+          crece. Si minas a las 15:00 y otra vez a las 23:00 del mismo día, el sistema no lo permite.
+        </p>
         <p className="text-sm text-foreground/60 text-center leading-relaxed">
           Para minar necesitas al menos un producto con estado <strong>Activo</strong> en Mis Productos — la misma condición que para recibir transferencias de otros socios.
         </p>

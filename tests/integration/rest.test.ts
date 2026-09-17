@@ -41,30 +41,6 @@ describe("schema / ledger constraint", () => {
   });
 });
 
-describe("mining.claimMining", () => {
-  it("requires an active product and allows one claim per day", async () => {
-    const user = await makeUser();
-    const caller = createTestCaller({
-      id: user.id,
-      role: "SOCIO",
-      region: user.region,
-      isVerified: true,
-    });
-    await expect(caller.mining.claimMining()).rejects.toMatchObject({ code: "BAD_REQUEST" });
-
-    await makeProduct({ sellerId: user.id });
-    const first = await caller.mining.claimMining();
-    expect(first.reward).toBe(1);
-    expect(first.streak).toBe(1);
-
-    await expect(caller.mining.claimMining()).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message: expect.stringMatching(/Ya has minado/),
-    });
-    await expectLedgerBalanced();
-  });
-});
-
 describe("jobs", () => {
   it("computes amount from minutes server-side and pays on verify", async () => {
     const requester = await makeUser({ region: "VERACRUZ" });

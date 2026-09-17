@@ -4,93 +4,123 @@ import { users, dailyMining, products } from "../../db/schema";
 import { eq, desc, and, count, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { issueFromSystem } from "../../lib/system-ledger";
+import {
+  MINING_TIMEZONE,
+  evaluateMiningClaim,
+  miningIdempotencyKey,
+} from "../../lib/mining-day";
+import { isPgUniqueViolation } from "../../lib/pg-error";
 
 export const miningRouter = createTRPCRouter({
+  getMiningStatus: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const now = new Date();
+
+    const [productCount] = await db
+      .select({ val: count() })
+      .from(products)
+      .where(and(eq(products.sellerId, userId), eq(products.status, "ACTIVO")));
+
+    const [lastMining] = await db
+      .select()
+      .from(dailyMining)
+      .where(eq(dailyMining.userId, userId))
+      .orderBy(desc(dailyMining.claimedAt))
+      .limit(1);
+
+    const evaluation = evaluateMiningClaim({
+      now,
+      last: lastMining
+        ? { minedOn: lastMining.minedOn, streak: lastMining.streak }
+        : null,
+      hasActiveProduct: productCount.val > 0,
+    });
+
+    return {
+      canMine: evaluation.canMine,
+      reason: evaluation.reason,
+      displayStreak: evaluation.displayStreak,
+      nextReward: evaluation.nextReward,
+      minedOn: lastMining?.minedOn ?? null,
+      nextAvailableAt: evaluation.nextAvailableAt,
+      timezone: MINING_TIMEZONE,
+    };
+  }),
+
   claimMining: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
-    return await db.transaction(async (tx) => {
-      // 0. Row-level lock the user to prevent concurrent claims
-      await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
+    try {
+      return await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT 1 FROM ${users} WHERE id = ${userId} FOR UPDATE`);
 
-      const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
-      }
-
-      // Direct check: User must have at least one ACTIVE product in Bazar
-      const [productCount] = await tx
-        .select({ val: count() })
-        .from(products)
-        .where(
-          and(eq(products.sellerId, userId), eq(products.status, "ACTIVO"))
-        );
-
-      if (productCount.val === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar.",
-        });
-      }
-
-      // Get last mining record
-      const [lastMining] = await tx
-        .select()
-        .from(dailyMining)
-        .where(eq(dailyMining.userId, userId))
-        .orderBy(desc(dailyMining.date))
-        .limit(1);
-
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      let newStreak = 1;
-      let alreadyMined = false;
-
-      if (lastMining) {
-        const lastDate = new Date(lastMining.date);
-        const lastDay = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
-
-        if (lastDay.getTime() === today.getTime()) {
-          alreadyMined = true;
-        } else {
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-
-          if (lastDay.getTime() === yesterday.getTime()) {
-            newStreak = lastMining.streak + 1;
-          } else {
-            newStreak = 1;
-          }
+        const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
         }
-      }
 
-      if (alreadyMined) {
+        const [productCount] = await tx
+          .select({ val: count() })
+          .from(products)
+          .where(
+            and(eq(products.sellerId, userId), eq(products.status, "ACTIVO"))
+          );
+
+        const [lastMining] = await tx
+          .select()
+          .from(dailyMining)
+          .where(eq(dailyMining.userId, userId))
+          .orderBy(desc(dailyMining.claimedAt))
+          .limit(1);
+
+        const now = new Date();
+        const evaluation = evaluateMiningClaim({
+          now,
+          last: lastMining
+            ? { minedOn: lastMining.minedOn, streak: lastMining.streak }
+            : null,
+          hasActiveProduct: productCount.val > 0,
+        });
+
+        if (evaluation.reason === "NO_PRODUCT") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "¡Órale! Debes tener al menos un producto activo en el bazar para poder minar.",
+          });
+        }
+
+        if (evaluation.reason === "ALREADY_MINED") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Ya has minado hoy" });
+        }
+
+        const { today, nextStreak, nextReward } = evaluation;
+
+        // Insert first so UNIQUE(user_id, mined_on) rejects races before minting.
+        await tx.insert(dailyMining).values({
+          userId,
+          claimedAt: now,
+          minedOn: today,
+          streak: nextStreak,
+          amount: nextReward,
+        });
+
+        await issueFromSystem(tx, {
+          toId: userId,
+          amount: nextReward,
+          concept: `Minado Diario - Racha ${nextStreak}`,
+          type: "MINADO",
+          idempotencyKey: miningIdempotencyKey(userId, today),
+        });
+
+        return { streak: nextStreak, reward: nextReward };
+      });
+    } catch (err) {
+      if (err instanceof TRPCError) throw err;
+      if (isPgUniqueViolation(err)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Ya has minado hoy" });
       }
-
-      let reward = 1;
-      if (newStreak >= 30) reward = 10;
-      else if (newStreak >= 15) reward = 7;
-      else if (newStreak >= 7) reward = 5;
-      else if (newStreak >= 3) reward = 3;
-      else reward = 1;
-
-      await issueFromSystem(tx, {
-        toId: userId,
-        amount: reward,
-        concept: `Minado Diario - Racha ${newStreak}`,
-        type: "MINADO",
-      });
-
-      await tx.insert(dailyMining).values({
-        userId,
-        date: now,
-        streak: newStreak,
-        amount: reward,
-      });
-
-      return { streak: newStreak, reward };
-    });
+      throw err;
+    }
   }),
 });

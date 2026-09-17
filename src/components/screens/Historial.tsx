@@ -37,7 +37,11 @@ export function Historial() {
                       <div>
                         <div className="font-black text-foreground text-lg uppercase tracking-tight line-clamp-1">{tx.concept}</div>
                         <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                          {new Date(tx.createdAt).toLocaleString()}
+                          {new Intl.DateTimeFormat("es-MX", {
+                            timeZone: "America/Mexico_City",
+                            dateStyle: "short",
+                            timeStyle: "medium",
+                          }).format(new Date(tx.createdAt))}
                         </div>
                       </div>
                     </div>

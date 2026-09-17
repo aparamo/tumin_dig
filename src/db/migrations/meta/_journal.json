@@ -85,6 +85,13 @@
       "when": 1786471000000,
       "tag": "0011_system_ledger_check",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786550000000,
+      "tag": "0012_mining_civil_day",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   jsonb,
   pgEnum,
   unique,
+  date,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -248,13 +249,18 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   }),
 }));
 
-export const dailyMining = pgTable("TUMIN_daily_mining", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  date: timestamp("date").notNull(),
-  streak: integer("streak").notNull(),
-  amount: doublePrecision("amount").notNull(),
-});
+export const dailyMining = pgTable(
+  "TUMIN_daily_mining",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").references(() => users.id).notNull(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull(),
+    minedOn: date("mined_on", { mode: "string" }).notNull(),
+    streak: integer("streak").notNull(),
+    amount: doublePrecision("amount").notNull(),
+  },
+  (t) => [unique("daily_mining_user_day").on(t.userId, t.minedOn)]
+);
 
 export const dailyMiningRelations = relations(dailyMining, ({ one }) => ({
   user: one(users, {

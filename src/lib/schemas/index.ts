@@ -12,3 +12,9 @@ export {
   type RegisterLocationInput,
   type UpdateLocationInput,
 } from "./register";
+export {
+  miningStatusSchema,
+  miningBlockReasonSchema,
+  type MiningStatus,
+  type MiningBlockReason,
+} from "./mining";
