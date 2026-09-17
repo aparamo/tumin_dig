@@ -28,7 +28,8 @@ async function main() {
       ('e2e_socio', 'E2E Socio', '9610000001', 'socio@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'SOCIO', 'ACTIVO', true, true, true, 'México', 'Veracruz'),
       ('e2e_coord_local', 'E2E Coord Local', '9610000002', 'local@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'COORDINADOR_LOCAL', 'ACTIVO', true, false, true, 'México', 'Veracruz'),
       ('e2e_coord', 'E2E Coord', '9610000003', 'coord@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'COORDINADOR', 'ACTIVO', true, false, true, 'México', 'Veracruz'),
-      ('e2e_seller', 'E2E Seller', '9610000004', 'seller@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'SOCIO', 'ACTIVO', true, true, true, 'México', 'Veracruz')
+      ('e2e_seller', 'E2E Seller', '9610000004', 'seller@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'SOCIO', 'ACTIVO', true, true, true, 'México', 'Veracruz'),
+      ('e2e_freeze_target', 'E2E Freeze Target', '9610000005', 'freeze@e2e.local', '${nipHash}', 'Túmin Totonacapan', 'SOCIO', 'ACTIVO', true, true, true, 'México', 'Veracruz')
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO "TUMIN_users" (id, name, phone, nip, region, role, status, is_verified, public_profile)
@@ -36,7 +37,9 @@ async function main() {
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO "TUMIN_products" (seller_id, name, price_mxn, price_tumin, categories, region, status, show_in_profile)
-    VALUES ('e2e_seller', 'Producto E2E', 90, 10, '["Alimentos"]'::jsonb, 'Túmin Totonacapan', 'ACTIVO', true);
+    VALUES
+      ('e2e_seller', 'Producto E2E', 90, 10, '["Alimentos"]'::jsonb, 'Túmin Totonacapan', 'ACTIVO', true),
+      ('e2e_freeze_target', 'Producto Congelar E2E', 90, 10, '["Alimentos"]'::jsonb, 'Túmin Totonacapan', 'ACTIVO', true);
 
     INSERT INTO "TUMIN_transactions" (from_id, to_id, amount, concept, type)
     VALUES ('SYSTEM', 'e2e_socio', 500, 'E2E seed', 'BONO');
@@ -46,6 +49,9 @@ async function main() {
     db: pg,
     port: PORT,
     host: "127.0.0.1",
+    // Next.dev opens several postgres-js connections (RSC + route handlers).
+    // The class default is 1 and extra clients are dropped → /api/auth/session hangs.
+    maxConnections: Number(process.env.TEST_DB_MAX_CONNECTIONS ?? 20),
   });
   await server.start();
   console.log(`[test-db-server] listening on 127.0.0.1:${PORT}`);

@@ -20,6 +20,9 @@ const cspDirectives = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Playwright (and some local setups) hit the dev server via 127.0.0.1.
+  // Next 16 treats that as a distinct origin from localhost and blocks HMR/dev assets.
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "utfs.io" },

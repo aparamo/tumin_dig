@@ -68,6 +68,7 @@ const NavItem = ({
       <Button
         variant="ghost"
         size="icon"
+        aria-label={item.label}
         className={cn(
           "flex flex-col gap-0.5 h-8 w-8 flex-1 rounded-xl transition-all",
           active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
@@ -89,6 +90,7 @@ const NavItem = ({
             {...triggerProps}
             variant="ghost"
             size="icon"
+            aria-label={item.label}
             className={cn(
               "rounded-xl transition-all border-2 border-transparent",
               compact ? "w-10 h-10" : "w-12 h-12",

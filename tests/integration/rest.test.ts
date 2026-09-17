@@ -97,6 +97,26 @@ describe("jobs", () => {
 });
 
 describe("audit", () => {
+  it("getAuditReport returns lists without throwing", async () => {
+    const coord = await makeUser({ role: "COORDINADOR", region: "Túmin Totonacapan" });
+    const idle = await makeUser({
+      name: "Idle Seller",
+      region: "Túmin Totonacapan",
+      residenceState: "Veracruz",
+    });
+    await makeProduct({ sellerId: idle.id, region: "Túmin Totonacapan" });
+
+    const caller = createTestCaller({
+      id: coord.id,
+      role: "COORDINADOR",
+      region: "Túmin Totonacapan",
+      isVerified: true,
+    });
+    const report = await caller.audit.getAuditReport();
+    expect(report.inactiveUsers.some((u) => u.id === idle.id)).toBe(true);
+    expect(report.nonSellers.some((u) => u.id === idle.id)).toBe(true);
+  });
+
   it("freezeUser cascades products/ads and resets productOk", async () => {
     const coord = await makeUser({ role: "COORDINADOR", region: "VERACRUZ" });
     const target = await makeUser({ region: "OAXACA", residenceState: "Oaxaca" });

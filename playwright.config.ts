@@ -1,9 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 
+// Keep browsers inside the repo so sandbox/CI cache rotations do not break launches.
+process.env.PLAYWRIGHT_BROWSERS_PATH ??= path.join(__dirname, ".playwright-browsers");
+
 const PORT = 3100;
 const DB_PORT = 5433;
-const baseURL = `http://127.0.0.1:${PORT}`;
+const baseURL = `http://localhost:${PORT}`;
 
 if (process.env.DATABASE_URL?.includes("neon.tech")) {
   throw new Error("Refuse to run E2E against a Neon DATABASE_URL.");
@@ -47,23 +50,25 @@ export default defineConfig({
     {
       command: "bun run scripts/test-db-server.ts",
       port: DB_PORT,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 120_000,
       env: {
         TEST_DB_PORT: String(DB_PORT),
+        TEST_DB_MAX_CONNECTIONS: "20",
         NODE_ENV: "test",
       },
     },
     {
       command: `bun run dev -- --port ${PORT}`,
       url: baseURL,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 180_000,
       env: {
         DATABASE_URL: `postgresql://postgres:postgres@127.0.0.1:${DB_PORT}/postgres`,
-        DATABASE_MAX_CONNECTIONS: "1",
+        DATABASE_MAX_CONNECTIONS: "5",
         AUTH_SECRET: "e2e-auth-secret-not-for-production",
         AUTH_TRUST_HOST: "true",
+        AUTH_URL: baseURL,
         SYSTEM_NIP_SECRET: "e2e-system-nip-secret",
         NODE_ENV: "development",
       },

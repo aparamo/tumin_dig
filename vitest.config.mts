@@ -93,7 +93,8 @@ export default defineConfig({
       },
       {
         extends: true,
-        plugins: [testDbAliasPlugin()],
+        // Do NOT alias @/db here: sendTumin.race talks to real Postgres via TEST_PG_URL.
+        // The PGlite swap would silently make FOR UPDATE contention impossible.
         test: {
           name: { label: "concurrency", color: "magenta" },
           environment: "node",

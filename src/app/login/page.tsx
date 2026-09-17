@@ -87,6 +87,7 @@ function LoginForm() {
               <Input
                 id="nip"
                 type="password"
+                autoComplete="current-password"
                 placeholder="****"
                 maxLength={6}
                 className="text-center tracking-[0.5em] text-xl bg-background"

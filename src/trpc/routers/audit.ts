@@ -233,7 +233,7 @@ export const auditRouter = createTRPCRouter({
             sql`NOT EXISTS (
               SELECT 1 FROM ${transactions}
               WHERE (${transactions.fromId} = ${users.id} OR ${transactions.toId} = ${users.id})
-              AND ${transactions.createdAt} >= ${thirtyDaysAgo}
+              AND ${transactions.createdAt} >= ${thirtyDaysAgo.toISOString()}
             )`
           )
         )
@@ -337,7 +337,17 @@ export const auditRouter = createTRPCRouter({
 
       assertNotSelf(callerId, input.userId);
 
-      const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      const [targetUser] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          status: users.status,
+          region: users.region,
+          residenceState: users.residenceState,
+        })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
       if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
 
       if (!isInJurisdiction({ role: userRole, region: ctx.session.user.region }, targetUser)) {
