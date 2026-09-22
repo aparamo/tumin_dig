@@ -66,7 +66,7 @@ export default function MercadoInternoPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          Mensajes en Túmin
+          Mensajes a través de la plataforma de Túmin digital
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
           La app tiene una bandeja de mensajes privados entre socios. No es lo mismo que los <strong>comentarios de producto</strong> (esos son públicos en el detalle del artículo).
