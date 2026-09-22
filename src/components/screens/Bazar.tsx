@@ -11,16 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Loader2, Plus, Search, Star, MessageCircle, ShoppingCart, 
+  Loader2, Plus, Search, Star, ShoppingCart, 
   ShoppingBag, Sparkles, MapPin, ArrowUpDown
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
 import { CategoryFilterDialog } from "@/components/directory/CategoryFilterDialog";
+import { CommunicateButton } from "@/components/contact/CommunicateButton";
 import { MEXICO_STATES } from "@/lib/location";
 import { PRODUCT_CATEGORY_ICONS, isProductCategory } from "@/lib/product-categories";
-import { useFeedback } from "@/components/FeedbackProvider";
 import { cn } from "@/lib/utils";
 
 const FILTER_LABEL =
@@ -31,7 +31,6 @@ const FILTER_TRIGGER =
 
 export function Bazar() {
   const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
-  const { notifyError } = useFeedback();
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("Todas");
   const [locationState, setLocationState] = useState("Todas");
@@ -259,25 +258,21 @@ export function Bazar() {
                       )}
                     </div>
 
-                    <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                      <Button 
-                        variant="outline" 
-                        className="flex-1 h-12 border shadow-neo-sm"
-                        onClick={() => {
-                          const sellerPhone = item.seller.phone;
-                          if (!sellerPhone) {
-                            notifyError("Este socio no ha habilitado el contacto por WhatsApp.");
-                            return;
-                          }
-                          const phone = sellerPhone.replace(/\D/g, "");
-                          window.open(`https://wa.me/${phone.startsWith("52") ? phone : "52" + phone}?text=Hola%20${encodeURIComponent(item.seller.displayName)},%20me%20interesa%20tu%20producto:%20${encodeURIComponent(item.product.name)}`, "_blank");
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <CommunicateButton
+                        target={{
+                          userId: item.seller.id,
+                          displayName: item.seller.displayName,
+                          contactMethods: item.seller.contactMethods ?? [],
+                          messageText: `Hola ${item.seller.displayName}, me interesa tu producto: ${item.product.name}`,
                         }}
-                      >
-                        <MessageCircle className="w-5 h-5 mr-2" /> WA
-                      </Button>
+                        iconOnly
+                        label="Comunicarse"
+                        className="h-12 w-12 shrink-0 border shadow-neo-sm"
+                      />
                       <Button 
                         variant="default"
-                        className="flex-2 h-12 shadow-neo-sm"
+                        className="min-w-0 flex-1 h-12 shadow-neo-sm"
                         onClick={() => {
                           setPendingPurchase({
                             sellerId: item.seller.id,

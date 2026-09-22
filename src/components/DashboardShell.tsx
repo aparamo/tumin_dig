@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Megaphone,
   BookUser,
+  MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -34,6 +35,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { type Screen } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { trpc } from "@/lib/trpc/react";
 
 interface MenuItem {
   id: Screen;
@@ -41,6 +43,7 @@ interface MenuItem {
   icon: LucideIcon;
   color?: string;
   href?: string;
+  badge?: number;
 }
 
 const NavItem = ({
@@ -56,10 +59,20 @@ const NavItem = ({
   active: boolean;
   onClick?: () => void;
 }) => {
+  const badge =
+    item.badge && item.badge > 0 ? (
+      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-black text-destructive-foreground">
+        {item.badge > 99 ? "99+" : item.badge}
+      </span>
+    ) : null;
+
   if (isMobile) {
     const content = (
       <>
-        <item.icon className="w-5 h-5" />
+        <span className="relative">
+          <item.icon className="w-5 h-5" />
+          {badge}
+        </span>
         <span className="text-[8px] font-bold uppercase">{item.label}</span>
       </>
     );
@@ -80,7 +93,12 @@ const NavItem = ({
     );
   }
 
-  const icon = <item.icon className={cn(compact ? "w-5 h-5" : "w-6 h-6")} />;
+  const icon = (
+    <span className="relative inline-flex">
+      <item.icon className={cn(compact ? "w-5 h-5" : "w-6 h-6")} />
+      {badge}
+    </span>
+  );
 
   return (
     <Tooltip>
@@ -132,6 +150,11 @@ export function DashboardShell({
   const [isHeaderCoordOpen, setIsHeaderCoordOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const { data: unreadData } = trpc.messaging.unreadCount.useQuery(undefined, {
+    refetchInterval: 30_000,
+    enabled: !!session?.user,
+  });
+  const unreadCount = unreadData?.count ?? 0;
 
   const isCoordinator =
     session?.user?.role === "COORDINADOR" ||
@@ -151,7 +174,7 @@ export function DashboardShell({
     { id: "historial", label: "Historial", icon: History },
   ];
 
-  // Desktop sidebar: sin Comunidad/Perfil (van en header) pero con Anuncios
+  // Desktop sidebar: sin Comunidad/Perfil/Mensajes (van en header)
   const desktopMenuItems: MenuItem[] = [
     { id: "inicio", label: "Inicio", icon: Home },
     { id: "pagar", label: "Pagar", icon: Send },
@@ -163,6 +186,13 @@ export function DashboardShell({
     { id: "historial", label: "Historial", icon: History },
   ];
 
+  const messagesItem: MenuItem = {
+    id: "mensajes",
+    label: "Mensajes",
+    icon: MessagesSquare,
+    badge: unreadCount || undefined,
+  };
+
   const coordinatorItems: MenuItem[] = [
     { id: "coordinacion", label: "Validar", icon: Settings, color: "text-orange-500", href: "/coordinacion" },
     { id: "gestion-roles", label: "Roles", icon: Users, color: "text-purple-500", href: "/gestion-socios" },
@@ -170,9 +200,11 @@ export function DashboardShell({
   ];
 
   const activeLabel =
-    menuItems.find((i) => i.id === activeScreen)?.label ||
-    coordinatorItems.find((i) => i.id === activeScreen)?.label ||
-    "Túmin";
+    activeScreen === "mensajes"
+      ? messagesItem.label
+      : menuItems.find((i) => i.id === activeScreen)?.label ||
+        coordinatorItems.find((i) => i.id === activeScreen)?.label ||
+        "Túmin";
 
   const handleNavItem = (item: MenuItem) => {
     if (item.href) {
@@ -271,8 +303,36 @@ export function DashboardShell({
             </h1>
           </div>
 
-          {/* Desktop header right */}
+          {/* Desktop header right — Mensajes primero desde la izquierda */}
           <div className="hidden md:flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger
+                render={(triggerProps) => (
+                  <Button
+                    {...triggerProps}
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Mensajes"
+                    className={cn(
+                      "relative w-10 h-10 rounded-xl text-muted-foreground hover:bg-muted",
+                      activeScreen === "mensajes" && "bg-primary text-primary-foreground hover:bg-primary"
+                    )}
+                    onClick={() => handleNavItem(messagesItem)}
+                  >
+                    <MessagesSquare className="w-5 h-5" />
+                    {unreadCount > 0 ? (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-black text-destructive-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    ) : null}
+                  </Button>
+                )}
+              />
+              <TooltipContent side="bottom" className="font-black uppercase text-xs">
+                Mensajes
+              </TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger
                 render={(triggerProps) => (
@@ -375,7 +435,24 @@ export function DashboardShell({
             <ThemeToggle />
           </div>
 
-          <div className="md:hidden">
+          <div className="flex md:hidden items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mensajes"
+              className={cn(
+                "relative w-10 h-10 rounded-xl text-muted-foreground",
+                activeScreen === "mensajes" && "bg-primary text-primary-foreground"
+              )}
+              onClick={() => handleNavItem(messagesItem)}
+            >
+              <MessagesSquare className="w-5 h-5" />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-black text-destructive-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
+            </Button>
             <ThemeToggle />
           </div>
         </header>
@@ -427,7 +504,12 @@ export function DashboardShell({
                 }}
               >
                 <item.icon className="w-4 h-4" />
-                {item.label}
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.badge && item.badge > 0 ? (
+                  <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-black text-destructive-foreground">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
+                ) : null}
               </Button>
             ))}
 

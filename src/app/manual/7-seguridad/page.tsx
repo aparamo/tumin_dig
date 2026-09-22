@@ -159,12 +159,12 @@ export default function SeguridadPage() {
             <ul className="space-y-2 text-sm text-foreground/70">
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Perfil público:</strong> activa o desactiva tu página pública <code className="bg-muted px-1 rounded text-xs font-mono">/u/tu-id</code>.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Nombre público y bio:</strong> cómo quieres presentarte (distinto a tu nombre de registro si lo deseas).</span></li>
-              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Teléfono:</strong> si se muestra el botón de WhatsApp para que te contacten desde el Bazar.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Formas de contacto:</strong> en Perfil → Formas de comunicarse defines WhatsApp, llamada, SMS, Telegram, Signal, redes, videollamada u otros, con un interruptor global y visibilidad por canal.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Correo electrónico:</strong> si es visible en tu perfil público.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Ubicación:</strong> si se muestra dónde vives (ciudad/estado o país), no tu región de inscripción comunitaria.</span></li>
             </ul>
             <p className="text-xs text-foreground/50 italic pt-1">
-              Por default, el teléfono está habilitado para el botón de contacto. Si no lo deseas, desactívalo en esta sección.
+              Por default, las formas de contacto no se muestran públicamente hasta que las actives. El teléfono de tu cuenta sirve para login y no implica WhatsApp automático.
             </p>
           </div>
         </div>

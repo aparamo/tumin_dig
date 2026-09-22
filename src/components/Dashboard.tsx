@@ -16,6 +16,7 @@ import { GestorMedios } from "./screens/GestorMedios";
 import { MiRed } from "./screens/MiRed";
 import { GestionAnuncios } from "./screens/GestionAnuncios";
 import { Directorio } from "./screens/Directorio";
+import { Mensajes } from "./screens/Mensajes";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence } from "motion/react";
 import { DashboardShell } from "./DashboardShell";
@@ -31,7 +32,7 @@ export function Dashboard() {
       const validScreens = [
         "inicio", "pagar", "bazar", "directorio", "comunidad", "coordinacion", "perfil",
         "historial", "auditoria", "gestion-roles", "gestion-productos",
-        "medios", "anuncios", "mi-red",
+        "medios", "anuncios", "mi-red", "mensajes",
       ] as const;
       if (validScreens.includes(pending as typeof validScreens[number])) {
         setCurrentScreen(pending as typeof validScreens[number]);
@@ -55,6 +56,7 @@ export function Dashboard() {
       case "medios": return <GestorMedios />;
       case "mi-red": return <MiRed />;
       case "anuncios": return <GestionAnuncios />;
+      case "mensajes": return <Mensajes />;
       default: return <div className="p-4">Pantalla en construcción: {currentScreen}</div>;
     }
   };

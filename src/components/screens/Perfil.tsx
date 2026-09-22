@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark, MessagesSquare
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -23,6 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { InviteShareDialog } from "@/components/InviteShareDialog";
+import { ManageContactMethodsDialog } from "@/components/contact/ManageContactMethodsDialog";
+import { CHANNEL_LABELS, type ContactChannelId } from "@/lib/contact-links";
 import {
   ENROLLMENT_OTHER,
   MEXICO_STATES,
@@ -78,6 +80,7 @@ const TIER_BADGES = {
 
 export function Perfil() {
   const { setCurrentScreen, setDirectoryTab } = useStore();
+  const [manageContactOpen, setManageContactOpen] = useState(false);
   const { data: savedContactsPreview } = trpc.directory.listSavedContacts.useQuery({
     cursor: 0,
     pageSize: 10,
@@ -96,6 +99,7 @@ export function Perfil() {
     [notifyError, notifySuccess],
   );
   const { data: user, isLoading } = trpc.user.fullMe.useQuery();
+  const { data: contactData } = trpc.contactMethods.listMine.useQuery();
   
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
@@ -641,14 +645,6 @@ export function Perfil() {
                   disabled={!privacyHydrated}
                 />
                 <PrivacyRow
-                  id="showPhone"
-                  label="Mostrar teléfono en el bazar"
-                  description="Habilita el botón de WhatsApp cuando publicas o vendes."
-                  checked={privacy.showPhone}
-                  onCheckedChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
-                  disabled={!privacyHydrated}
-                />
-                <PrivacyRow
                   id="showEmail"
                   label="Mostrar correo en perfil público"
                   checked={privacy.showEmail}
@@ -671,7 +667,6 @@ export function Perfil() {
                 onClick={() =>
                   updatePrivacySettings.mutate({
                     publicProfile: privacy.publicProfile,
-                    showPhone: privacy.showPhone,
                     showEmail: privacy.showEmail,
                     showRegion: privacy.showRegion,
                     publicName: privacy.publicName.trim() === "" ? null : privacy.publicName.trim(),
@@ -684,6 +679,51 @@ export function Perfil() {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="neo-card border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+                <MessagesSquare className="h-6 w-6" /> Formas de comunicarse
+              </CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase">
+                Resumen compacto — gestiona canales y visibilidad en el diálogo
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Contacto público:{" "}
+                <strong>
+                  {contactData?.showContactMethods ? "activado" : "desactivado"}
+                </strong>
+              </p>
+              {(contactData?.methods?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">Ninguna forma agregada</p>
+              ) : (
+                <p className="text-sm font-bold">
+                  {(contactData?.methods ?? [])
+                    .map((m) =>
+                      m.channel === "other" && m.label
+                        ? m.label
+                        : CHANNEL_LABELS[m.channel as ContactChannelId]
+                    )
+                    .join(" · ")}
+                </p>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full md:w-auto h-12 font-black uppercase border-2"
+                onClick={() => setManageContactOpen(true)}
+              >
+                Gestionar formas de contacto
+              </Button>
+            </CardContent>
+          </Card>
+
+          <ManageContactMethodsDialog
+            open={manageContactOpen}
+            onOpenChange={setManageContactOpen}
+          />
 
           {/* Security / NIP */}
           <Card className="neo-card border-2">

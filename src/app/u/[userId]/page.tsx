@@ -5,13 +5,14 @@ import { eq, and, desc, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users, products, ratings } from "@/db/schema";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProfileProductsSection } from "@/components/profile/ProfileProductsSection";
-import { MessageCircle, User, ShieldCheck, Star, Zap, Calendar } from "lucide-react";
+import { PublicProfileCommunicate } from "@/components/profile/PublicProfileCommunicate";
+import { User, ShieldCheck, Star, Zap, Calendar } from "lucide-react";
 import type { Metadata } from "next";
 import { formatPublicLocation } from "@/lib/location";
+import { loadPublicContactMethods } from "@/lib/contact-methods-server";
 
 const TIER_LABELS: Record<string, { label: string; className: string }> = {
   NORMAL: { label: "Socix", className: "bg-slate-500" },
@@ -50,8 +51,8 @@ export default async function PublicUserPage({ params }: PageProps) {
         residencePostalCode: u.residencePostalCode,
       })
     : null;
-  const phone = u.showPhone ? u.phone : null;
   const email = u.showEmail ? u.email : null;
+  const contactMethods = (await loadPublicContactMethods([userId])).get(userId) ?? [];
 
   const activeProducts = await db
     .select()
@@ -81,15 +82,6 @@ export default async function PublicUserPage({ params }: PageProps) {
     month: "long",
     year: "numeric",
   }).format(u.createdAt);
-
-  const waHref =
-    phone != null
-      ? (() => {
-          const digits = phone.replace(/\D/g, "");
-          const withCountry = digits.startsWith("52") ? digits : `52${digits}`;
-          return `https://wa.me/${withCountry}?text=${encodeURIComponent(`Hola ${displayName}, te contacto desde Túmin digital.`)}`;
-        })()
-      : null;
 
   return (
     <div className="min-h-dvh bg-background p-4 pb-16 md:p-8">
@@ -154,13 +146,11 @@ export default async function PublicUserPage({ params }: PageProps) {
                 </p>
               )}
               <div className="mt-2 flex flex-wrap justify-center gap-3 md:justify-start">
-                {waHref && (
-                  <Button asChild variant="default" className="h-12 border-2 shadow-neo-sm">
-                    <a href={waHref} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
-                    </a>
-                  </Button>
-                )}
+                <PublicProfileCommunicate
+                  userId={userId}
+                  displayName={displayName}
+                  contactMethods={contactMethods}
+                />
               </div>
             </div>
           </CardContent>
@@ -177,8 +167,9 @@ export default async function PublicUserPage({ params }: PageProps) {
             imageUrl: p.imageUrl,
             isStarred: p.isStarred,
           }))}
+          sellerId={userId}
           sellerName={displayName}
-          sellerPhone={phone}
+          contactMethods={contactMethods}
         />
       </div>
     </div>

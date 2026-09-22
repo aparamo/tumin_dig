@@ -32,6 +32,8 @@ import type {
   DirectoryStarProduct,
   SavedContactListItem,
 } from "../../lib/directory-types";
+import { loadPublicContactMethods } from "../../lib/contact-methods-server";
+import type { PublicContactMethod } from "../../lib/contact-links";
 
 function displayNameFrom(u: { publicName: string | null; name: string }) {
   return (u.publicName?.trim() ? u.publicName.trim() : null) ?? u.name;
@@ -327,6 +329,7 @@ export const directoryRouter = createTRPCRouter({
         email: u.showEmail ? (u.email ?? null) : null,
         showPhone: u.showPhone,
         publicProfilePath: `/u/${u.id}`,
+        contactMethods: (await loadPublicContactMethods([u.id])).get(u.id) ?? ([] as PublicContactMethod[]),
       };
     }),
 

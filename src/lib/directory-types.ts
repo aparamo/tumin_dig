@@ -56,6 +56,7 @@ export interface DirectoryMemberDetail extends DirectoryMemberListItem {
   showPhone: boolean;
   otherProducts: DirectoryStarProduct[];
   publicProfilePath: string;
+  contactMethods: import("@/lib/contact-links").PublicContactMethod[];
 }
 
 export interface SavedContactListItem {

@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { Loader2, ShoppingCart, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProductComments } from "@/components/bazar/ProductComments";
 import { SaveContactButton } from "@/components/directory/SaveContactButton";
+import { CommunicateButton } from "@/components/contact/CommunicateButton";
 import type { PendingPurchase } from "@/lib/store";
+import type { PublicContactMethod } from "@/lib/contact-links";
 
 export interface ProductDetailDialogProps {
   productId: string | null;
@@ -62,17 +64,8 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
 
   const seller = data?.seller;
   const product = data?.product;
-
-  const waHref =
-    seller?.phone && seller.showPhone
-      ? (() => {
-          const digits = seller.phone.replace(/\D/g, "");
-          const withCountry = digits.startsWith("52") ? digits : `52${digits}`;
-          const name = seller.displayName;
-          const pname = product?.name ?? "";
-          return `https://wa.me/${withCountry}?text=${encodeURIComponent(`Hola ${name}, me interesa: ${pname}`)}`;
-        })()
-      : null;
+  const contactMethods = (seller as { contactMethods?: PublicContactMethod[] } | undefined)
+    ?.contactMethods ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,17 +214,15 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                {waHref ? (
-                  <Button asChild variant="outline" className="h-12 flex-1 border-2 shadow-neo-sm">
-                    <a href={waHref} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
-                    </a>
-                  </Button>
-                ) : (
-                  <Button variant="outline" className="h-12 flex-1 border-2 opacity-60" disabled>
-                    <MessageCircle className="mr-2 h-5 w-5" /> Contacto no disponible
-                  </Button>
-                )}
+                <CommunicateButton
+                  target={{
+                    userId: seller.id,
+                    displayName: seller.displayName,
+                    contactMethods,
+                    messageText: `Hola ${seller.displayName}, me interesa: ${product.name}`,
+                  }}
+                  className="h-12 flex-1 border-2 shadow-neo-sm"
+                />
                 <Button
                   type="button"
                   variant="default"

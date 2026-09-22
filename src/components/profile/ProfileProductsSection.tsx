@@ -4,11 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageCircle, ShoppingBag, ShoppingCart, Info, Star } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Info, Star } from "lucide-react";
 
 import { ProductDetailDialog } from "@/components/bazar/ProductDetailDialog";
+import { CommunicateButton } from "@/components/contact/CommunicateButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { PublicContactMethod } from "@/lib/contact-links";
 
 export interface ProfileProduct {
   id: string;
@@ -23,19 +25,17 @@ export interface ProfileProduct {
 
 export interface ProfileProductsSectionProps {
   products: ProfileProduct[];
+  sellerId: string;
   sellerName: string;
-  /** Already filtered by `showPhone` on the server; null means contact is not public */
-  sellerPhone: string | null;
+  contactMethods: PublicContactMethod[];
 }
 
-function buildWaHrefForProduct(sellerPhone: string, sellerName: string, productName: string): string {
-  const digits = sellerPhone.replace(/\D/g, "");
-  const withCountry = digits.startsWith("52") ? digits : `52${digits}`;
-  const text = `Hola ${sellerName}, me interesa: ${productName}`;
-  return `https://wa.me/${withCountry}?text=${encodeURIComponent(text)}`;
-}
-
-export function ProfileProductsSection({ products, sellerName, sellerPhone }: ProfileProductsSectionProps) {
+export function ProfileProductsSection({
+  products,
+  sellerId,
+  sellerName,
+  contactMethods,
+}: ProfileProductsSectionProps) {
   const router = useRouter();
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailProductId, setDetailProductId] = useState<string | null>(null);
@@ -63,7 +63,6 @@ export function ProfileProductsSection({ products, sellerName, sellerPhone }: Pr
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {products.map((p) => {
           const cover = p.imgUrls[0] ?? p.imageUrl;
-          const waHref = sellerPhone != null ? buildWaHrefForProduct(sellerPhone, sellerName, p.name) : null;
 
           return (
             <Card key={p.id} className="overflow-hidden border-2">
@@ -101,20 +100,18 @@ export function ProfileProductsSection({ products, sellerName, sellerPhone }: Pr
                     <Info className="mr-2 h-4 w-4 shrink-0" />
                     Ver detalles
                   </Button>
-                  {waHref ? (
-                    <Button asChild variant="outline" className="h-11 flex-1 border-2 shadow-neo-sm sm:min-w-20">
-                      <a href={waHref} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-2 h-4 w-4 shrink-0" />
-                        WA
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="h-11 flex-1 border-2 opacity-60 sm:min-w-20" disabled type="button">
-                      <MessageCircle className="mr-2 h-4 w-4 shrink-0" />
-                      WA
-                    </Button>
-                  )}
-                  <Button asChild variant="default" className="h-11 flex-1 shadow-neo-sm sm:min-w-28">
+                  <CommunicateButton
+                    target={{
+                      userId: sellerId,
+                      displayName: sellerName,
+                      contactMethods,
+                      messageText: `Hola ${sellerName}, me interesa: ${p.name}`,
+                    }}
+                    iconOnly
+                    label="Comunicarse"
+                    className="h-11 w-11 shrink-0 border-2 shadow-neo-sm"
+                  />
+                  <Button asChild variant="default" className="h-11 min-w-0 flex-1 shadow-neo-sm sm:min-w-28">
                     <Link href="/login">
                       <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
                       Comprar

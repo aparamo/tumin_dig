@@ -24,7 +24,7 @@ export default function MercadoInternoPage() {
           <div className="space-y-1">
             <h4 className="font-black uppercase text-sm tracking-widest">Detalle de un producto</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes contactarlo por WhatsApp, <strong>guardar al vendedor como contacto</strong> o ver todos sus productos.
+              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes usar <strong>Comunicarse</strong> (WhatsApp, Telegram, llamada, mensaje en Túmin y otros canales que la persona haya publicado), <strong>guardar al vendedor como contacto</strong> o ver todos sus productos.
             </p>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function MercadoInternoPage() {
           Directorio de miembros
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto más recientes). Al tocar un miembro se abre un detalle con opción de <strong>Contactar</strong> (WhatsApp si lo habilita) y <strong>Guardar contacto</strong>.
+          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto más recientes). Al tocar un miembro se abre un detalle con opción de <strong>Comunicarse</strong> (según los medios que haya publicado) y <strong>Guardar contacto</strong>.
         </p>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
           Tus contactos guardados están en la pestaña <strong>Mis contactos</strong>, también desde Perfil y al enviar Túmin (chips que rellenan teléfono o correo públicos). Desde el Bazar también puedes guardar al vendedor.
@@ -272,7 +272,7 @@ export default function MercadoInternoPage() {
               <MessageSquare className="w-5 h-5 text-primary" />
               <h4 className="font-black uppercase text-sm tracking-widest">Palabra Empeñada</h4>
             </div>
-            <p className="text-sm text-foreground/70 leading-relaxed">Un acuerdo por WhatsApp tiene el valor de un contrato. Cumple siempre con lo pactado.</p>
+            <p className="text-sm text-foreground/70 leading-relaxed">Un acuerdo por mensaje (WhatsApp, Túmin u otro canal acordado) tiene el valor de un contrato. Cumple siempre con lo pactado.</p>
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-2">

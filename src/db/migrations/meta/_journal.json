@@ -92,6 +92,13 @@
       "when": 1786550000000,
       "tag": "0012_mining_civil_day",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787000000000,
+      "tag": "0013_contact_methods_messaging",
+      "breakpoints": true
     }
   ]
 }

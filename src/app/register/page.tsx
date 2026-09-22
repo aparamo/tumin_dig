@@ -53,6 +53,7 @@ function RegisterForm() {
     nip: "",
     referrerId,
     inviteToken,
+    enableWhatsAppContact: false,
   });
 
   const [error, setError] = useState("");
@@ -111,6 +112,7 @@ function RegisterForm() {
         nip: formData.nip,
         referrerId: formData.referrerId || undefined,
         inviteToken: formData.inviteToken || undefined,
+        enableWhatsAppContact: formData.enableWhatsAppContact,
       });
       notifySuccess("¡Cuenta creada con éxito!");
       router.push("/login");
@@ -158,7 +160,7 @@ function RegisterForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone" className="font-black uppercase text-xs">
-                Teléfono (WhatsApp)
+                Teléfono
               </Label>
               <Input
                 id="phone"
@@ -169,6 +171,20 @@ function RegisterForm() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 required
               />
+              <label className="flex items-start gap-2 pt-1 text-sm font-medium leading-snug">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-primary"
+                  checked={formData.enableWhatsAppContact}
+                  onChange={(e) =>
+                    setFormData({ ...formData, enableWhatsAppContact: e.target.checked })
+                  }
+                />
+                <span>
+                  ¿Quieres que otras personas te contacten por WhatsApp con este mismo número?
+                  (Puedes cambiarlo después en tu perfil.)
+                </span>
+              </label>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="font-black uppercase text-xs">
@@ -232,7 +248,7 @@ function RegisterForm() {
                   <Textarea
                     id="enrollmentOther"
                     placeholder="Ej. me inscribí en Puebla con referido de Veracruz; taller en Jalisco; comunidad en el extranjero; feria comunitaria…"
-                    className="min-h-[88px] bg-background border-2"
+                    className="min-h-22 bg-background border-2"
                     value={formData.enrollmentMethodOther}
                     onChange={(e) =>
                       setFormData({ ...formData, enrollmentMethodOther: e.target.value })

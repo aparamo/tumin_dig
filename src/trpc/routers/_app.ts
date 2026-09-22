@@ -10,6 +10,8 @@ import { adsRouter } from "./ads";
 import { smartAdsRouter } from "./smartAds";
 import { passwordResetRouter } from "./passwordReset";
 import { directoryRouter } from "./directory";
+import { contactMethodsRouter } from "./contactMethods";
+import { messagingRouter } from "./messaging";
 
 export const appRouter = createTRPCRouter({
   hello: publicProcedure
@@ -29,6 +31,8 @@ export const appRouter = createTRPCRouter({
   smartAds: smartAdsRouter,
   passwordReset: passwordResetRouter,
   directory: directoryRouter,
+  contactMethods: contactMethodsRouter,
+  messaging: messagingRouter,
 });
 
 export type AppRouter = typeof appRouter;

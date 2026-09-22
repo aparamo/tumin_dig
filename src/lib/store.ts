@@ -25,7 +25,13 @@ export type Screen =
   | "gestion-productos"
   | "medios"
   | "anuncios"
-  | "mi-red";
+  | "mi-red"
+  | "mensajes";
+
+export interface PendingConversationPeer {
+  peerUserId: string;
+  conversationId: string;
+}
 
 interface AppState {
   currentScreen: Screen;
@@ -39,6 +45,8 @@ interface AppState {
   setPendingPurchase: (p: PendingPurchase | null) => void;
   directoryTab: DirectoryTab;
   setDirectoryTab: (tab: DirectoryTab) => void;
+  pendingConversationPeer: PendingConversationPeer | null;
+  setPendingConversationPeer: (p: PendingConversationPeer | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -56,4 +64,6 @@ export const useStore = create<AppState>((set) => ({
   setPendingPurchase: (p) => set({ pendingPurchase: p }),
   directoryTab: "miembros",
   setDirectoryTab: (tab) => set({ directoryTab: tab }),
+  pendingConversationPeer: null,
+  setPendingConversationPeer: (p) => set({ pendingConversationPeer: p }),
 }));

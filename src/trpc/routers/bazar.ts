@@ -21,6 +21,7 @@ import { LIMITS } from "../../lib/limits";
 import { MAX_STARRED_PRODUCTS } from "../../lib/product-categories";
 import { issueFromSystem } from "../../lib/system-ledger";
 import { productCreateSchema, productUpdateSchema } from "../../lib/schemas/product";
+import { loadPublicContactMethods } from "../../lib/contact-methods-server";
 
 type DrizzleTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -182,8 +183,18 @@ export const bazarRouter = createTRPCRouter({
         },
       }));
 
+      const sellerIds = [...new Set(items.map((i) => i.seller.id))];
+      const methodsBySeller = await loadPublicContactMethods(sellerIds);
+      const itemsWithContact = items.map((item) => ({
+        ...item,
+        seller: {
+          ...item.seller,
+          contactMethods: methodsBySeller.get(item.seller.id) ?? [],
+        },
+      }));
+
       return {
-        items,
+        items: itemsWithContact,
         nextCursor,
       };
     }),
@@ -225,12 +236,16 @@ export const bazarRouter = createTRPCRouter({
       }
 
       const sellerMapped = mapSellerLocation(row.seller);
+      const methodsBySeller = await loadPublicContactMethods([sellerMapped.id]);
       return {
         product: {
           ...row.product,
           locationLabel: sellerMapped.locationCompact ?? row.product.region,
         },
-        seller: sellerMapped,
+        seller: {
+          ...sellerMapped,
+          contactMethods: methodsBySeller.get(sellerMapped.id) ?? [],
+        },
       };
     }),
 

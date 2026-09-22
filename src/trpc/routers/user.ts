@@ -7,7 +7,10 @@ import {
 } from "../../lib/trpc/server";
 import { z } from "zod";
 import { db } from "../../db";
-import { users, media, products, inviteTokens } from "../../db/schema";
+import { users, media, products, inviteTokens, contactMethods } from "../../db/schema";
+import { normalizeContactValue } from "../../lib/contact-links";
+import { loadPublicContactMethods } from "../../lib/contact-methods-server";
+import { loadMyContactMethods } from "../../lib/contact-methods-server";
 import { eq, or, and, sql, desc, ilike, count, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
@@ -37,7 +40,13 @@ import { LIMITS } from "../../lib/limits";
 
 export const userRouter = createTRPCRouter({
   register: rateLimitedPublicProcedure
-    .input(registerLocationSchema)
+    .input(
+      registerLocationSchema.and(
+        z.object({
+          enableWhatsAppContact: z.boolean().optional().default(false),
+        })
+      )
+    )
     .mutation(async ({ input }) => {
       // 0. Resolve referrer from invite token if needed
       let referrerId = input.referrerId;
@@ -134,6 +143,22 @@ export const userRouter = createTRPCRouter({
         })
         .returning();
 
+      if (input.enableWhatsAppContact) {
+        try {
+          const normalized = normalizeContactValue("whatsapp", input.phone);
+          await db.insert(contactMethods).values({
+            userId: user.id,
+            channel: "whatsapp",
+            value: normalized.value,
+            isEnabled: true,
+            isPublic: false,
+            sortOrder: 0,
+          });
+        } catch {
+          // Invalid phone for WA — skip; user can add later in profile
+        }
+      }
+
       return {
         id: user.id,
         name: user.name,
@@ -206,6 +231,7 @@ export const userRouter = createTRPCRouter({
         showPhone: users.showPhone,
         showEmail: users.showEmail,
         showRegion: users.showRegion,
+        showContactMethods: users.showContactMethods,
         isVerified: users.isVerified,
         referrerId: users.referrerId,
         createdAt: users.createdAt,
@@ -216,7 +242,8 @@ export const userRouter = createTRPCRouter({
       .where(eq(users.id, ctx.session.user.id))
       .limit(1);
     if (!user) throw new TRPCError({ code: "NOT_FOUND" });
-    return user;
+    const methods = await loadMyContactMethods(user.id);
+    return { ...user, contactMethods: methods };
   }),
 
   getGamificationState: protectedProcedure.query(async ({ ctx }) => {
@@ -269,6 +296,7 @@ export const userRouter = createTRPCRouter({
         accountTier: u.accountTier,
         isVerified: u.isVerified,
         createdAt: u.createdAt,
+        contactMethods: (await loadPublicContactMethods([u.id])).get(u.id) ?? [],
       };
     }),
 

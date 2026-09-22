@@ -72,10 +72,12 @@ export const users = pgTable("TUMIN_users", {
   bio: text("bio"),
   /** Whether `/u/[id]` and public APIs expose this user — privacy-first: off by default */
   publicProfile: boolean("public_profile").default(false).notNull(),
-  /** Phone is hidden by default; users can opt-in to show it on their public profile/bazar */
+  /** @deprecated Prefer contact_methods + showContactMethods; kept for migration/legacy */
   showPhone: boolean("show_phone").default(false).notNull(),
   showEmail: boolean("show_email").default(false).notNull(),
   showRegion: boolean("show_region").default(true).notNull(),
+  /** Global gate: when false, no contact methods are exposed publicly */
+  showContactMethods: boolean("show_contact_methods").default(false).notNull(),
   failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
   lockedUntil: timestamp("locked_until"),
   duplicatorBonus: doublePrecision("duplicator_bonus").default(0).notNull(),
@@ -106,6 +108,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   inviteTokens: many(inviteTokens),
   savedContactsOwned: many(savedContacts, { relationName: "savedContactsOwner" }),
   savedAsContact: many(savedContacts, { relationName: "savedAsContact" }),
+  contactMethods: many(contactMethods),
+  conversationsAsA: many(conversations, { relationName: "conversationUserA" }),
+  conversationsAsB: many(conversations, { relationName: "conversationUserB" }),
+  sentMessages: many(messages),
 }));
 
 export const passwordResets = pgTable("TUMIN_password_resets", {
@@ -398,6 +404,101 @@ export const inviteTokens = pgTable("TUMIN_invite_tokens", {
 export const inviteTokensRelations = relations(inviteTokens, ({ one }) => ({
   user: one(users, {
     fields: [inviteTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const contactChannelEnum = pgEnum("contact_channel", [
+  "whatsapp",
+  "phone",
+  "sms",
+  "telegram",
+  "signal",
+  "mastodon",
+  "facebook",
+  "instagram",
+  "meet",
+  "zoom",
+  "jitsi",
+  "other",
+]);
+
+export type ContactChannel = (typeof contactChannelEnum.enumValues)[number];
+
+/** Public contact channels (separate from login phone). Multiple `other` rows allowed; one slot per other channel enforced in app. */
+export const contactMethods = pgTable("TUMIN_contact_methods", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  channel: contactChannelEnum("channel").notNull(),
+  value: text("value").notNull(),
+  label: text("label"),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  isPublic: boolean("is_public").default(false).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const contactMethodsRelations = relations(contactMethods, ({ one }) => ({
+  user: one(users, {
+    fields: [contactMethods.userId],
+    references: [users.id],
+  }),
+}));
+
+/** 1:1 DM threads between two users (userAId < userBId lexicographically) */
+export const conversations = pgTable(
+  "TUMIN_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userAId: text("user_a_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    userBId: text("user_b_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    lastMessageAt: timestamp("last_message_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique("conversations_user_pair_uid").on(t.userAId, t.userBId)]
+);
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  userA: one(users, {
+    fields: [conversations.userAId],
+    references: [users.id],
+    relationName: "conversationUserA",
+  }),
+  userB: one(users, {
+    fields: [conversations.userBId],
+    references: [users.id],
+    relationName: "conversationUserB",
+  }),
+  messages: many(messages),
+}));
+
+export const messages = pgTable("TUMIN_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id, { onDelete: "cascade" })
+    .notNull(),
+  senderId: text("sender_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  readAt: timestamp("read_at"),
+});
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
     references: [users.id],
   }),
 }));

@@ -11,10 +11,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageCircle, ShieldCheck, Star, User, ExternalLink } from "lucide-react";
+import { Loader2, ShieldCheck, Star, User, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryBadges } from "@/components/directory/CategoryBadges";
 import { SaveContactButton } from "@/components/directory/SaveContactButton";
+import { CommunicateButton } from "@/components/contact/CommunicateButton";
 
 export interface MemberDetailDialogProps {
   userId: string | null;
@@ -27,17 +28,6 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
     { userId: userId ?? "" },
     { enabled: open && !!userId }
   );
-
-  const waHref =
-    data?.phone && data.showPhone
-      ? (() => {
-          const digits = data.phone.replace(/\D/g, "");
-          const withCountry = digits.startsWith("52") ? digits : `52${digits}`;
-          return `https://wa.me/${withCountry}?text=${encodeURIComponent(
-            `Hola ${data.displayName}, te contacto desde Túmin digital.`
-          )}`;
-        })()
-      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,17 +132,17 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
 
             <div className="shrink-0 space-y-2 border-t-2 border-border p-4">
               <div className="flex flex-wrap gap-2">
-                {waHref ? (
-                  <Button asChild className="flex-1 text-sm font-black uppercase shadow-neo-sm md:text-base">
-                    <a href={waHref} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="mr-1.5 h-4 w-4" /> Contactar
-                    </a>
-                  </Button>
-                ) : (
-                  <Button disabled className="flex-1 text-sm font-black uppercase md:text-base" variant="outline">
-                    <MessageCircle className="mr-1.5 h-4 w-4" /> Sin WhatsApp público
-                  </Button>
-                )}
+                <CommunicateButton
+                  target={{
+                    userId: data.id,
+                    displayName: data.displayName,
+                    contactMethods: data.contactMethods ?? [],
+                    messageText: `Hola ${data.displayName}, te contacto desde Túmin digital.`,
+                  }}
+                  variant="default"
+                  className="flex-1 text-sm font-black uppercase shadow-neo-sm md:text-base"
+                  label="Comunicarse"
+                />
                 <SaveContactButton
                   contactUserId={data.id}
                   isSaved={data.isSavedContact}
