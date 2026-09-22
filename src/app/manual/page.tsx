@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Shield, Users, Zap, FolderOpen } from "lucide-react";
+import { ArrowRight, BookOpen, Shield, Users, Zap, FolderOpen, ShoppingBag } from "lucide-react";
 
 export default function ManualPage() {
   return (
@@ -78,6 +78,26 @@ export default function ManualPage() {
         </Card>
 
         <Card className="border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer group">
+          <Link href="/manual/5-mercado-interno">
+            <CardHeader>
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <CardTitle className="uppercase font-black tracking-tight">Comprar y Vender</CardTitle>
+              <CardDescription className="font-bold text-xs uppercase tracking-widest">Capítulo 5: Mercado Interno</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-foreground/70 leading-relaxed">
+                Bazar, Comunicarse multi-canal, Mensajes, pagar compra vs transferencia, Mis compras y el panel Mis Ventas.
+              </p>
+              <Button variant="ghost" className="mt-4 p-0 font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
+                Leer más <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer group">
           <Link href="/manual/6-gobernanza">
             <CardHeader>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -121,7 +141,7 @@ export default function ManualPage() {
       <section className="bg-primary/5 p-8 rounded-2xl border border-primary/10">
         <h2 className="text-2xl font-black uppercase tracking-tight mb-4">¿Necesitas ayuda rápida?</h2>
         <p className="text-sm text-foreground/70 mb-6 leading-relaxed">
-          Si tienes dudas técnicas o quieres contactar a un coordinador, revisa la sección de Seguridad y Auditoría o contacta a tu Bantúmin local.
+          Si tienes dudas técnicas o quieres contactar a un coordinador, revisa la sección de Seguridad y Auditoría o contacta a tu coordinadorx (Bantúmin) local.
         </p>
         <Link href="/manual/7-seguridad">
           <Button variant="default" className="font-black uppercase tracking-widest">

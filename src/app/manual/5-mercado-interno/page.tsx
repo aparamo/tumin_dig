@@ -1,6 +1,25 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShoppingBag, MessageSquare, Repeat, Eye, ToggleRight, Star, Pencil, ExternalLink, Send, CheckCircle2, AlertTriangle, Megaphone, ImageIcon, Calendar } from "lucide-react";
+import {
+  ShoppingBag,
+  MessageSquare,
+  MessagesSquare,
+  Repeat,
+  Eye,
+  ToggleRight,
+  Star,
+  Pencil,
+  ExternalLink,
+  Send,
+  CheckCircle2,
+  AlertTriangle,
+  Megaphone,
+  ImageIcon,
+  Calendar,
+  Receipt,
+  TrendingUp,
+  Bell,
+} from "lucide-react";
 
 export default function MercadoInternoPage() {
   return (
@@ -24,29 +43,100 @@ export default function MercadoInternoPage() {
           <div className="space-y-1">
             <h4 className="font-black uppercase text-sm tracking-widest">Detalle de un producto</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes usar <strong>Comunicarse</strong> (WhatsApp, Telegram, llamada, mensaje en Túmin y otros canales que la persona haya publicado), <strong>guardar al vendedor como contacto</strong> o ver todos sus productos.
+              Al tocar una tarjeta del Bazar se abre un <strong>diálogo de detalle</strong> con la galería de imágenes, descripción completa, información adicional, calificación del vendedor y un enlace a su perfil público. Desde ahí también puedes usar <strong>Comunicarse</strong>, <strong>guardar al vendedor como contacto</strong> o ver todos sus productos.
             </p>
+          </div>
+        </div>
+        <div className="flex gap-4 p-4 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <MessagesSquare className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <h4 className="font-black uppercase text-sm tracking-widest">Botón Comunicarse</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              En las tarjetas del Bazar aparece solo como <strong>ícono</strong> (para no tapar Comprar). En el detalle del producto, el Directorio y el perfil público <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">/u/...</code> se muestra con texto.
+            </p>
+            <ul className="space-y-1.5 text-sm text-foreground/70">
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Si tienes sesión, la primera opción es <strong>Mensaje en Túmin</strong>.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Canales frecuentes: WhatsApp, Llamar, SMS, Telegram.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Mostrar más opciones</strong>: Signal, Instagram, Facebook, Mastodon, Google Meet, Zoom, Jitsi u Otro.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Si la persona no publicó medios externos, verás: <em>«Esta persona no publicó formas de contacto externas»</em> — igual puedes escribirle en la plataforma.</span></li>
+            </ul>
           </div>
         </div>
       </section>
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          Pagar con Túmin (Enviar)
+          Mensajes en Túmin
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Para transferir Túmin a otra persona usa la pantalla <strong>Enviar Túmin</strong> del menú. También puedes llegar desde el Bazar: al tocar <strong>Comprar</strong> en el detalle de un producto, el formulario se autocompleta con el precio, el concepto y el contacto del vendedor. Si tienes <strong>contactos guardados</strong> con teléfono o correo público, aparecen como atajos encima del campo destinatario.
+          La app tiene una bandeja de mensajes privados entre socios. No es lo mismo que los <strong>comentarios de producto</strong> (esos son públicos en el detalle del artículo).
         </p>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
-            <Send className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <MessagesSquare className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-black uppercase text-sm tracking-widest">Buscar al destinatario</h4>
-              <p className="text-sm text-foreground/70 leading-relaxed">
-                Escribe el <strong>teléfono o correo</strong> del socio receptor (mínimo 8 caracteres). La app muestra una tarjeta con su foto o iniciales, nombre y si <strong>puede recibir Túmin</strong> antes de que confirmes la transferencia.
+              <h4 className="font-black uppercase text-sm tracking-widest">Dónde está</h4>
+              <p className="text-sm text-foreground/70">
+                El ícono de <strong>Mensajes</strong> está en el <strong>header</strong> (arriba), no en el menú lateral. Si tienes conversaciones sin leer, aparece un badge con el número.
               </p>
             </div>
           </div>
+          <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+            <Send className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-black uppercase text-sm tracking-widest">Cómo iniciar</h4>
+              <p className="text-sm text-foreground/70">
+                Usa <strong>Comunicarse → Mensaje en Túmin</strong> desde el Bazar, el Directorio o un perfil. Verás una bandeja de conversaciones y, al abrir una, el hilo completo.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          En esta versión no hay archivos adjuntos ni chat en tiempo real: la bandeja se actualiza al abrirla o al enviar.
+        </p>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Pagar con Túmin
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          La pantalla <strong>Pagar</strong> del menú admite dos modos. Si tienes <strong>contactos guardados</strong> con teléfono o correo público, aparecen como atajos (solo en transferencia libre).
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-5 space-y-3 border-2 border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              <h4 className="font-black uppercase text-sm tracking-widest">Compra</h4>
+            </div>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Desde el Bazar, al tocar <strong>Comprar</strong>, llegas con un banner: foto del producto, precios en MXN + Ŧ, nombre del vendedor y badge <strong>Compra</strong>.
+              Los campos quedan bloqueados con los datos del artículo. El pago queda vinculado al producto en tu historial, aunque después se edite o se borre del Bazar.
+            </p>
+            <p className="text-xs text-foreground/50 italic">
+              Puedes quitar el banner (X) para convertirlo en una transferencia libre sin producto.
+            </p>
+          </Card>
+          <Card className="p-5 space-y-3 border-2 border-border">
+            <div className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-primary" />
+              <h4 className="font-black uppercase text-sm tracking-widest">Transferencia libre</h4>
+            </div>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Envío de Túmin sin producto vinculado. Escribes el <strong>teléfono o correo</strong> del receptor (mínimo 8 caracteres); la app muestra una tarjeta con su nombre y si <strong>puede recibir Túmin</strong> antes de confirmar.
+            </p>
+          </Card>
+        </div>
+        <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+          <Bell className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-black uppercase text-sm tracking-widest">Aviso automático al receptor</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Tras un pago nuevo, el <strong>receptor</strong> puede recibir un mensaje automático en <strong>Mensajes</strong> (compra o transferencia), según sus preferencias en Perfil. Si fallara el aviso, el pago igual se completa.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-4">
           <div className="flex gap-4 p-4 border-2 border-green-500/30 rounded-xl items-start bg-green-500/5">
             <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
@@ -75,10 +165,29 @@ export default function MercadoInternoPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Mis compras
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          En el menú lateral está <strong>Mis Compras</strong>: el historial de productos que pagaste con Túmin desde el Bazar.
+        </p>
+        <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
+          <Receipt className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-black uppercase text-sm tracking-widest">Qué ves en cada compra</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Nombre del producto (y foto si la tenía), precios en MXN y Ŧ, vendedor, fecha, y un botón <strong>Contactar</strong> para escribirle o usar sus canales públicos.
+              Puedes cargar más compras si el historial es largo. Si aún no has comprado nada, verás: <em>«Aún no has comprado productos con Túmin»</em>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
           Cómo vender: Mis Productos
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Para publicar un producto ve a la sección <strong>Mis Productos</strong> desde el menú lateral. Ahí gestionas todo tu inventario personal.
+          Para publicar un producto ve a la sección <strong>Mis Productos</strong> desde el menú lateral. Ahí gestionas tu inventario y, en otra pestaña, tus ventas.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="p-4 border-l-4 border-l-orange-500">
@@ -102,10 +211,34 @@ export default function MercadoInternoPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Mis Ventas
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          Dentro de <strong>Mis Productos</strong> hay dos pestañas: <strong>Mis Productos</strong> y <strong>Mis Ventas</strong>. La segunda es tu panel de vendedor.
+        </p>
+        <div className="flex gap-4 p-4 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <TrendingUp className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <h4 className="font-black uppercase text-sm tracking-widest">Qué incluye el panel</h4>
+            <ul className="space-y-1.5 text-sm text-foreground/70">
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Totales: número de ventas, ingresos en Ŧ y MXN, compradores únicos.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Productos más vendidos y tendencia (últimos 7, 30 o 90 días, o todo).</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Filtros por producto, fechas y monto mínimo.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Lista de ventas con botón <strong>Contactar</strong> al comprador.</span></li>
+            </ul>
+            <p className="text-xs text-foreground/50 italic pt-1">
+              El historial guarda el nombre y la foto del producto en el momento de la venta, aunque después lo edites o lo quites del Bazar.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
           Gestión de tu inventario
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Desde <strong>Mis Productos</strong> tienes control total sobre cada artículo que publicaste: editarlo, eliminarlo o cambiar su visibilidad.
+          Desde la pestaña <strong>Mis Productos</strong> tienes control total sobre cada artículo que publicaste: editarlo, eliminarlo o cambiar su visibilidad.
         </p>
         <div className="space-y-4">
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">
@@ -162,7 +295,7 @@ export default function MercadoInternoPage() {
           Comentarios y Preguntas
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Dentro del diálogo de detalle de cada producto, cualquier socix puede dejar preguntas o comentarios directamente en la plataforma.
+          Dentro del diálogo de detalle de cada producto, cualquier socix puede dejar preguntas o comentarios directamente en la plataforma. Esto <strong>no es un mensaje privado</strong>: es público en el producto. Para hablar en privado usa <strong>Comunicarse → Mensaje en Túmin</strong>.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">

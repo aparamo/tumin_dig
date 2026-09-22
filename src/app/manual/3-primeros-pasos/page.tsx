@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Smartphone, Monitor, CheckCircle2, ShieldCheck, Eye, UserCheck, UserPlus, Timer } from "lucide-react";
+import { Smartphone, Monitor, CheckCircle2, ShieldCheck, Eye, UserCheck, UserPlus, Timer, Phone } from "lucide-react";
 
 export default function PrimerosPasosPage() {
   return (
@@ -133,6 +133,17 @@ export default function PrimerosPasosPage() {
             </p>
           </Card>
         </div>
+        <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <Phone className="w-8 h-8 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <h4 className="font-black uppercase tracking-tight">Teléfono ≠ WhatsApp automático</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              El campo <strong>Teléfono</strong> sirve para iniciar sesión, recuperar tu NIP y recibir pagos. No implica que otras personas puedan contactarte por WhatsApp.
+              Hay un checkbox opcional (apagado por defecto): <em>¿Quieres que otras personas te contacten por WhatsApp con este mismo número?</em>
+              Puedes activarlo o cambiarlo después en <strong>Perfil → Formas de comunicarse</strong>.
+            </p>
+          </div>
+        </div>
         <p className="text-sm text-foreground/60 italic pl-2">
           Después del registro puedes actualizar tu ubicación en <strong>Perfil → Inscripción y ubicación</strong>. La región de inscripción queda fija para coordinación.
         </p>
@@ -140,22 +151,22 @@ export default function PrimerosPasosPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          El badge de Socix Verificadx
+          El reconocimiento de Socix Verificadx
         </h2>
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
-          Tu Bantúmin local puede otorgarte el reconocimiento de <strong>Socix Verificadx</strong> una vez que confirme tu identidad y que eres una persona real de la comunidad.
+          Tu coordinadorx (Bantúmin) local puede otorgarte el reconocimiento de <strong>Socix Verificadx</strong> una vez que confirme tu identidad y que eres una persona real de la comunidad.
         </p>
         <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
           <UserCheck className="w-8 h-8 text-primary shrink-0 mt-0.5" />
           <div className="space-y-2">
             <h4 className="font-black uppercase tracking-tight">¿Qué significa estar verificadx?</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Aparece un badge <strong>&quot;Verificadx&quot;</strong> <ShieldCheck className="inline w-4 h-4 text-primary" /> en tu perfil público. Es un sello de confianza visible para el resto de la comunidad, pero <strong>no es un requisito</strong> para usar la app, el Bazar ni ninguna funcionalidad — puedes empezar de inmediato.
+              Aparece una insignia <strong>&quot;Verificadx&quot;</strong> <ShieldCheck className="inline w-4 h-4 text-primary" /> en tu perfil público. Es un sello de confianza visible para el resto de la comunidad, pero <strong>no es un requisito</strong> para usar la app, el Bazar ni ninguna funcionalidad — puedes empezar de inmediato.
             </p>
           </div>
         </div>
         <p className="text-sm text-foreground/60 italic pl-2">
-          Si aún no estás verificadx, simplemente contacta a tu Bantúmin regional y cuéntale sobre tu participación en la red.
+          Si aún no estás verificadx, simplemente contacta a tu coordinadorx (Bantúmin) regional y cuéntale sobre tu participación en la red.
         </p>
       </section>
 
@@ -178,7 +189,10 @@ export default function PrimerosPasosPage() {
             <ShieldCheck className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Qué puedes controlar</h4>
-              <p className="text-sm text-foreground/70">Nombre público, bio, si se muestra tu teléfono, correo o <strong>ubicación</strong> (dónde vives, no tu región de inscripción).</p>
+              <p className="text-sm text-foreground/70">
+                Nombre público, bio, correo, <strong>ubicación</strong> (dónde vives, no tu región de inscripción) y tus <strong>formas de contacto</strong>:
+                un interruptor global más visibilidad por canal (WhatsApp, llamada, Telegram, etc.). El número de tu cuenta no se publica solo por tener perfil activo.
+              </p>
             </div>
           </div>
         </div>

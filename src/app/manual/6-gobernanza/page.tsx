@@ -33,10 +33,10 @@ export default function GobernanzaPage() {
 
       <section className="space-y-6">
         <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
-          ¿Qué es un Bantúmin?
+          ¿Qué es un Bantúmin o coordinadorx local  ?
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          El <strong>Bantúmin</strong> es un coordinador de servicio, no un gerente. Su labor es facilitar la abundancia para todos en su región.
+          El <strong>Bantúmin</strong> o coordinadorx local es una persona que apoya con labores de facilitación, gestión, verificación y validación de las múltiples actividades de las diversas redes locales tumistas. Su labor es facilitar la abundancia para todxs en su región.
         </p>
         <div className="bg-primary/5 p-8 rounded-2xl border border-primary/10 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -177,7 +177,7 @@ export default function GobernanzaPage() {
           <ul className="space-y-2 text-sm font-bold uppercase tracking-widest opacity-70">
             <li>● Centros de formación y talleres</li>
             <li>● Puntos de entrega y bazar permanente</li>
-            <li>● Sede operativa del Bantúmin regional</li>
+            <li>● Sede operativa del coordinadorx (Bantúmin) regional</li>
           </ul>
         </div>
       </section>

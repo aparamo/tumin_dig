@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw, Mail, Link2, Network, Timer } from "lucide-react";
+import { ShieldAlert, Fingerprint, Eye, Lock, KeyRound, SlidersHorizontal, RotateCcw, Mail, Link2, Network, Timer, Bell, MessagesSquare } from "lucide-react";
 
 export default function SeguridadPage() {
   return (
@@ -93,7 +93,7 @@ export default function SeguridadPage() {
           </div>
         </div>
         <p className="text-sm text-foreground/60 italic pl-2">
-          Si no eres tú quien intentó entrar, contacta a tu Bantúmin de inmediato.
+          Si no eres tú quien intentó entrar, contacta a tu coordinadorx (Bantúmin) de inmediato.
         </p>
       </section>
 
@@ -109,7 +109,7 @@ export default function SeguridadPage() {
             <Fingerprint className="w-6 h-6 text-primary shrink-0" />
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Identidad por Cercanía</h4>
-              <p className="text-sm text-foreground/70">Tu Bantúmin puede otorgarte el badge de Verificadx al conocerte en persona con un producto o servicio tangible.</p>
+              <p className="text-sm text-foreground/70">Tu coordinadorx (Bantúmin) puede otorgarte la insignia de socix Verificadx al conocerte (en persona o a través de la forma que mejor consideren ambxs) con un producto o servicio tangible.</p>
             </div>
           </div>
           <div className="flex gap-4 p-4 border rounded-xl bg-background/50">
@@ -150,7 +150,7 @@ export default function SeguridadPage() {
           Tu Privacidad Personal
         </h2>
         <p className="text-base leading-relaxed text-foreground/80 font-medium">
-          Tienes control total sobre qué información tuya es visible para el resto de la comunidad. Todo se configura desde <strong>Perfil → Privacidad y Perfil Público</strong>.
+          Tienes control total sobre qué información tuya es visible para el resto de la comunidad. Todo se configura desde <strong>Perfil → Privacidad y Perfil Público</strong> y, para contacto, desde <strong>Formas de comunicarse</strong>.
         </p>
         <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
           <SlidersHorizontal className="w-6 h-6 text-primary shrink-0 mt-0.5" />
@@ -159,12 +159,48 @@ export default function SeguridadPage() {
             <ul className="space-y-2 text-sm text-foreground/70">
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Perfil público:</strong> activa o desactiva tu página pública <code className="bg-muted px-1 rounded text-xs font-mono">/u/tu-id</code>.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Nombre público y bio:</strong> cómo quieres presentarte (distinto a tu nombre de registro si lo deseas).</span></li>
-              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Formas de contacto:</strong> en Perfil → Formas de comunicarse defines WhatsApp, llamada, SMS, Telegram, Signal, redes, videollamada u otros, con un interruptor global y visibilidad por canal.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Formas de contacto:</strong> en Perfil → Formas de comunicarse defines WhatsApp, llamada, SMS, Telegram, Signal, redes, videollamada u otros.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Correo electrónico:</strong> si es visible en tu perfil público.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Ubicación:</strong> si se muestra dónde vives (ciudad/estado o país), no tu región de inscripción comunitaria.</span></li>
             </ul>
+          </div>
+        </div>
+        <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-background/50">
+          <MessagesSquare className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-3 flex-1">
+            <h4 className="font-black uppercase text-sm tracking-widest">Privacidad dual de contacto</h4>
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Un canal solo es visible para otras personas si se cumplen <strong>las tres</strong> condiciones: tu perfil público está activo, el interruptor global <strong>«Mostrar formas de contacto»</strong> está encendido, y ese canal concreto está marcado como <strong>Público</strong>.
+            </p>
+            <ul className="space-y-2 text-sm text-foreground/70">
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Por defecto no se muestran. Agregar un canal <strong>no</strong> lo hace público automáticamente.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>El teléfono de tu cuenta sirve para login y recuperación de NIP; <strong>no implica WhatsApp automático</strong>.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Gestión: <strong>Perfil → Formas de comunicarse → Gestionar formas de contacto</strong> (diálogo amplio).</span></li>
+            </ul>
+          </div>
+        </div>
+        <p className="text-xs text-foreground/50 italic pl-2">
+          Los mensajes privados en la plataforma son solo entre cuentas autenticadas. No sustituyen el código OTP de recuperación de NIP (correo / WhatsApp / SMS del servicio Túmin).
+        </p>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Mensajes automáticos
+        </h2>
+        <p className="text-base leading-relaxed text-foreground/80 font-medium">
+          Cuando alguien te compra un producto o te envía Túmin, puedes recibir un aviso automático en <strong>Mensajes</strong>. Lo controlas en <strong>Perfil → Mensajes automáticos</strong>.
+        </p>
+        <div className="flex gap-4 p-5 border-2 border-primary/20 rounded-xl items-start bg-primary/5">
+          <Bell className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-3 flex-1">
+            <ul className="space-y-2 text-sm text-foreground/70">
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Mensajes de compras:</strong> aviso cuando alguien compra tu producto (encendido por defecto).</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Mensajes de transferencias:</strong> aviso cuando alguien te envía Túmin sin producto (encendido por defecto).</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Estos interruptores controlan si <strong>tú</strong> recibes el aviso como receptor; no afectan lo que envías.</span></li>
+            </ul>
             <p className="text-xs text-foreground/50 italic pt-1">
-              Por default, las formas de contacto no se muestran públicamente hasta que las actives. El teléfono de tu cuenta sirve para login y no implica WhatsApp automático.
+              En el hilo verás la nota: <em>Este es un mensaje automatizado. Puedes desactivarlo en &quot;Mi perfil&quot;</em>.
             </p>
           </div>
         </div>
@@ -235,7 +271,7 @@ export default function SeguridadPage() {
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-black shrink-0 text-xs">2</span>
-              <p className="text-foreground/70 pt-0.5">Contacta a tu Bantúmin regional y explícale la situación.</p>
+              <p className="text-foreground/70 pt-0.5">Contacta a tu coordinadorx (Bantúmin) regional y explícale la situación.</p>
             </div>
             <div className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-black shrink-0 text-xs">3</span>
