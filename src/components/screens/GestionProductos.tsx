@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Edit2, Trash2, X, ExternalLink, Star } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Plus, Edit2, Trash2, X, ExternalLink, Star, Package, TrendingUp } from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { UploadButton, createUploadBeginHandlers, getUploadedFileUrl, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
@@ -22,6 +23,7 @@ import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { PRODUCT_CATEGORIES, MAX_STARRED_PRODUCTS } from "@/lib/product-categories";
+import { MisVentasContent } from "@/components/screens/MisVentas";
 
 type ProductRow = InferSelectModel<typeof products>;
 
@@ -39,7 +41,10 @@ type ProductForm = {
   isStarred: boolean;
 };
 
+type GestionTab = "productos" | "ventas";
+
 export function GestionProductos() {
+  const [activeTab, setActiveTab] = useState<GestionTab>("productos");
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -132,6 +137,7 @@ export function GestionProductos() {
   };
 
   const handleCreateNew = useCallback(() => {
+    setActiveTab("productos");
     setIsCreating(true);
     setEditingProduct({
       name: "",
@@ -203,7 +209,7 @@ export function GestionProductos() {
   const addUrl = () => {
     if (!newUrl || !editingProduct) return;
     try {
-      new URL(newUrl); // simple validation
+      new URL(newUrl);
       setEditingProduct({
         ...editingProduct,
         imgUrls: [...editingProduct.imgUrls, newUrl]
@@ -236,114 +242,146 @@ export function GestionProductos() {
   return (
     <div className="flex flex-col gap-8 p-4 pb-12">
       <ConfirmDialog />
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter">Mis Productos</h1>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gestiona lo que ofreces a la comunidad</p>
-        </div>
-        <Button onClick={handleCreateNew} variant="secondary" className="h-12 border-2 shadow-neo-sm font-black uppercase">
-          <Plus className="w-5 h-5 mr-1" /> Nuevo
-        </Button>
-      </div>
 
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          <div className="col-span-full flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
-        ) : myProducts && myProducts.length > 0 ? (
-          myProducts.map((p) => (
-            <StaggerItem key={p.id}>
-              <Card className="neo-card overflow-hidden">
-                <CardContent className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-black text-xl uppercase tracking-tight">{p.name}</h3>
-                    <div className="flex gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 border-2" onClick={() => handleEdit(p)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="destructive" className="h-8 w-8 border-2" onClick={async () => {
-                        const ok = await confirm({
-                          title: "Eliminar producto",
-                          description: `¿Eliminar "${p.name}" permanentemente?`,
-                          confirmText: "Eliminar",
-                          variant: "destructive",
-                        });
-                        if (ok) deleteMutation.mutate({ id: p.id });
-                      }}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          if (v === "productos" || v === "ventas") setActiveTab(v);
+        }}
+        className="w-full"
+      >
+        <TabsList className="h-11 w-full max-w-md border-2 border-border bg-muted/40 p-1">
+          <TabsTrigger
+            value="productos"
+            className="flex-1 gap-1.5 text-sm font-black uppercase data-active:shadow-neo-sm md:text-base"
+          >
+            <Package className="h-4 w-4" aria-hidden />
+            Mis Productos
+          </TabsTrigger>
+          <TabsTrigger
+            value="ventas"
+            className="flex-1 gap-1.5 text-sm font-black uppercase data-active:shadow-neo-sm md:text-base"
+          >
+            <TrendingUp className="h-4 w-4" aria-hidden />
+            Mis Ventas
+          </TabsTrigger>
+        </TabsList>
 
-                  {p.description ? (
-                    <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-                  ) : null}
-
-                  <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-xl font-black text-primary">$ {p.priceMxn}</span>
-                    <span className="text-xl font-black text-secondary">+ {p.priceTumin} Ŧ</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {p.categories.map(c => (
-                      <span key={c} className="bg-muted px-2 py-0.5 rounded text-[10px] font-black uppercase border border-border">{c}</span>
-                    ))}
-                  </div>
-
-                  <div
-                    className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-base!important font-black uppercase tracking-wide text-foreground">Visible en bazar y perfil</p>
-                      <p className="text-base!important font-medium text-muted-foreground">Si lo apagas, no aparece en el mercado ni en /u</p>
-                    </div>
-                    <Switch
-                      checked={p.showInProfile ?? true}
-                      disabled={toggleShowInProfileMutation.isPending}
-                      onCheckedChange={(checked) => {
-                        toggleShowInProfileMutation.mutate({ productId: p.id, showInProfile: checked === true });
-                      }}
-                      className="shrink-0"
-                    />
-                  </div>
-
-                  <div
-                    className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 text-base!important font-black uppercase tracking-wide text-foreground">
-                        <Star className="h-4 w-4 text-secondary" aria-hidden /> Producto estrella
-                      </p>
-                      <p className="text-base!important font-medium text-muted-foreground">
-                        Destacado en directorio (máx. {MAX_STARRED_PRODUCTS})
-                      </p>
-                    </div>
-                    <Switch
-                      checked={p.isStarred ?? false}
-                      disabled={toggleIsStarredMutation.isPending}
-                      onCheckedChange={(checked) => {
-                        toggleIsStarredMutation.mutate({ productId: p.id, isStarred: checked === true });
-                      }}
-                      className="shrink-0"
-                    />
-                  </div>
-
-                  {p.imgUrls && p.imgUrls.length > 0 && (
-                    <div className="text-[10px] font-bold text-primary uppercase flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" /> {p.imgUrls.length} imágenes
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </StaggerItem>
-          ))
-        ) : (
-          <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 p-12 text-center text-muted-foreground font-bold uppercase text-sm">
-            Aún no has publicado productos.
+        <TabsContent value="productos" className="mt-6 space-y-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tighter">Mis Productos</h1>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gestiona lo que ofreces a la comunidad</p>
+            </div>
+            <Button onClick={handleCreateNew} variant="secondary" className="h-12 border-2 shadow-neo-sm font-black uppercase">
+              <Plus className="w-5 h-5 mr-1" /> Nuevo
+            </Button>
           </div>
-        )}
-      </StaggerContainer>
+
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              <div className="col-span-full flex justify-center p-12"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>
+            ) : myProducts && myProducts.length > 0 ? (
+              myProducts.map((p) => (
+                <StaggerItem key={p.id}>
+                  <Card className="neo-card overflow-hidden">
+                    <CardContent className="p-5">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="font-black text-xl uppercase tracking-tight">{p.name}</h3>
+                        <div className="flex gap-2">
+                          <Button size="icon" variant="outline" className="h-8 w-8 border-2" onClick={() => handleEdit(p)}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="destructive" className="h-8 w-8 border-2" onClick={async () => {
+                            const ok = await confirm({
+                              title: "Eliminar producto",
+                              description: `¿Eliminar "${p.name}" permanentemente?`,
+                              confirmText: "Eliminar",
+                              variant: "destructive",
+                            });
+                            if (ok) deleteMutation.mutate({ id: p.id });
+                          }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {p.description ? (
+                        <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                      ) : null}
+
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-xl font-black text-primary">$ {p.priceMxn}</span>
+                        <span className="text-xl font-black text-secondary">+ {p.priceTumin} Ŧ</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {p.categories.map(c => (
+                          <span key={c} className="bg-muted px-2 py-0.5 rounded text-[10px] font-black uppercase border border-border">{c}</span>
+                        ))}
+                      </div>
+
+                      <div
+                        className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-base!important font-black uppercase tracking-wide text-foreground">Visible en bazar y perfil</p>
+                          <p className="text-base!important font-medium text-muted-foreground">Si lo apagas, no aparece en el mercado ni en /u</p>
+                        </div>
+                        <Switch
+                          checked={p.showInProfile ?? true}
+                          disabled={toggleShowInProfileMutation.isPending}
+                          onCheckedChange={(checked) => {
+                            toggleShowInProfileMutation.mutate({ productId: p.id, showInProfile: checked === true });
+                          }}
+                          className="shrink-0"
+                        />
+                      </div>
+
+                      <div
+                        className="mb-4 flex items-center justify-between gap-3 rounded-lg border-2 border-border bg-muted/30 px-3 py-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-1.5 text-base!important font-black uppercase tracking-wide text-foreground">
+                            <Star className="h-4 w-4 text-secondary" aria-hidden /> Producto estrella
+                          </p>
+                          <p className="text-base!important font-medium text-muted-foreground">
+                            Destacado en directorio (máx. {MAX_STARRED_PRODUCTS})
+                          </p>
+                        </div>
+                        <Switch
+                          checked={p.isStarred ?? false}
+                          disabled={toggleIsStarredMutation.isPending}
+                          onCheckedChange={(checked) => {
+                            toggleIsStarredMutation.mutate({ productId: p.id, isStarred: checked === true });
+                          }}
+                          className="shrink-0"
+                        />
+                      </div>
+
+                      {p.imgUrls && p.imgUrls.length > 0 && (
+                        <div className="text-[10px] font-bold text-primary uppercase flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> {p.imgUrls.length} imágenes
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </StaggerItem>
+              ))
+            ) : (
+              <div className="col-span-full neo-card bg-muted/20 border-dashed border-2 p-12 text-center text-muted-foreground font-bold uppercase text-sm">
+                Aún no has publicado productos.
+              </div>
+            )}
+          </StaggerContainer>
+        </TabsContent>
+
+        <TabsContent value="ventas" className="mt-6">
+          <MisVentasContent onGoToProducts={() => setActiveTab("productos")} />
+        </TabsContent>
+      </Tabs>
 
       {isModalOpen && editingProduct && (
         <div className="fixed inset-0 z-100verflow-y-auto bg-background/80 backdrop-blur-md">
@@ -377,8 +415,8 @@ export function GestionProductos() {
                     </div>
                     <div className="space-y-2">
                       <Label className="font-black uppercase text-base">Estado</Label>
-                      <Select 
-                        value={editingProduct.status} 
+                      <Select
+                        value={editingProduct.status}
                         onValueChange={(v) => {
                           if (v === "ACTIVO" || v === "INACTIVO") {
                             setEditingProduct(prev => prev ? { ...prev, status: v } : null);
@@ -512,8 +550,8 @@ export function GestionProductos() {
                     {editingProduct.imgUrls && editingProduct.imgUrls.map((url: string, index: number) => (
                       <div key={index} className="relative group w-16 h-16 rounded-lg border-2 border-border overflow-hidden bg-muted">
                         <Image src={url} alt="producto" fill sizes="64px" className="object-cover" />
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => removeUrl(index)}
                         >
@@ -528,15 +566,14 @@ export function GestionProductos() {
                     )}
                   </div>
 
-                  {/* Media Gallery Selector */}
                   <div className="space-y-2">
                     <Label className="font-black uppercase text-md text-muted-foreground ml-1">Tu Galería (Clic para añadir)</Label>
                     <div className="flex gap-2 overflow-x-auto pb-2 min-h-16">
                       {mediaList?.filter(m => m.type === "IMAGE").map((m) => {
                         const isSelected = editingProduct.imgUrls?.includes(m.url);
                         return (
-                          <div 
-                            key={m.id} 
+                          <div
+                            key={m.id}
                             className={cn(
                               "relative w-16 h-16 shrink-0 rounded-lg border-2 overflow-hidden cursor-pointer transition-all",
                               isSelected ? "border-primary opacity-50 cursor-not-allowed" : "border-border hover:border-primary"
@@ -562,7 +599,6 @@ export function GestionProductos() {
                     </div>
                   </div>
 
-                  {/* External Link (Fallback) */}
                   <div className="flex gap-2 mt-4">
                     <Input placeholder="O pega un link externo..." value={newUrl} onChange={e => setNewUrl(e.target.value)} className="bg-background flex-1 text-base" />
                     <Button type="button" onClick={addUrl} variant="secondary" className="border-2 shadow-neo-sm h-10 px-4">

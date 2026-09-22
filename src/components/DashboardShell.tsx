@@ -19,6 +19,8 @@ import {
   Megaphone,
   BookUser,
   MessagesSquare,
+  Receipt,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -31,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { type Screen } from "@/lib/store";
 import { useRouter } from "next/navigation";
@@ -149,12 +151,29 @@ export function DashboardShell({
   const router = useRouter();
   const [isHeaderCoordOpen, setIsHeaderCoordOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [canScrollNavDown, setCanScrollNavDown] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const { data: unreadData } = trpc.messaging.unreadCount.useQuery(undefined, {
     refetchInterval: 30_000,
     enabled: !!session?.user,
   });
   const unreadCount = unreadData?.count ?? 0;
+
+  const updateNavScrollHint = useCallback(() => {
+    const el = navRef.current;
+    if (!el) {
+      setCanScrollNavDown(false);
+      return;
+    }
+    const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setCanScrollNavDown(remaining > 8);
+  }, []);
+
+  const scrollNavDown = useCallback(() => {
+    const el = navRef.current;
+    if (!el) return;
+    el.scrollBy({ top: Math.max(el.clientHeight * 0.55, 72), behavior: "smooth" });
+  }, []);
 
   const isCoordinator =
     session?.user?.role === "COORDINADOR" ||
@@ -172,6 +191,7 @@ export function DashboardShell({
     { id: "comunidad", label: "Comunidad", icon: Users },
     { id: "perfil", label: "Mi Perfil", icon: User },
     { id: "historial", label: "Historial", icon: History },
+    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
   ];
 
   // Desktop sidebar: sin Comunidad/Perfil/Mensajes (van en header)
@@ -184,6 +204,7 @@ export function DashboardShell({
     { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "anuncios", label: "Mis Anuncios", icon: Megaphone },
     { id: "historial", label: "Historial", icon: History },
+    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
   ];
 
   const messagesItem: MenuItem = {
@@ -224,6 +245,21 @@ export function DashboardShell({
   const handleSignOut = () => signOut();
 
   useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    updateNavScrollHint();
+    el.addEventListener("scroll", updateNavScrollHint, { passive: true });
+    const ro = new ResizeObserver(updateNavScrollHint);
+    ro.observe(el);
+    window.addEventListener("resize", updateNavScrollHint);
+    return () => {
+      el.removeEventListener("scroll", updateNavScrollHint);
+      ro.disconnect();
+      window.removeEventListener("resize", updateNavScrollHint);
+    };
+  }, [updateNavScrollHint, desktopMenuItems.length]);
+
+  useEffect(() => {
     if (!isHeaderCoordOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -241,26 +277,52 @@ export function DashboardShell({
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-4 z-50 overflow-hidden">
         <Link
           href="/"
-          className="w-12 h-12 bg-emerald-700 border-2 border-border shadow-neo-sm rounded-full flex items-center justify-center font-black text-xl text-secondary-foreground mb-6 shrink-0"
+          className="w-12 h-12 bg-emerald-700 border-2 border-border shadow-neo-sm rounded-full flex items-center justify-center font-black text-xl text-secondary-foreground mb-4 shrink-0"
         >
           <Image src="/logo_trans_sm.png" alt="Túmin Digital" width={32} height={32} />
         </Link>
 
-        <nav
-          ref={navRef}
-          className="flex flex-col gap-3 overflow-y-auto w-full items-center px-2 py-2 flex-1 scrollbar-hide"
-        >
-          {desktopMenuItems.map((item) => (
-            <NavItem
-              key={item.id}
-              item={item}
-              active={activeScreen === item.id}
-              onClick={() => handleNavItem(item)}
-            />
-          ))}
-        </nav>
+        <div className="relative flex min-h-0 w-full flex-1 flex-col">
+          <nav
+            ref={navRef}
+            className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-2 py-2 scrollbar-hide w-full"
+          >
+            {desktopMenuItems.map((item) => (
+              <NavItem
+                key={item.id}
+                item={item}
+                active={activeScreen === item.id}
+                onClick={() => handleNavItem(item)}
+              />
+            ))}
+          </nav>
 
-        <div className="mt-auto flex flex-col gap-3 py-4 shrink-0">
+          <AnimatePresence>
+            {canScrollNavDown ? (
+              <motion.button
+                type="button"
+                key="sidebar-scroll-down"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                onClick={scrollNavDown}
+                aria-label="Ver más del menú"
+                className="absolute bottom-1 right-0 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border/40 bg-card/90 text-muted-foreground shadow-[1px_1px_0_0_color-mix(in_oklab,var(--border)_40%,transparent)] backdrop-blur-sm hover:bg-muted hover:text-foreground"
+              >
+                <motion.span
+                  animate={{ y: [0, 3, 0] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                  className="inline-flex"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </motion.span>
+              </motion.button>
+            ) : null}
+          </AnimatePresence>
+        </div>
+
+        <div className="mt-2 flex shrink-0 flex-col gap-3 py-2">
           <ThemeToggle />
           <Tooltip>
             <TooltipTrigger

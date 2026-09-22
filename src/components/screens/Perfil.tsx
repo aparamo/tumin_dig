@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, User, Key, Save, 
-  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark, MessagesSquare
+  ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark, MessagesSquare, Bell
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -133,6 +133,14 @@ export function Perfil() {
     onError: (e) => notifyError(parseErrorMessage(e)),
   });
 
+  const updateAutoMessageSettings = trpc.user.updateAutoMessageSettings.useMutation({
+    onSuccess: async () => {
+      notifySuccess("Preferencias de mensajes automáticos actualizadas");
+      await utils.user.fullMe.invalidate();
+    },
+    onError: (e) => notifyError(parseErrorMessage(e)),
+  });
+
   const [editData, setEditData] = useState({ name: "", email: "", phone: "" });
   const [nipData, setNipData] = useState({ current: "", new: "", confirm: "" });
   /** Safe defaults until fullMe loads — never imply publicProfile is on before DB sync */
@@ -143,6 +151,10 @@ export function Perfil() {
     showRegion: true,
     publicName: "",
     bio: "",
+  });
+  const [autoMessages, setAutoMessages] = useState({
+    purchase: true,
+    transfer: true,
   });
   const [locationData, setLocationData] = useState({
     residenceMode: "mexico" as "mexico" | "international",
@@ -170,6 +182,10 @@ export function Perfil() {
       showRegion: user.showRegion,
       publicName: user.publicName ?? "",
       bio: user.bio ?? "",
+    });
+    setAutoMessages({
+      purchase: user.autoMessagePurchase,
+      transfer: user.autoMessageTransfer,
     });
     const intl = user.residenceCountry && !isMexicoCountry(user.residenceCountry);
     setLocationData({
@@ -677,6 +693,43 @@ export function Perfil() {
                 {updatePrivacySettings.isPending ? <Loader2 className="animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
                 Guardar privacidad
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card id="mensajes-automaticos" className="neo-card scroll-mt-24 border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl font-black uppercase tracking-tight">
+                <Bell className="h-6 w-6" /> Mensajes automáticos
+              </CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase">
+                Controla si recibes avisos automáticos en Mensajes cuando te compran o te transfieren
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4 rounded-xl border-2 border-border bg-muted/20 p-4">
+                <PrivacyRow
+                  id="auto-message-purchase"
+                  label="Mensajes de compras"
+                  description="Recibe un mensaje automático cuando alguien compre tu producto"
+                  checked={autoMessages.purchase}
+                  onCheckedChange={(v) => {
+                    setAutoMessages((p) => ({ ...p, purchase: v }));
+                    updateAutoMessageSettings.mutate({ autoMessagePurchase: v });
+                  }}
+                  disabled={!privacyHydrated || updateAutoMessageSettings.isPending}
+                />
+                <PrivacyRow
+                  id="auto-message-transfer"
+                  label="Mensajes de transferencias"
+                  description="Recibe un mensaje automático cuando alguien te transfiera Túmin"
+                  checked={autoMessages.transfer}
+                  onCheckedChange={(v) => {
+                    setAutoMessages((p) => ({ ...p, transfer: v }));
+                    updateAutoMessageSettings.mutate({ autoMessageTransfer: v });
+                  }}
+                  disabled={!privacyHydrated || updateAutoMessageSettings.isPending}
+                />
+              </div>
             </CardContent>
           </Card>
 

@@ -158,8 +158,11 @@ describe("toRows / product 10% rule / zustand store", () => {
         sellerEmail: null,
         sellerId: "s1",
         sellerName: "Seller",
+        productId: "00000000-0000-4000-8000-000000000001",
         productName: "Thing",
         priceTumin: 10,
+        priceMxn: 50,
+        imageUrl: null,
       },
     });
     useStore.getState().setCurrentScreen("inicio");

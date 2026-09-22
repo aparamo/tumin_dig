@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc/react";
 import { useStore } from "@/lib/store";
+import { AUTOMATED_MESSAGE_NOTE } from "@/lib/auto-messages";
 import { cn } from "@/lib/utils";
 
 export function Mensajes() {
@@ -149,7 +150,17 @@ function ThreadView({
                   mine ? "ml-auto bg-primary text-primary-foreground" : "bg-muted"
                 )}
               >
-                {m.body}
+                <p className="whitespace-pre-wrap">{m.body}</p>
+                {m.isAutomated ? (
+                  <p
+                    className={cn(
+                      "mt-1.5 text-[10px] leading-snug",
+                      mine ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}
+                  >
+                    {AUTOMATED_MESSAGE_NOTE}
+                  </p>
+                ) : null}
               </div>
             );
           })

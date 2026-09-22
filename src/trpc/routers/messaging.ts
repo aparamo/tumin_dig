@@ -209,6 +209,8 @@ export const messagingRouter = createTRPCRouter({
           id: messages.id,
           senderId: messages.senderId,
           body: messages.body,
+          isAutomated: messages.isAutomated,
+          automatedType: messages.automatedType,
           createdAt: messages.createdAt,
           readAt: messages.readAt,
         })

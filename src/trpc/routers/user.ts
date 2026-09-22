@@ -203,6 +203,38 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
+  /** Resolve recipient by user id (used for bazar purchases when phone/email are private) */
+  getTransferRecipient: protectedProcedure
+    .input(z.object({ userId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const callerId = ctx.session.user.id;
+
+      const [user] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          publicName: users.publicName,
+          avatarUrl: users.avatarUrl,
+          status: users.status,
+        })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!user || isSystemAccountId(user.id)) return null;
+
+      const [{ activeProducts }] = await db
+        .select({ activeProducts: count() })
+        .from(products)
+        .where(and(eq(products.sellerId, user.id), eq(products.status, "ACTIVO")));
+
+      return {
+        ...user,
+        hasActiveProduct: Number(activeProducts) > 0,
+        isSelf: user.id === callerId,
+      };
+    }),
+
   me: protectedProcedure.query(({ ctx }) => {
     return ctx.session.user;
   }),
@@ -232,6 +264,8 @@ export const userRouter = createTRPCRouter({
         showEmail: users.showEmail,
         showRegion: users.showRegion,
         showContactMethods: users.showContactMethods,
+        autoMessagePurchase: users.autoMessagePurchase,
+        autoMessageTransfer: users.autoMessageTransfer,
         isVerified: users.isVerified,
         referrerId: users.referrerId,
         createdAt: users.createdAt,
@@ -406,6 +440,31 @@ export const userRouter = createTRPCRouter({
         return { success: true as const };
       }
 
+      await db.update(users).set(patch).where(eq(users.id, ctx.session.user.id));
+      return { success: true as const };
+    }),
+
+  updateAutoMessageSettings: protectedProcedure
+    .input(
+      z.object({
+        autoMessagePurchase: z.boolean().optional(),
+        autoMessageTransfer: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const patch: {
+        autoMessagePurchase?: boolean;
+        autoMessageTransfer?: boolean;
+      } = {};
+      if (input.autoMessagePurchase !== undefined) {
+        patch.autoMessagePurchase = input.autoMessagePurchase;
+      }
+      if (input.autoMessageTransfer !== undefined) {
+        patch.autoMessageTransfer = input.autoMessageTransfer;
+      }
+      if (Object.keys(patch).length === 0) {
+        return { success: true as const };
+      }
       await db.update(users).set(patch).where(eq(users.id, ctx.session.user.id));
       return { success: true as const };
     }),

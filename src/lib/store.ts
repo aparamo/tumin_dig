@@ -7,8 +7,11 @@ export interface PendingPurchase {
   sellerEmail: string | null;
   sellerId: string;
   sellerName: string;
+  productId: string;
   productName: string;
   priceTumin: number;
+  priceMxn: number;
+  imageUrl?: string | null;
 }
 
 export type Screen =
@@ -20,6 +23,7 @@ export type Screen =
   | "coordinacion"
   | "perfil"
   | "historial"
+  | "mis-compras"
   | "auditoria"
   | "gestion-roles"
   | "gestion-productos"

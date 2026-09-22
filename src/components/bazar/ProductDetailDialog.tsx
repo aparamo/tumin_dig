@@ -233,8 +233,11 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                       sellerName: seller.displayName,
                       sellerPhone: seller.phone ?? null,
                       sellerEmail: seller.email ?? null,
+                      productId: product.id,
                       productName: product.name,
                       priceTumin: product.priceTumin,
+                      priceMxn: product.priceMxn,
+                      imageUrl: images[0] ?? product.imageUrl ?? null,
                     });
                     onOpenChange(false);
                   }}

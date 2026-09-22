@@ -7,7 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, CheckCircle2, X, ShoppingBag, AlertTriangle, UserCircle2, Bookmark } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Loader2,
+  Send,
+  CheckCircle2,
+  X,
+  ShoppingBag,
+  AlertTriangle,
+  UserCircle2,
+  Bookmark,
+} from "lucide-react";
 import Image from "next/image";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -22,7 +32,14 @@ export interface RecipientCardProps {
   isSelf: boolean;
 }
 
-export function RecipientCard({ name, publicName, avatarUrl, status, hasActiveProduct, isSelf }: RecipientCardProps) {
+export function RecipientCard({
+  name,
+  publicName,
+  avatarUrl,
+  status,
+  hasActiveProduct,
+  isSelf,
+}: RecipientCardProps) {
   const displayName = publicName ?? name;
   const initials = displayName
     .split(" ")
@@ -96,14 +113,20 @@ export function Pagar() {
   );
 
   const [purchaseBanner, setPurchaseBanner] = useState<{
+    productId: string;
     productName: string;
+    sellerId: string;
     sellerName: string;
+    priceTumin: number;
+    priceMxn: number;
+    imageUrl?: string | null;
   } | null>(null);
 
   const [recipientInput, setRecipientInput] = useState("");
   const [amount, setAmount] = useState("");
   const [concept, setConcept] = useState("");
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const isPurchaseFlow = Boolean(purchaseBanner);
 
   useEffect(() => {
     if (!pendingPurchase || appliedFromPurchaseRef.current) return;
@@ -112,22 +135,38 @@ export function Pagar() {
       setAmount(String(pendingPurchase.priceTumin));
       setConcept(`Compra: ${pendingPurchase.productName}`);
       setPurchaseBanner({
+        productId: pendingPurchase.productId,
         productName: pendingPurchase.productName,
+        sellerId: pendingPurchase.sellerId,
         sellerName: pendingPurchase.sellerName,
+        priceTumin: pendingPurchase.priceTumin,
+        priceMxn: pendingPurchase.priceMxn,
+        imageUrl: pendingPurchase.imageUrl,
       });
       appliedFromPurchaseRef.current = true;
     });
   }, [pendingPurchase]);
 
-  const { data: foundUser, isLoading: isSearching } = trpc.user.searchByDato.useQuery(
+  const { data: foundByDato, isLoading: isSearchingDato } = trpc.user.searchByDato.useQuery(
     { dato: recipientInput },
-    { enabled: recipientInput.length >= 8 }
+    { enabled: !isPurchaseFlow && recipientInput.length >= 8 }
   );
+
+  const { data: foundById, isLoading: isSearchingId } = trpc.user.getTransferRecipient.useQuery(
+    { userId: purchaseBanner?.sellerId ?? "" },
+    { enabled: Boolean(purchaseBanner?.sellerId) }
+  );
+
+  const foundUser = isPurchaseFlow ? foundById : foundByDato;
+  const isSearching = isPurchaseFlow ? isSearchingId : isSearchingDato;
 
   const sendTumin = trpc.wallet.sendTumin.useMutation({
     onSuccess: () => {
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
+      utils.wallet.getMyPurchases.invalidate();
+      utils.messaging.listConversations.invalidate();
+      utils.messaging.unreadCount.invalidate();
       setCurrentScreen("inicio");
     },
     onError: (error) => {
@@ -155,7 +194,13 @@ export function Pagar() {
       amount: parseFloat(amount),
       concept,
       idempotencyKey,
+      ...(purchaseBanner ? { productId: purchaseBanner.productId } : {}),
     });
+  };
+
+  const clearPurchase = () => {
+    setPurchaseBanner(null);
+    useStore.getState().setPendingPurchase(null);
   };
 
   return (
@@ -165,15 +210,43 @@ export function Pagar() {
           role="status"
           className="flex items-start gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 p-4 shadow-neo-sm"
         >
-          <ShoppingBag className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Desde el Bazar</p>
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 border-border bg-muted">
+            {purchaseBanner.imageUrl ? (
+              <Image
+                src={purchaseBanner.imageUrl}
+                alt={purchaseBanner.productName}
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <ShoppingBag className="h-6 w-6 text-muted-foreground" aria-hidden />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-2 border-border font-black uppercase text-[10px] shadow-neo-sm">
+                Compra
+              </Badge>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Desde el Bazar
+              </p>
+            </div>
             <p className="text-sm font-black uppercase leading-snug text-foreground">
-              Comprando: <span className="text-primary">{purchaseBanner.productName}</span> de{" "}
-              {purchaseBanner.sellerName}
+              {purchaseBanner.productName}
             </p>
             <p className="text-xs font-bold text-muted-foreground">
-              Datos del formulario autocompletados; revisa y confirma antes de transferir.
+              Vendedor: {purchaseBanner.sellerName}
+            </p>
+            <p className="text-sm font-black tracking-tight">
+              <span className="text-primary">${purchaseBanner.priceMxn} MXN</span>
+              <span className="mx-1.5 text-muted-foreground">+</span>
+              <span className="text-secondary">{purchaseBanner.priceTumin} Ŧ</span>
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Estás pagando la parte en Túmin digitales de este producto.
             </p>
           </div>
           <Button
@@ -181,23 +254,34 @@ export function Pagar() {
             variant="ghost"
             size="icon-sm"
             className="shrink-0 rounded-full"
-            onClick={() => setPurchaseBanner(null)}
-            aria-label="Cerrar aviso"
+            onClick={clearPurchase}
+            aria-label="Convertir a transferencia libre"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       )}
 
+      {!purchaseBanner && (
+        <div className="flex items-center gap-2 px-1">
+          <Badge variant="outline" className="border-2 font-black uppercase text-[10px]">
+            Transferencia libre
+          </Badge>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Envío de Túmin sin producto vinculado
+          </p>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Enviar Túmin</CardTitle>
+          <CardTitle>{isPurchaseFlow ? "Pagar producto" : "Enviar Túmin"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSend} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-xs font-black uppercase">Teléfono o Correo del receptor</Label>
-              {(savedContactsData?.items.length ?? 0) > 0 && (
+              {(savedContactsData?.items.length ?? 0) > 0 && !isPurchaseFlow && (
                 <div className="space-y-2 rounded-xl border-2 border-border bg-muted/20 p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -252,12 +336,18 @@ export function Pagar() {
               )}
               <Input
                 placeholder="Ej. 9611234567"
-                value={recipientInput}
+                value={
+                  isPurchaseFlow
+                    ? purchaseBanner?.sellerName || "Vendedor del producto"
+                    : recipientInput
+                }
                 onChange={(e) => {
                   setRecipientInput(e.target.value);
                   setSendError(null);
                 }}
                 className="bg-background"
+                disabled={isPurchaseFlow}
+                readOnly={isPurchaseFlow}
               />
               {isSearching ? (
                 <p className="text-xs font-bold uppercase text-muted-foreground">Buscando socio...</p>
@@ -270,6 +360,10 @@ export function Pagar() {
                   hasActiveProduct={foundUser.hasActiveProduct}
                   isSelf={foundUser.isSelf}
                 />
+              ) : isPurchaseFlow ? (
+                <p className="flex items-center gap-1 text-xs font-black uppercase text-destructive">
+                  <UserCircle2 className="h-3 w-3" /> No se pudo cargar el vendedor
+                </p>
               ) : recipientInput.length >= 8 ? (
                 <p className="flex items-center gap-1 text-xs font-black uppercase text-destructive">
                   <UserCircle2 className="h-3 w-3" /> Socio no encontrado
@@ -289,6 +383,8 @@ export function Pagar() {
                 }}
                 className="bg-background text-2xl font-black"
                 required
+                disabled={isPurchaseFlow}
+                readOnly={isPurchaseFlow}
               />
             </div>
 
@@ -303,6 +399,8 @@ export function Pagar() {
                 }}
                 className="bg-background"
                 required
+                disabled={isPurchaseFlow}
+                readOnly={isPurchaseFlow}
               />
             </div>
 
@@ -323,14 +421,15 @@ export function Pagar() {
               ) : (
                 <Send className="mr-2 h-5 w-5" />
               )}
-              Transferir
+              {isPurchaseFlow ? "Confirmar compra" : "Transferir"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
       <p className="px-4 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        Recuerda que para enviar Túmin, el destinatario debe tener al menos un producto activo en el Bazar.
+        Recuerda que para enviar Túmin, el destinatario debe tener al menos un producto activo en el
+        Bazar.
       </p>
     </div>
   );

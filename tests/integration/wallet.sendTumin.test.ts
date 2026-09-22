@@ -10,7 +10,7 @@ import {
   countTransfersTo,
 } from "../helpers/ledger";
 import { db } from "@/db";
-import { users, transactions } from "@/db/schema";
+import { users, transactions, messages } from "@/db/schema";
 import { LIMITS } from "@/lib/limits";
 
 async function setupTransferPair(opts?: {
@@ -252,5 +252,141 @@ describe("wallet.sendTumin", () => {
     });
     await expectBalanceCloseTo(sender.id, 500 - amount);
     await expectLedgerBalanced();
+  });
+
+  it("links productId on purchase and lists it in getMyPurchases", async () => {
+    const sender = await makeUser({ isVerified: true, name: "Buyer" });
+    const recipient = await makeUser({
+      name: "Seller",
+      firstSaleOk: true,
+      duplicatorBonus: LIMITS.DUPLICATOR_CAP,
+      autoMessagePurchase: true,
+    });
+    const product = await makeProduct({
+      sellerId: recipient.id,
+      name: "Café de altura",
+      priceMxn: 80,
+      priceTumin: 20,
+    });
+    await mint(sender.id, 100);
+    const caller = createTestCaller({
+      id: sender.id,
+      role: "SOCIO",
+      region: sender.region,
+      isVerified: true,
+    });
+
+    const tx = await caller.wallet.sendTumin({
+      toId: recipient.id,
+      amount: 20,
+      concept: "Compra: Café de altura",
+      idempotencyKey: randomUUID(),
+      productId: product.id,
+    });
+
+    expect(tx.productId).toBe(product.id);
+    expect(tx.productSnapshot).toMatchObject({
+      name: "Café de altura",
+      priceMxn: 80,
+      priceTumin: 20,
+    });
+
+    const purchases = await caller.wallet.getMyPurchases({ limit: 10, cursor: 0 });
+    expect(purchases.items.some((p) => p.id === tx.id && p.productName === "Café de altura")).toBe(
+      true
+    );
+
+    const msgs = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.senderId, sender.id));
+    expect(msgs.some((m) => m.isAutomated && m.automatedType === "PURCHASE")).toBe(true);
+  });
+
+  it("skips purchase auto-message when recipient disabled it", async () => {
+    const sender = await makeUser({ isVerified: true, name: "Buyer2" });
+    const recipient = await makeUser({
+      name: "QuietSeller",
+      firstSaleOk: true,
+      duplicatorBonus: LIMITS.DUPLICATOR_CAP,
+      autoMessagePurchase: false,
+    });
+    const product = await makeProduct({ sellerId: recipient.id, name: "Miel" });
+    await mint(sender.id, 100);
+    const caller = createTestCaller({
+      id: sender.id,
+      role: "SOCIO",
+      region: sender.region,
+      isVerified: true,
+    });
+
+    await caller.wallet.sendTumin({
+      toId: recipient.id,
+      amount: 10,
+      concept: "Compra: Miel",
+      idempotencyKey: randomUUID(),
+      productId: product.id,
+    });
+
+    const msgs = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.senderId, sender.id), eq(messages.isAutomated, true)));
+    expect(msgs).toHaveLength(0);
+  });
+
+  it("lists sales for seller via getMySales and getMySalesStats", async () => {
+    const buyer = await makeUser({ isVerified: true, name: "BuyerSales" });
+    const seller = await makeUser({
+      name: "SellerPanel",
+      firstSaleOk: true,
+      duplicatorBonus: LIMITS.DUPLICATOR_CAP,
+    });
+    const product = await makeProduct({
+      sellerId: seller.id,
+      name: "Pan de maíz",
+      priceMxn: 40,
+      priceTumin: 15,
+    });
+    await mint(buyer.id, 200);
+    const buyerCaller = createTestCaller({
+      id: buyer.id,
+      role: "SOCIO",
+      region: buyer.region,
+      isVerified: true,
+    });
+    const sellerCaller = createTestCaller({
+      id: seller.id,
+      role: "SOCIO",
+      region: seller.region,
+      isVerified: true,
+    });
+
+    const tx = await buyerCaller.wallet.sendTumin({
+      toId: seller.id,
+      amount: 15,
+      concept: "Compra: Pan de maíz",
+      idempotencyKey: randomUUID(),
+      productId: product.id,
+    });
+
+    const sales = await sellerCaller.wallet.getMySales({ limit: 10, cursor: 0 });
+    expect(sales.stats.totalSales).toBeGreaterThanOrEqual(1);
+    expect(sales.items.some((s) => s.id === tx.id && s.productName === "Pan de maíz")).toBe(true);
+    expect(sales.items.find((s) => s.id === tx.id)?.buyer.id).toBe(buyer.id);
+
+    const filtered = await sellerCaller.wallet.getMySales({
+      limit: 10,
+      cursor: 0,
+      productId: product.id,
+      minAmount: 10,
+    });
+    expect(filtered.items.some((s) => s.id === tx.id)).toBe(true);
+
+    const stats = await sellerCaller.wallet.getMySalesStats({ timeRange: "30d" });
+    expect(stats.summary.totalSales).toBeGreaterThanOrEqual(1);
+    expect(stats.summary.totalRevenueTumin).toBeGreaterThanOrEqual(15);
+    expect(stats.topProducts.some((p) => p.productId === product.id)).toBe(true);
+    expect(stats.salesByDay.length).toBe(30);
   });
 });

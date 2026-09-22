@@ -26,6 +26,8 @@ export interface MakeUserOptions {
   residenceState?: string | null;
   residenceCountry?: string | null;
   publicProfile?: boolean;
+  autoMessagePurchase?: boolean;
+  autoMessageTransfer?: boolean;
 }
 
 let userSeq = 0;
@@ -56,6 +58,8 @@ export async function makeUser(opts: MakeUserOptions = {}) {
       residenceState: opts.residenceState ?? "Veracruz",
       residenceCountry: opts.residenceCountry ?? "México",
       publicProfile: opts.publicProfile ?? true,
+      autoMessagePurchase: opts.autoMessagePurchase ?? true,
+      autoMessageTransfer: opts.autoMessageTransfer ?? true,
     })
     .returning();
 

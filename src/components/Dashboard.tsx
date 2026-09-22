@@ -17,6 +17,7 @@ import { MiRed } from "./screens/MiRed";
 import { GestionAnuncios } from "./screens/GestionAnuncios";
 import { Directorio } from "./screens/Directorio";
 import { Mensajes } from "./screens/Mensajes";
+import { MisCompras } from "./screens/MisCompras";
 import { PageTransition } from "./ui/motion";
 import { AnimatePresence } from "motion/react";
 import { DashboardShell } from "./DashboardShell";
@@ -31,7 +32,7 @@ export function Dashboard() {
       sessionStorage.removeItem("tumin_pending_screen");
       const validScreens = [
         "inicio", "pagar", "bazar", "directorio", "comunidad", "coordinacion", "perfil",
-        "historial", "auditoria", "gestion-roles", "gestion-productos",
+        "historial", "mis-compras", "auditoria", "gestion-roles", "gestion-productos",
         "medios", "anuncios", "mi-red", "mensajes",
       ] as const;
       if (validScreens.includes(pending as typeof validScreens[number])) {
@@ -49,6 +50,7 @@ export function Dashboard() {
       case "comunidad": return <Comunidad />;
       case "perfil": return <Perfil />;
       case "historial": return <Historial />;
+      case "mis-compras": return <MisCompras />;
       case "coordinacion": return <Coordinacion />;
       case "auditoria": return <Auditoria />;
       case "gestion-roles": return <GestionRoles />;

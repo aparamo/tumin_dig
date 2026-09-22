@@ -191,7 +191,7 @@ export function CommunicateDialog({
             <p className="text-sm text-muted-foreground py-2">
               Esta persona no publicó formas de contacto externas.
               {session?.user
-                ? " Puedes escribirle por Túmin."
+                ? " Puedes escribirle a través de esta plataforma."
                 : " Inicia sesión para enviarle un mensaje en la plataforma."}
             </p>
           ) : null}

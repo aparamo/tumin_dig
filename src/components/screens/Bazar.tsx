@@ -279,8 +279,12 @@ export function Bazar() {
                             sellerName: item.seller.displayName,
                             sellerPhone: item.seller.phone ?? null,
                             sellerEmail: null,
+                            productId: item.product.id,
                             productName: item.product.name,
                             priceTumin: item.product.priceTumin,
+                            priceMxn: item.product.priceMxn,
+                            imageUrl:
+                              item.product.imgUrls?.[0] ?? item.product.imageUrl ?? null,
                           });
                           setCurrentScreen("pagar");
                         }}

@@ -84,6 +84,10 @@ export const users = pgTable("TUMIN_users", {
   firstSaleOk: boolean("first_sale_ok").default(false).notNull(),
   productOk: boolean("product_ok").default(false).notNull(),
   isVerified: boolean("is_verified").default(false).notNull(),
+  /** Receive automated DM when someone buys your product (default on) */
+  autoMessagePurchase: boolean("auto_message_purchase").default(true).notNull(),
+  /** Receive automated DM when someone transfers Túmin to you (default on) */
+  autoMessageTransfer: boolean("auto_message_transfer").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -132,6 +136,14 @@ export const passwordResetsRelations = relations(passwordResets, ({ one }) => ({
   }),
 }));
 
+/** Snapshot of product at purchase time (survives later edits/deletes) */
+export type ProductPurchaseSnapshot = {
+  name: string;
+  priceMxn: number;
+  priceTumin: number;
+  imageUrl?: string | null;
+};
+
 export const transactions = pgTable("TUMIN_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   fromId: text("from_id").references(() => users.id).notNull(),
@@ -139,6 +151,9 @@ export const transactions = pgTable("TUMIN_transactions", {
   amount: doublePrecision("amount").notNull(),
   concept: text("concept").notNull(),
   type: transactionTypeEnum("type").notNull(),
+  /** Set when payment is a bazar product purchase */
+  productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  productSnapshot: jsonb("product_snapshot").$type<ProductPurchaseSnapshot>(),
   /** Client-generated UUID for idempotency — prevents duplicate payments on retry/double-submit */
   idempotencyKey: text("idempotency_key").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -154,6 +169,10 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.toId],
     references: [users.id],
     relationName: "receiver",
+  }),
+  product: one(products, {
+    fields: [transactions.productId],
+    references: [products.id],
   }),
 }));
 
@@ -197,6 +216,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [users.id],
   }),
   comments: many(productComments),
+  purchases: many(transactions),
 }));
 
 export const productCommentsRelations = relations(productComments, ({ one }) => ({
@@ -479,6 +499,21 @@ export const conversationsRelations = relations(conversations, ({ one, many }) =
   messages: many(messages),
 }));
 
+export const autoMessageTypeEnum = pgEnum("auto_message_type", [
+  "PURCHASE",
+  "TRANSFER",
+]);
+
+export type AutoMessageType = (typeof autoMessageTypeEnum.enumValues)[number];
+
+export type AutomatedMessageMetadata = {
+  productId?: string;
+  productName?: string;
+  amount?: number;
+  priceMxn?: number;
+  transactionId?: string;
+};
+
 export const messages = pgTable("TUMIN_messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   conversationId: uuid("conversation_id")
@@ -488,6 +523,9 @@ export const messages = pgTable("TUMIN_messages", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   body: text("body").notNull(),
+  isAutomated: boolean("is_automated").default(false).notNull(),
+  automatedType: autoMessageTypeEnum("automated_type"),
+  metadata: jsonb("metadata").$type<AutomatedMessageMetadata>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   readAt: timestamp("read_at"),
 });
