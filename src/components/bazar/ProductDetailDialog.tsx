@@ -74,9 +74,9 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
         className={cn(
           "z-50 flex flex-col gap-0 overflow-hidden bg-background p-0 ring-0",
           // Mobile: full-screen edge-to-edge
-          "fixed inset-0 left-0 top-0 h-dvhh-[100dvh] w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 shadow-none",
+          "fixed inset-0 left-0 top-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 shadow-none overflow-x-hidden",
           // sm+: centered modal, wide layout
-          "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border-2 sm:border-border sm:shadow-neo"
+          "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border-2 sm:border-border sm:shadow-neo-sm"
         )}
       >
         {!productId || isLoading ? (
@@ -136,7 +136,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
               </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background p-4 pb-8 sm:p-6">
+            <div className="flex min-h-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-background p-4 pb-8 sm:p-6">
               <DialogHeader className="space-y-2 text-left">
                 <div className="flex flex-wrap gap-2">
                   <Badge className="border-2 font-black uppercase">
@@ -213,7 +213,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="mt-6 flex min-w-0 max-w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
                 <CommunicateButton
                   target={{
                     userId: seller.id,
@@ -221,12 +221,12 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                     contactMethods,
                     messageText: `Hola ${seller.displayName}, me interesa: ${product.name}`,
                   }}
-                  className="h-12 flex-1 border-2 shadow-neo-sm"
+                  className="h-10 min-w-0 w-full flex-1 border-2 text-xs shadow-neo-sm sm:h-12 sm:text-sm"
                 />
                 <Button
                   type="button"
                   variant="default"
-                  className="h-12 flex-1 shadow-neo-sm"
+                  className="h-10 min-w-0 w-full flex-1 text-xs shadow-neo-sm sm:h-12 sm:text-sm"
                   onClick={() => {
                     onBuy({
                       sellerId: seller.id,
@@ -242,13 +242,13 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                     onOpenChange(false);
                   }}
                 >
-                  <ShoppingCart className="mr-2 h-5 w-5" /> Comprar
+                  <ShoppingCart className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Comprar
                 </Button>
                 {seller.publicProfile && (
                   <SaveContactButton
                     contactUserId={seller.id}
                     isSaved={isSellerSaved}
-                    className="h-12 flex-1"
+                    className="h-10 min-w-0 w-full flex-1 text-xs sm:h-12 sm:text-sm"
                   />
                 )}
               </div>

@@ -27,7 +27,7 @@ const FILTER_LABEL =
   "mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-muted-foreground";
 
 const FILTER_TRIGGER =
-  "h-12 w-full min-w-0 justify-between gap-1.5 border-2 border-border bg-card px-2.5 text-sm font-bold shadow-none data-[size=default]:h-12";
+  "h-10 w-full min-w-0 justify-between gap-1.5 border-2 border-border bg-card px-2.5 text-sm font-bold shadow-none data-[size=default]:h-10 sm:h-12 sm:data-[size=default]:h-12";
 
 export function Bazar() {
   const { setCurrentScreen, setOpenGestionProductCreate, setPendingPurchase } = useStore();
@@ -72,15 +72,15 @@ export function Bazar() {
         : "Más recientes";
 
   return (
-    <div className="flex flex-col gap-8 p-4 pb-12">
-      <div className="flex justify-between items-center">
+    <div className="flex max-w-full flex-col gap-6 overflow-x-hidden p-3 pb-12 sm:gap-8 sm:p-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Bazar</h1>
-        <Button 
+        <Button
           onClick={handleAddNewProduct}
           variant="secondary"
-          className="h-12 shadow-neo-sm font-black uppercase text-xs sm:text-sm"
+          className="h-9 px-3 text-[10px] font-black uppercase shadow-neo-sm sm:h-12 sm:px-4 sm:text-xs md:text-sm"
         >
-          <Plus className="w-5 h-5 mr-1 shrink-0" /> Agregar nuevo
+          <Plus className="mr-1 h-4 w-4 shrink-0 sm:h-5 sm:w-5" /> Agregar nuevo
         </Button>
       </div>
 
@@ -90,7 +90,7 @@ export function Bazar() {
           <Search className="pointer-events-none absolute bottom-3.5 left-3.5 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Productos..." 
-            className="h-12 border-2 bg-card pl-10 text-sm font-bold"
+            className="h-10 border-2 bg-card pl-10 text-sm font-bold sm:h-12"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -102,7 +102,7 @@ export function Bazar() {
             value={category}
             onChange={setCategory}
             labelClassName={cn(FILTER_LABEL, "md:text-[10px]")}
-            triggerClassName="h-12 border-border bg-card text-sm font-bold md:text-sm data-[size=default]:h-12"
+            triggerClassName="h-10 border-border bg-card text-sm font-bold data-[size=default]:h-10 sm:h-12 sm:data-[size=default]:h-12 md:text-sm"
             description="Filtra productos y servicios del Bazar por categoría."
           />
 
@@ -268,11 +268,11 @@ export function Bazar() {
                         }}
                         iconOnly
                         label="Comunicarse"
-                        className="h-12 w-12 shrink-0 border shadow-neo-sm"
+                        className="h-10 w-10 shrink-0 border shadow-neo-sm sm:h-12 sm:w-12"
                       />
                       <Button 
                         variant="default"
-                        className="min-w-0 flex-1 h-12 shadow-neo-sm"
+                        className="h-10 min-w-0 flex-1 text-xs shadow-neo-sm sm:h-12 sm:text-sm"
                         onClick={() => {
                           setPendingPurchase({
                             sellerId: item.seller.id,
@@ -308,7 +308,7 @@ export function Bazar() {
         <div className="flex justify-center mt-8">
           <Button
             variant="outline"
-            className="border-2 shadow-neo-sm font-black uppercase h-12 px-8"
+            className="h-10 border-2 px-6 text-xs font-black uppercase shadow-neo-sm sm:h-12 sm:px-8 sm:text-sm"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
           >

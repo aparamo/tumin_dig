@@ -470,7 +470,7 @@ export function MisVentasContent({
         <Button
           type="button"
           variant="secondary"
-          className="h-12 border-2 font-black uppercase shadow-neo-sm"
+          className="h-10 border-2 text-xs font-black uppercase shadow-neo-sm sm:h-12 sm:text-sm"
           onClick={onGoToProducts}
         >
           <Package className="mr-2 h-5 w-5" /> Ver mis productos
@@ -525,7 +525,7 @@ export function MisVentasContent({
           <Button
             type="button"
             variant="outline"
-            className="h-12 border-2 px-8 font-black uppercase shadow-neo-sm"
+            className="h-10 border-2 px-6 text-xs font-black uppercase shadow-neo-sm sm:h-12 sm:px-8 sm:text-sm"
             onClick={() => salesQuery.fetchNextPage()}
             disabled={salesQuery.isFetchingNextPage}
           >

@@ -27,9 +27,9 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   
-  --shadow-neo: 4px 4px 0px 0px var(--border);
-  --shadow-neo-sm: 2px 2px 0px 0px var(--border);
-  --shadow-neo-lg: 6px 6px 0px 0px var(--border);
+  --shadow-neo: 1.5px 1.5px 0px 0px var(--border);
+  --shadow-neo-sm: 1.5px 1.5px 0px 0px var(--border);
+  --shadow-neo-lg: 2px 2px 0px 0px var(--border);
 }
 
 :root {
@@ -148,14 +148,14 @@
 
 @layer components {
   .neo-card {
-    @apply border-2 border-border shadow-neo bg-card rounded-xl overflow-hidden transition-all;
+    @apply border-2 border-border shadow-neo-sm bg-card rounded-xl overflow-hidden transition-all;
   }
   
   .neo-btn {
-    @apply border-2 border-border shadow-neo rounded-lg font-black transition-all active:shadow-none active:translate-x-1 active:translate-y-1;
+    @apply border-2 border-border shadow-neo-sm rounded-lg font-black transition-all active:shadow-none active:translate-x-0.5 active:translate-y-0.5;
   }
 
   .neo-input {
-    @apply border-2 border-border bg-background px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-neo transition-all;
+    @apply border-2 border-border bg-background px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-neo-sm transition-all;
   }
 }

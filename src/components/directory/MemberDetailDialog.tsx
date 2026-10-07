@@ -130,8 +130,8 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
               )}
             </div>
 
-            <div className="shrink-0 space-y-2 border-t-2 border-border p-4">
-              <div className="flex flex-wrap gap-2">
+            <div className="min-w-0 shrink-0 space-y-2 border-t-2 border-border p-3 sm:p-4">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <CommunicateButton
                   target={{
                     userId: data.id,
@@ -140,13 +140,13 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
                     messageText: `Hola ${data.displayName}, te contacto desde Túmin digital.`,
                   }}
                   variant="default"
-                  className="flex-1 text-sm font-black uppercase shadow-neo-sm md:text-base"
+                  className="h-10 min-w-0 w-full flex-1 text-xs font-black uppercase shadow-neo-sm sm:h-11 sm:text-sm md:text-base"
                   label="Comunicarse"
                 />
                 <SaveContactButton
                   contactUserId={data.id}
                   isSaved={data.isSavedContact}
-                  className="flex-1"
+                  className="h-10 min-w-0 w-full flex-1 sm:h-11"
                 />
               </div>
               <Button asChild variant="ghost" className="w-full text-sm font-black uppercase tracking-wide md:text-base">

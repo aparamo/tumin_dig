@@ -51,7 +51,10 @@ export function SaveContactButton({
       variant={variant}
       size={size}
       disabled={disabled || pending}
-      className={cn("text-sm font-black uppercase shadow-neo-sm md:text-base", className)}
+      className={cn(
+        "min-w-0 text-xs font-black uppercase shadow-neo-sm sm:text-sm md:text-base",
+        className
+      )}
       onClick={() => {
         if (isSaved) {
           removeMutation.mutate({ contactUserId });

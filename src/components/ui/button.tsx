@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground border-border shadow-neo hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground border-border shadow-neo-sm hover:bg-primary/90",
         outline:
-          "border-border bg-background shadow-neo hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          "border-border bg-background shadow-neo-sm hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground border-border shadow-neo hover:bg-secondary/90 aria-expanded:bg-secondary",
+          "bg-secondary text-secondary-foreground border-border shadow-neo-sm hover:bg-secondary/90 aria-expanded:bg-secondary",
         ghost:
           "border-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive text-destructive-foreground border-border shadow-neo hover:bg-destructive/90 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
+          "bg-destructive text-destructive-foreground border-border shadow-neo-sm hover:bg-destructive/90 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
         link: "text-primary underline-offset-4 hover:underline border-none shadow-none",
       },
       size: {
@@ -25,11 +25,11 @@ const buttonVariants = cva(
           "h-10 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         xs: "h-7 gap-1 rounded-md px-2 text-xs [&_svg:not([class*=\'size-'])]:\'size-3",
         sm: "h-8 gap-1 rounded-md px-3 text-[0.8rem] [&_svg:not([class*=\'size-'])]:\'size-3.5",
-        lg: "h-12 gap-2 px-6 text-base",
+        lg: "h-10 gap-2 px-4 text-sm sm:h-12 sm:px-6 sm:text-base",
         icon: "size-10",
         "icon-xs": "size-7 rounded-md",
         "icon-sm": "size-8 rounded-md",
-        "icon-lg": "size-12",
+        "icon-lg": "size-10 sm:size-12",
       },
     },
     defaultVariants: {

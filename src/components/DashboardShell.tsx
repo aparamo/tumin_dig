@@ -69,28 +69,27 @@ const NavItem = ({
     ) : null;
 
   if (isMobile) {
-    const content = (
-      <>
-        <span className="relative">
-          <item.icon className="w-5 h-5" />
-          {badge}
-        </span>
-        <span className="text-[8px] font-bold uppercase">{item.label}</span>
-      </>
-    );
+    const shortLabel =
+      item.id === "perfil" ? "Perfil" : item.id === "inicio" ? "Inicio" : item.label;
 
     return (
       <Button
+        type="button"
         variant="ghost"
-        size="icon"
         aria-label={item.label}
         className={cn(
-          "flex flex-col gap-0.5 h-8 w-8 flex-1 rounded-xl transition-all",
+          "h-14 min-w-0 flex-1 flex-col gap-0.5 overflow-hidden rounded-lg border-0 px-0.5 shadow-none whitespace-normal",
           active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}
         onClick={onClick}
       >
-        {content}
+        <span className="relative inline-flex shrink-0">
+          <item.icon className="h-5 w-5" />
+          {badge}
+        </span>
+        <span className="max-w-full truncate text-[9px] font-bold uppercase leading-none tracking-wide">
+          {shortLabel}
+        </span>
       </Button>
     );
   }
@@ -272,7 +271,7 @@ export function DashboardShell({
   }, [isHeaderCoordOpen]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh max-w-[100vw] overflow-x-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-card border-r-4 border-border flex-col items-center py-4 z-50 overflow-hidden">
         <Link
@@ -348,25 +347,26 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <div className="flex flex-col flex-1 md:ml-20">
+      <div className="flex min-w-0 flex-1 flex-col md:ml-20">
         {/* Header */}
-        <header className="fixed top-0 left-0 right-0 md:left-20 h-16 bg-card border-b-4 border-border flex items-center justify-between px-4 z-40">
-          <div className="flex items-center gap-2">
+        <header className="fixed top-0 right-0 left-0 z-40 flex h-14 max-w-[100vw] items-center gap-2 border-b-4 border-border bg-card px-2 sm:h-16 sm:px-4 md:left-20">
+          <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={() => setIsSidebarOpen(true)}
-              className="md:hidden neo-btn bg-background"
+              className="h-8 w-8 shrink-0 rounded-md border border-border bg-background shadow-neo-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:hidden sm:h-9 sm:w-9 sm:rounded-lg"
+              aria-label="Abrir menú"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <h1 className="text-xl font-black tracking-tight text-foreground uppercase truncate">
+            <h1 className="min-w-0 truncate pl-2 text-base font-black tracking-tight text-foreground uppercase sm:pl-0.5 sm:text-xl">
               {activeLabel}
             </h1>
           </div>
 
           {/* Desktop header right — Mensajes primero desde la izquierda */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
             <Tooltip>
               <TooltipTrigger
                 render={(triggerProps) => (
@@ -444,7 +444,7 @@ export function DashboardShell({
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      className="absolute right-0 top-12 bg-card border-2 border-border rounded-xl shadow-neo p-2 flex flex-col gap-1 min-w-40 z-50"
+                      className="absolute right-0 top-12 z-50 flex min-w-40 flex-col gap-1 rounded-xl border-2 border-border bg-card p-2 shadow-neo-sm"
                     >
                       {coordinatorItems.map((item) => (
                         <Link
@@ -497,25 +497,25 @@ export function DashboardShell({
             <ThemeToggle />
           </div>
 
-          <div className="flex md:hidden items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 md:hidden">
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               aria-label="Mensajes"
               className={cn(
-                "relative w-10 h-10 rounded-xl text-muted-foreground",
+                "relative h-8 w-8 shrink-0 rounded-md text-muted-foreground sm:h-9 sm:w-9 sm:rounded-lg",
                 activeScreen === "mensajes" && "bg-primary text-primary-foreground"
               )}
               onClick={() => handleNavItem(messagesItem)}
             >
-              <MessagesSquare className="w-5 h-5" />
+              <MessagesSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {unreadCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-black text-destructive-foreground">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               ) : null}
             </Button>
-            <ThemeToggle />
+            <ThemeToggle compact />
           </div>
         </header>
 
@@ -618,14 +618,25 @@ export function DashboardShell({
           </nav>
         </aside>
 
-        {/* Main Content */}
-        <main className="mt-16 mb-24 md:mb-0 flex-1 overflow-x-hidden p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        {/* Main Content — Mensajes fills viewport for split pane; other screens keep padding */}
+        <main
+          className={cn(
+            "mt-14 flex-1 overflow-x-hidden sm:mt-16",
+            activeScreen === "mensajes"
+              ? "mb-16 h-[calc(100dvh-7.5rem)] p-0 sm:h-[calc(100dvh-8rem)] md:mb-0 md:h-[calc(100dvh-4rem)]"
+              : "mb-24 p-4 md:mb-0 md:p-8"
+          )}
+        >
+          {activeScreen === "mensajes" ? (
+            <div className="h-full min-h-0">{children}</div>
+          ) : (
+            <div className="mx-auto max-w-7xl">{children}</div>
+          )}
         </main>
 
         {/* Mobile Bottom Nav */}
         {!hideBottomNav && (
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t-4 border-border flex justify-around items-center px-4 z-50">
+          <nav className="fixed right-0 bottom-0 left-0 z-50 flex h-16 max-w-[100vw] items-stretch gap-0.5 border-t-4 border-border bg-card px-1 md:hidden">
             <NavItem isMobile item={menuItems[0]} active={activeScreen === "inicio"} onClick={() => handleNavItem(menuItems[0])} />
             <NavItem isMobile item={itemWithId(menuItems, "pagar")} active={activeScreen === "pagar"} onClick={() => handleNavItem(itemWithId(menuItems, "pagar"))} />
             <NavItem isMobile item={itemWithId(menuItems, "bazar")} active={activeScreen === "bazar"} onClick={() => handleNavItem(itemWithId(menuItems, "bazar"))} />

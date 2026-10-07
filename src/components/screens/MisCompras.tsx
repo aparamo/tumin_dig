@@ -144,7 +144,7 @@ export function MisCompras() {
           <Button
             type="button"
             variant="outline"
-            className="h-12 border-2 px-8 font-black uppercase shadow-neo-sm"
+            className="h-10 border-2 px-6 text-xs font-black uppercase shadow-neo-sm sm:h-12 sm:px-8 sm:text-sm"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
           >

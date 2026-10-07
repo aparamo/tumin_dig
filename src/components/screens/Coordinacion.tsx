@@ -240,7 +240,7 @@ export function Coordinacion() {
             ) : pendingAds && pendingAds.length > 0 ? (
               pendingAds.map((ad) => (
                 <StaggerItem key={ad.id}>
-                  <Card className="overflow-hidden border-2 border-border shadow-neo">
+                  <Card className="overflow-hidden border-2 border-border shadow-neo-sm">
                     <div className="relative aspect-video w-full bg-muted">
                        <Image src={ad.imageUrl} alt="Ad content" fill className="object-cover" />
                     </div>

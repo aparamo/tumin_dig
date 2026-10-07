@@ -54,7 +54,7 @@ export function MiRed() {
         </Button>
       </div>
 
-      <Card className="bg-primary/10 border-primary shadow-neo">
+      <Card className="border-primary bg-primary/10 shadow-neo-sm">
         <CardContent className="p-6 flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-2xl">
             {isLoading ? <Loader2 className="animate-spin" /> : network?.length ?? 0}

@@ -250,19 +250,19 @@ export function GestionProductos() {
         }}
         className="w-full"
       >
-        <TabsList className="h-11 w-full max-w-md border-2 border-border bg-muted/40 p-1">
+        <TabsList className="h-auto min-h-14 w-full max-w-lg gap-1.5 border-2 border-border bg-muted/40 p-2">
           <TabsTrigger
             value="productos"
-            className="flex-1 gap-1.5 text-sm font-black uppercase data-active:shadow-neo-sm md:text-base"
+            className="h-auto flex-1 gap-2 px-4 py-3 text-sm font-black uppercase transition-colors hover:bg-background/60 hover:text-foreground data-active:shadow-neo-sm data-active:hover:bg-background md:text-base"
           >
-            <Package className="h-4 w-4" aria-hidden />
+            <Package className="h-4 w-4 shrink-0" aria-hidden />
             Mis Productos
           </TabsTrigger>
           <TabsTrigger
             value="ventas"
-            className="flex-1 gap-1.5 text-sm font-black uppercase data-active:shadow-neo-sm md:text-base"
+            className="h-auto flex-1 gap-2 px-4 py-3 text-sm font-black uppercase transition-colors hover:bg-background/60 hover:text-foreground data-active:shadow-neo-sm data-active:hover:bg-background md:text-base"
           >
-            <TrendingUp className="h-4 w-4" aria-hidden />
+            <TrendingUp className="h-4 w-4 shrink-0" aria-hidden />
             Mis Ventas
           </TabsTrigger>
         </TabsList>
@@ -273,7 +273,7 @@ export function GestionProductos() {
               <h1 className="text-3xl font-black uppercase tracking-tighter">Mis Productos</h1>
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Gestiona lo que ofreces a la comunidad</p>
             </div>
-            <Button onClick={handleCreateNew} variant="secondary" className="h-12 border-2 shadow-neo-sm font-black uppercase">
+            <Button onClick={handleCreateNew} variant="secondary" className="h-10 border-2 text-xs font-black uppercase shadow-neo-sm sm:h-12 sm:text-sm">
               <Plus className="w-5 h-5 mr-1" /> Nuevo
             </Button>
           </div>
@@ -609,7 +609,7 @@ export function GestionProductos() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-lg uppercase font-black tracking-widest"
+                  className="h-10 w-full text-sm font-black uppercase tracking-widest sm:h-12 sm:text-lg"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
                   {createMutation.isPending || updateMutation.isPending ? (

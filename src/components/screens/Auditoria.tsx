@@ -178,7 +178,7 @@ export function Auditoria() {
             <Flame className="w-5 h-5 text-secondary" />
             <h2 className="text-xl font-black uppercase tracking-tight">Top Duplicadores</h2>
           </div>
-          <Card className="overflow-hidden border-2 border-border shadow-neo">
+          <Card className="overflow-hidden border-2 border-border shadow-neo-sm">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow className="border-b-2 border-border">
@@ -324,7 +324,7 @@ export function Auditoria() {
           <Star className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-black uppercase tracking-tight">Calidad del Bazar</h2>
         </div>
-        <Card className="overflow-hidden border-2 border-border shadow-neo">
+        <Card className="overflow-hidden border-2 border-border shadow-neo-sm">
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow className="border-b-2 border-border">

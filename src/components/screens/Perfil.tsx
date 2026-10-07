@@ -214,8 +214,8 @@ export function Perfil() {
   const TierIcon = TIER_BADGES[tier].icon;
 
   return (
-    <div className="flex flex-col gap-8 p-4 pb-12">
-      <div className="flex flex-col md:flex-row gap-8 items-start">
+    <div className="flex max-w-full flex-col gap-6 overflow-x-hidden p-3 pb-12 sm:gap-8 sm:p-4">
+      <div className="flex min-w-0 flex-col items-start gap-6 md:flex-row md:gap-8">
         {/* Left Col: Avatar & ID */}
         <div className="w-full md:w-80 flex flex-col gap-6">
           <Card className="neo-card border-2 overflow-hidden">
@@ -358,7 +358,7 @@ export function Perfil() {
 
           <Button 
             variant="destructive" 
-            className="w-full h-12 shadow-neo-sm font-black uppercase"
+            className="h-10 w-full font-black uppercase shadow-neo-sm sm:h-12"
             onClick={() => signOut()}
           >
             <LogOut className="w-5 h-5 mr-2" /> Cerrar Sesión
@@ -380,7 +380,7 @@ export function Perfil() {
                   <Input 
                     value={editData.name} 
                     onChange={e => setEditData({...editData, name: e.target.value})}
-                    className="bg-background border-2 h-12"
+                    className="h-10 border-2 bg-background sm:h-12"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -388,7 +388,7 @@ export function Perfil() {
                   <Input 
                     value={editData.phone} 
                     onChange={e => setEditData({...editData, phone: e.target.value})}
-                    className="bg-background border-2 h-12"
+                    className="h-10 border-2 bg-background sm:h-12"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -397,12 +397,12 @@ export function Perfil() {
                     type="email"
                     value={editData.email} 
                     onChange={e => setEditData({...editData, email: e.target.value})}
-                    className="bg-background border-2 h-12"
+                    className="h-10 border-2 bg-background sm:h-12"
                   />
                 </div>
               </div>
               <Button 
-                className="w-full md:w-auto px-8 h-12 font-black uppercase"
+                className="h-10 w-full px-4 text-xs font-black uppercase sm:h-12 sm:px-8 sm:text-sm md:w-auto"
                 disabled={updateProfile.isPending}
                 onClick={() => updateProfile.mutate(editData)}
               >
@@ -460,7 +460,7 @@ export function Perfil() {
                     }
                   }}
                 >
-                  <SelectTrigger className="h-12 border-2 bg-background">
+                  <SelectTrigger className="h-10 border-2 bg-background sm:h-12">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -479,7 +479,7 @@ export function Perfil() {
                           val && setLocationData((l) => ({ ...l, residenceState: val }))
                         }
                       >
-                        <SelectTrigger className="h-12 border-2 bg-background">
+                        <SelectTrigger className="h-10 border-2 bg-background sm:h-12">
                           <SelectValue placeholder="Selecciona estado" />
                         </SelectTrigger>
                         <SelectContent className="max-h-64">
@@ -494,7 +494,7 @@ export function Perfil() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase ml-1">Ciudad (opcional)</Label>
                       <Input
-                        className="bg-background border-2 h-12"
+                        className="h-10 border-2 bg-background sm:h-12"
                         value={locationData.residenceCity}
                         onChange={(e) =>
                           setLocationData((l) => ({ ...l, residenceCity: e.target.value }))
@@ -504,7 +504,7 @@ export function Perfil() {
                     <div className="space-y-2 md:col-span-2">
                       <Label className="text-[10px] font-black uppercase ml-1">C.P. (opcional)</Label>
                       <Input
-                        className="bg-background border-2 h-12"
+                        className="h-10 border-2 bg-background sm:h-12"
                         value={locationData.residencePostalCode}
                         onChange={(e) =>
                           setLocationData((l) => ({ ...l, residencePostalCode: e.target.value }))
@@ -518,7 +518,7 @@ export function Perfil() {
                     <div className="space-y-2 md:col-span-2">
                       <Label className="text-[10px] font-black uppercase ml-1">País o región</Label>
                       <Input
-                        className="bg-background border-2 h-12"
+                        className="h-10 border-2 bg-background sm:h-12"
                         value={locationData.residenceCountry}
                         onChange={(e) =>
                           setLocationData((l) => ({ ...l, residenceCountry: e.target.value }))
@@ -529,7 +529,7 @@ export function Perfil() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase ml-1">Ciudad (opcional)</Label>
                       <Input
-                        className="bg-background border-2 h-12"
+                        className="h-10 border-2 bg-background sm:h-12"
                         value={locationData.residenceCity}
                         onChange={(e) =>
                           setLocationData((l) => ({ ...l, residenceCity: e.target.value }))
@@ -539,7 +539,7 @@ export function Perfil() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase ml-1">C.P. (opcional)</Label>
                       <Input
-                        className="bg-background border-2 h-12"
+                        className="h-10 border-2 bg-background sm:h-12"
                         value={locationData.residencePostalCode}
                         onChange={(e) =>
                           setLocationData((l) => ({ ...l, residencePostalCode: e.target.value }))
@@ -577,7 +577,7 @@ export function Perfil() {
               </div>
 
               <Button
-                className="w-full md:w-auto px-8 h-12 font-black uppercase"
+                className="h-10 w-full px-4 text-xs font-black uppercase sm:h-12 sm:px-8 sm:text-sm md:w-auto"
                 disabled={updateLocation.isPending}
                 onClick={() =>
                   updateLocation.mutate({
@@ -633,7 +633,7 @@ export function Perfil() {
                   placeholder="Si lo dejas vacío, usamos tu nombre completo"
                   value={privacy.publicName}
                   onChange={(e) => setPrivacy((p) => ({ ...p, publicName: e.target.value }))}
-                  className="bg-background border-2 h-12"
+                  className="h-10 border-2 bg-background sm:h-12"
                   maxLength={80}
                   disabled={!privacyHydrated}
                 />
@@ -678,7 +678,7 @@ export function Perfil() {
               </div>
 
               <Button
-                className="w-full md:w-auto px-8 h-12 font-black uppercase"
+                className="h-10 w-full px-4 text-xs font-black uppercase sm:h-12 sm:px-8 sm:text-sm md:w-auto"
                 disabled={!privacyHydrated || updatePrivacySettings.isPending}
                 onClick={() =>
                   updatePrivacySettings.mutate({
@@ -765,7 +765,7 @@ export function Perfil() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full md:w-auto h-12 font-black uppercase border-2"
+                className="h-10 w-full whitespace-normal px-3 text-center text-[10px] font-black uppercase leading-tight border-2 sm:h-12 sm:w-auto sm:px-6 sm:text-xs md:text-sm"
                 onClick={() => setManageContactOpen(true)}
               >
                 Gestionar formas de contacto
@@ -795,7 +795,7 @@ export function Perfil() {
                     autoComplete="new-password"
                     value={nipData.new} 
                     onChange={e => setNipData({...nipData, new: e.target.value.slice(0, 6)})}
-                    className="bg-background border-2 h-12"
+                    className="h-10 border-2 bg-background sm:h-12"
                   />
                 </div>
                 <div className="space-y-2">
@@ -807,13 +807,13 @@ export function Perfil() {
                     autoComplete="new-password"
                     value={nipData.confirm} 
                     onChange={e => setNipData({...nipData, confirm: e.target.value.slice(0, 6)})}
-                    className="bg-background border-2 h-12"
+                    className="h-10 border-2 bg-background sm:h-12"
                   />
                 </div>
               </div>
               <Button 
                 variant="secondary"
-                className="w-full md:w-auto px-8 h-12 font-black uppercase border-2 shadow-neo-sm"
+                className="h-10 w-full px-4 text-xs font-black uppercase border-2 shadow-neo-sm sm:h-12 sm:px-8 sm:text-sm md:w-auto"
                 disabled={!nipData.new || nipData.new !== nipData.confirm || nipData.new.length < 4 || nipData.new.length > 6 || updateNip.isPending}
                 onClick={() => {
                   if (nipData.new.length < 4 || nipData.new.length > 6) {

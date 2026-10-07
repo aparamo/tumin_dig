@@ -90,7 +90,7 @@ export function Inicio() {
   })();
 
   return (
-    <div className="grid md:grid-cols-12 gap-8 pb-10">
+    <div className="grid max-w-full gap-6 overflow-x-hidden pb-10 md:grid-cols-12 md:gap-8">
       {activeAd && (
         <div className="md:col-span-12">
           <div className="relative w-full aspect-21/9 md:aspect-32/9 rounded-2xl overflow-hidden border-4 border-border shadow-neo-sm group">
@@ -122,7 +122,7 @@ export function Inicio() {
 
       {/* Left Column: Balance & Quick Actions */}
       <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-8">
-        <Card className="bg-primary/10 border-primary shadow-neo">
+        <Card className="border-primary bg-primary/10 shadow-neo-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-muted-foreground text-sm font-bold uppercase tracking-wider text-center border-none shadow-none bg-transparent p-0">Saldo Disponible</CardTitle>
           </CardHeader>
@@ -141,13 +141,13 @@ export function Inicio() {
               <Button 
                 variant="outline" 
                 onClick={() => refetchBalance()}
-                className="w-full h-12"
+                className="h-10 w-full sm:h-12"
               >
                 <RefreshCw className="w-5 h-5 mr-2" /> Actualizar
               </Button>
               <Button 
                 variant="secondary"
-                className="w-full h-12"
+                className="h-10 w-full sm:h-12"
                 onClick={handleMining}
                 disabled={claimMining.isPending || !miningStatus?.canMine}
               >
@@ -161,7 +161,7 @@ export function Inicio() {
           <Button 
             variant="default"
             onClick={() => setCurrentScreen("pagar")}
-            className="bg-accent text-accent-foreground h-28 flex flex-col gap-2 shadow-neo"
+            className="flex h-24 flex-col gap-2 bg-accent text-accent-foreground shadow-neo-sm sm:h-28"
           >
             <Send className="w-8 h-8" />
             <span className="uppercase text-xs font-black">Enviar</span>
@@ -169,10 +169,12 @@ export function Inicio() {
           <Button 
             variant="secondary"
             onClick={() => setCurrentScreen("bazar")}
-            className="h-28 flex flex-col gap-2 shadow-neo"
+            className="group flex h-24 flex-col gap-2 shadow-neo-sm sm:h-28"
           >
             <ShoppingBag className="w-8 h-8" />
-            <span className="uppercase text-xs font-black">Bazar</span>
+            <span className="uppercase text-xs font-black transition-colors group-hover:text-stone-900 dark:group-hover:text-white">
+              Bazar
+            </span>
           </Button>
         </div>
 
