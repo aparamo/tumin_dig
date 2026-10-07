@@ -191,8 +191,12 @@ export function Bazar() {
                     
                     <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                       {item.product.isStarred && (
-                        <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
-                          <Star className="mr-1 h-3 w-3 fill-current" /> Estrella
+                        <Badge
+                          aria-label="Producto estrella"
+                          title="Producto estrella"
+                          className="h-7 w-7 justify-center border-2 border-border bg-secondary px-0 py-0 text-secondary-foreground shadow-neo-sm [&>svg]:size-3.5!"
+                        >
+                          <Star className="fill-current" />
                         </Badge>
                       )}
                       <Badge className="bg-secondary text-secondary-foreground border-2 border-border shadow-neo-sm font-black uppercase text-[10px]">
@@ -214,9 +218,9 @@ export function Bazar() {
                     </div>
                   </div>
 
-                  <div className="p-5">
+                  <div className="p-3 sm:p-5">
                     <div className="mb-2">
-                      <h3 className="font-black text-base text-foreground uppercase tracking-tight leading-tight line-clamp-2 min-h-11 sm:text-lg">
+                      <h3 className="min-h-10 line-clamp-2 text-base font-black uppercase leading-tight tracking-tight text-foreground sm:min-h-11 sm:text-lg">
                         {item.product.name}
                       </h3>
                     </div>
@@ -226,12 +230,14 @@ export function Bazar() {
                       </p>
                     ) : null}
                     
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-2xl font-black text-primary tracking-tighter">
-                        $ {item.product.priceMxn} <span className="text-[10px] uppercase text-muted-foreground font-bold">MXN</span>
+                    <div className="mb-3 flex flex-wrap items-baseline gap-2 sm:mb-4">
+                      <span className="text-xl font-black tracking-tighter text-primary sm:text-2xl">
+                        $ {item.product.priceMxn}{" "}
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground">MXN</span>
                       </span>
-                      <span className="text-2xl font-black text-secondary tracking-tighter">
-                        + {item.product.priceTumin} <span className="text-[10px] uppercase text-muted-foreground font-bold">Ŧ</span>
+                      <span className="text-xl font-black tracking-tighter text-secondary sm:text-2xl">
+                        + {item.product.priceTumin}{" "}
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Ŧ</span>
                       </span>
                     </div>
 

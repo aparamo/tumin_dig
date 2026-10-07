@@ -223,8 +223,8 @@ export function Perfil() {
               {user.avatarUrl ? (
                 <Image src={user.avatarUrl} alt={user.name} fill sizes="(max-width: 768px) 100vw, 320px" className="object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                  <User className="w-24 h-24 text-primary/30" />
+                <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                  <User className="h-16 w-16 text-primary/30 sm:h-24 sm:w-24" />
                 </div>
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -262,8 +262,13 @@ export function Perfil() {
                   Identidad pendiente de validar
                 </Badge>
               )}
-              <div className="flex justify-center bg-white p-4 rounded-2xl border-2 border-border mb-4 shadow-neo-sm">
-                <QRCodeSVG value={user.id} size={150} />
+              <div className="mb-4 flex justify-center rounded-2xl border-2 border-border bg-white p-3 shadow-neo-sm sm:p-4">
+                <span className="sm:hidden">
+                  <QRCodeSVG value={user.id} size={120} />
+                </span>
+                <span className="hidden sm:inline">
+                  <QRCodeSVG value={user.id} size={150} />
+                </span>
               </div>
               <Button 
                 variant="outline" 
@@ -370,7 +375,7 @@ export function Perfil() {
           {/* Basic Info */}
           <Card className="neo-card border-2">
             <CardHeader>
-              <CardTitle className="text-2xl font-black uppercase tracking-tight">Información de Perfil</CardTitle>
+              <CardTitle className="text-xl font-black uppercase tracking-tight sm:text-2xl">Información de Perfil</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">Actualiza tus datos de contacto</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -415,7 +420,7 @@ export function Perfil() {
           {/* Inscripción y ubicación */}
           <Card className="neo-card border-2">
             <CardHeader>
-              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tight sm:text-2xl">
                 <MapPin className="h-6 w-6 text-primary" /> Inscripción y ubicación
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">
@@ -607,9 +612,10 @@ export function Perfil() {
           {/* Privacidad y perfil público */}
           <Card id="privacidad" className="neo-card scroll-mt-24 border-2">
             <CardHeader>
-              <CardTitle className="text-2xl font-black uppercase tracking-tight">Privacidad y perfil público</CardTitle>
+              <CardTitle className="text-xl font-black uppercase tracking-tight sm:text-2xl">Privacidad y perfil público</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">
-                Controla qué datos se muestran en el bazar, el directorio y tu página pública. Pulsa Guardar para aplicar.
+                Por defecto tu perfil es privado. Tú eliges qué se muestra en el bazar, el directorio y
+                tu página /u. Pulsa Guardar para aplicar.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -619,12 +625,29 @@ export function Perfil() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" asChild className="h-10 border-2 font-black uppercase text-xs">
-                  <a href={`/u/${user.id}`} target="_blank" rel="noopener noreferrer">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                {privacy.publicProfile ? (
+                  <Button variant="outline" asChild className="h-10 border-2 font-black uppercase text-xs">
+                    <a href={`/u/${user.id}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" /> Ver mi perfil público
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled
+                    className="h-10 border-2 font-black uppercase text-xs"
+                    title="Activa «Perfil público visible» y guarda para poder verlo"
+                  >
                     <ExternalLink className="mr-2 h-4 w-4" /> Ver mi perfil público
-                  </a>
-                </Button>
+                  </Button>
+                )}
+                {!privacy.publicProfile && privacyHydrated ? (
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Activa el interruptor abajo y guarda para publicar tu página /u.
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -655,7 +678,7 @@ export function Perfil() {
                 <PrivacyRow
                   id="publicProfile"
                   label="Perfil público visible"
-                  description="Necesario para aparecer en el Bazar y el Directorio. También habilita tu página /u."
+                  description="Apagado por defecto. Al activarlo apareces en el Directorio (y enlaces /u) y otras personas pueden ver lo que marques abajo."
                   checked={privacy.publicProfile}
                   onCheckedChange={(v) => setPrivacy((p) => ({ ...p, publicProfile: v }))}
                   disabled={!privacyHydrated}
@@ -698,7 +721,7 @@ export function Perfil() {
 
           <Card id="mensajes-automaticos" className="neo-card scroll-mt-24 border-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl font-black uppercase tracking-tight">
+              <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tight sm:text-2xl">
                 <Bell className="h-6 w-6" /> Mensajes automáticos
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">
@@ -735,19 +758,27 @@ export function Perfil() {
 
           <Card className="neo-card border-2">
             <CardHeader>
-              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tight sm:text-2xl">
                 <MessagesSquare className="h-6 w-6" /> Formas de comunicarse
               </CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">
-                Resumen compacto — gestiona canales y visibilidad en el diálogo
+                Resumen compacto — canales públicos solo si el perfil público y el interruptor global
+                están activos
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
                 Contacto público:{" "}
                 <strong>
-                  {contactData?.showContactMethods ? "activado" : "desactivado"}
+                  {contactData?.showContactMethods && privacy.publicProfile
+                    ? "activado"
+                    : "desactivado"}
                 </strong>
+                {!privacy.publicProfile && privacyHydrated ? (
+                  <span className="block mt-1 text-[10px] font-bold uppercase tracking-wide">
+                    Requiere perfil público visible.
+                  </span>
+                ) : null}
               </p>
               {(contactData?.methods?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted-foreground">Ninguna forma agregada</p>
@@ -781,7 +812,7 @@ export function Perfil() {
           {/* Security / NIP */}
           <Card className="neo-card border-2">
             <CardHeader>
-              <CardTitle className="text-2xl font-black uppercase tracking-tight">Seguridad</CardTitle>
+              <CardTitle className="text-xl font-black uppercase tracking-tight sm:text-2xl">Seguridad</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase">Actualiza tu NIP (4 a 6 caracteres alfanuméricos)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

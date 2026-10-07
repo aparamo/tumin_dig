@@ -21,7 +21,7 @@ export function PublicProfileCommunicate({
         messageText: `Hola ${displayName}, te contacto desde Túmin digital.`,
       }}
       variant="default"
-      className="w-full sm:w-auto"
+      className="h-10 w-full min-w-0 px-4 text-xs shadow-neo-sm sm:h-11 sm:w-auto sm:text-sm"
     />
   );
 }

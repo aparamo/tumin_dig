@@ -133,8 +133,11 @@ const NavItem = ({
   );
 };
 
+/** Shell chrome for SPA screens, plus route-only labels (e.g. public `/u/[id]`). */
+export type ShellScreen = Screen | "perfil-publico";
+
 interface DashboardShellProps {
-  activeScreen: Screen;
+  activeScreen: ShellScreen;
   children: React.ReactNode;
   hideBottomNav?: boolean;
   onNavigate?: (screen: Screen) => void;
@@ -220,11 +223,13 @@ export function DashboardShell({
   ];
 
   const activeLabel =
-    activeScreen === "mensajes"
-      ? messagesItem.label
-      : menuItems.find((i) => i.id === activeScreen)?.label ||
-        coordinatorItems.find((i) => i.id === activeScreen)?.label ||
-        "Túmin";
+    activeScreen === "perfil-publico"
+      ? "Perfil público"
+      : activeScreen === "mensajes"
+        ? messagesItem.label
+        : menuItems.find((i) => i.id === activeScreen)?.label ||
+          coordinatorItems.find((i) => i.id === activeScreen)?.label ||
+          "Túmin";
 
   const handleNavItem = (item: MenuItem) => {
     if (item.href) {

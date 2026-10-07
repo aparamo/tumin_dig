@@ -59,13 +59,15 @@ export function ProfileProductsSection({
 
   return (
     <section>
-      <h2 className="mb-4 text-xl font-black uppercase tracking-tight">Productos en el bazar</h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <h2 className="mb-3 text-lg font-black uppercase tracking-tight sm:mb-4 sm:text-xl">
+        Productos en el bazar
+      </h2>
+      <div className="grid max-w-full grid-cols-1 gap-3 overflow-x-hidden sm:grid-cols-2 sm:gap-4">
         {products.map((p) => {
           const cover = p.imgUrls[0] ?? p.imageUrl;
 
           return (
-            <Card key={p.id} className="overflow-hidden border-2">
+            <Card key={p.id} className="min-w-0 overflow-hidden border-2 shadow-neo-sm">
               <div className="relative aspect-video bg-muted">
                 {cover ? (
                   <Image src={cover} alt={p.name} fill sizes="(max-width:640px) 100vw, 50vw" className="object-cover" />
@@ -75,29 +77,33 @@ export function ProfileProductsSection({
                   </div>
                 )}
                 {p.isStarred && (
-                  <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border-2 border-border bg-secondary px-2 py-0.5 text-[9px] font-black uppercase text-secondary-foreground shadow-neo-sm">
-                    <Star className="h-3 w-3 fill-current" /> Estrella
+                  <span
+                    aria-label="Producto estrella"
+                    title="Producto estrella"
+                    className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-md border-2 border-border bg-secondary text-secondary-foreground shadow-neo-sm"
+                  >
+                    <Star className="h-3.5 w-3.5 fill-current" />
                   </span>
                 )}
               </div>
-              <CardContent className="space-y-3 p-4">
+              <CardContent className="min-w-0 space-y-3 p-3 sm:p-4">
                 <h3 className="line-clamp-2 font-black uppercase leading-tight">{p.name}</h3>
                 <p className="line-clamp-2 text-xs text-muted-foreground">{p.description || "—"}</p>
-                <div className="flex flex-wrap gap-2 text-lg font-black">
+                <div className="flex flex-wrap gap-2 text-base font-black sm:text-lg">
                   <span className="text-primary">$ {p.priceMxn} MXN</span>
                   <span className="text-secondary">+ {p.priceTumin} Ŧ</span>
                 </div>
-                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
+                <div className="flex min-w-0 flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-11 flex-1 border-2 shadow-neo-sm sm:min-w-32"
+                    className="h-10 min-w-0 flex-1 border-2 px-2 text-[10px] shadow-neo-sm sm:h-11 sm:min-w-32 sm:px-4 sm:text-xs"
                     onClick={() => {
                       setDetailProductId(p.id);
                       setDetailOpen(true);
                     }}
                   >
-                    <Info className="mr-2 h-4 w-4 shrink-0" />
+                    <Info className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
                     Ver detalles
                   </Button>
                   <CommunicateButton
@@ -109,11 +115,15 @@ export function ProfileProductsSection({
                     }}
                     iconOnly
                     label="Comunicarse"
-                    className="h-11 w-11 shrink-0 border-2 shadow-neo-sm"
+                    className="h-10 w-10 shrink-0 border-2 shadow-neo-sm sm:h-11 sm:w-11"
                   />
-                  <Button asChild variant="default" className="h-11 min-w-0 flex-1 shadow-neo-sm sm:min-w-28">
+                  <Button
+                    asChild
+                    variant="default"
+                    className="h-10 min-w-0 flex-1 px-2 text-[10px] shadow-neo-sm sm:h-11 sm:min-w-28 sm:px-4 sm:text-xs"
+                  >
                     <Link href="/login">
-                      <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
+                      <ShoppingCart className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
                       Comprar
                     </Link>
                   </Button>
