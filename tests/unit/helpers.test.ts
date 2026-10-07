@@ -8,6 +8,9 @@ import {
   formatCompactLocation,
   isMexicoCountry,
   resolveEnrollmentRegionForStorage,
+  updateLocationSchema,
+  RESIDENCE_COUNTRIES,
+  RESIDENCE_COUNTRY_OTHER,
 } from "@/lib/location";
 import { toFriendlyErrorMessage } from "@/lib/friendly-error";
 import { parseErrorMessage } from "@/lib/parse-error";
@@ -72,6 +75,35 @@ describe("location helpers", () => {
 
   it("resolveEnrollmentRegionForStorage uses OTHER marker", () => {
     expect(resolveEnrollmentRegionForStorage("anything", "OTHER")).toBe("Otro");
+  });
+
+  it("updateLocationSchema accepts region change and listed countries", () => {
+    expect(RESIDENCE_COUNTRIES).toContain("Colombia");
+    expect(RESIDENCE_COUNTRY_OTHER).toBe("Otro");
+
+    const regionChange = updateLocationSchema.parse({
+      region: "Túmin Oaxaca",
+      enrollmentMethod: "REGION",
+    });
+    expect(regionChange.region).toBe("Túmin Oaxaca");
+
+    const country = updateLocationSchema.parse({
+      residenceCountry: "Colombia",
+      residenceState: null,
+      residenceCity: "Medellín",
+    });
+    expect(country.residenceCountry).toBe("Colombia");
+
+    const freeText = updateLocationSchema.parse({
+      residenceCountry: "Alemania",
+      residenceState: null,
+    });
+    expect(freeText.residenceCountry).toBe("Alemania");
+  });
+
+  it("updateLocationSchema rejects empty region string", () => {
+    const bad = updateLocationSchema.safeParse({ region: "a" });
+    expect(bad.success).toBe(false);
   });
 });
 

@@ -103,7 +103,13 @@ export default function GobernanzaPage() {
             <Briefcase className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div>
               <h4 className="font-black uppercase text-sm tracking-widest mb-1">Labores</h4>
-              <p className="text-sm text-foreground/70">Revisa las solicitudes de trabajo comunitario pendientes de su región. Puede <strong>Aprobar</strong> (el sistema emite los Túmin correspondientes) o <strong>Rechazar</strong> cada labor registrada.</p>
+              <p className="text-sm text-foreground/70">
+                Revisa las solicitudes de trabajo comunitario pendientes de su región. Puede <strong>Aprobar</strong> (el sistema emite los Túmin correspondientes) o <strong>Rechazar</strong> cada labor registrada.
+                Si la red votó en mayoría en desacuerdo (con al menos 3 votos), o si hay una <strong>controversia</strong> con dos o más señalamientos de coordinación, el pago queda bloqueado; el rechazo sigue permitido.
+              </p>
+              <p className="text-xs text-foreground/50 mt-1 italic">
+                Un coordinador puede señalar controversia con un motivo; al segundo señalamiento se abre el bloqueo y un hilo de resolución con quien pidió la labor. Solo un Coordinador General marca la controversia como resuelta.
+              </p>
             </div>
           </div>
           <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
@@ -147,9 +153,19 @@ export default function GobernanzaPage() {
           Pantalla Comunidad
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          La sección <strong>Comunidad</strong> es el punto de encuentro para registrar y consultar trabajo comunitario. Al final de la pantalla se muestra un <strong>historial paginado</strong> de las últimas actividades.
+          La sección <strong>Comunidad</strong> es el punto de encuentro para registrar y consultar trabajo comunitario. Antes del historial verás <strong>Labores propuestas</strong> (aún sin validar); al final hay un <strong>historial paginado</strong> de actividades.
         </p>
         <div className="space-y-4">
+          <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
+            <Handshake className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-black uppercase text-sm tracking-widest mb-1">Labores propuestas y voto</h4>
+              <p className="text-sm text-foreground/70">
+                Cualquier socix puede votar <strong>de acuerdo</strong> o <strong>no de acuerdo</strong> y dejar un mensaje público de retroalimentación. Quien registró la labor no vota la propia.
+                Si hay al menos 3 votos y los desacuerdos superan a los acuerdos, la coordinación no puede aprobar el pago hasta que cambie el cómputo o se rechace la labor.
+              </p>
+            </div>
+          </div>
           <div className="flex gap-4 p-5 border rounded-xl items-start bg-background/50">
             <Clock className="w-6 h-6 text-primary shrink-0 mt-0.5" />
             <div>
@@ -160,6 +176,24 @@ export default function GobernanzaPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground/90 border-l-4 border-primary pl-4">
+          Indicadores
+        </h2>
+        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+          Cualquier socio puede abrir <strong>Indicadores</strong> desde el menú (ruta <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">/indicadores</code>). El periodo se elige entre día, semana, mes, año o todo el historial (zona horaria México).
+        </p>
+        <ul className="space-y-2 text-sm text-foreground/70">
+          <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Sistema:</strong> salud de toda la red (transacciones, Túmin generados e intercambiados) con desglose por tipo.</span></li>
+          <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Mis indicadores:</strong> tu actividad — intercambiado, ganado, gastado, bonos, minado y pago de labor.</span></li>
+          <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Estado:</strong> filtro por estado de residencia en México (socios, labores y circulación en ese filtro).</span></li>
+          <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Región</strong> (solo coordinación): adscripción comunitaria, con filtros opcionales de país y estado.</span></li>
+        </ul>
+        <p className="text-sm text-foreground/60 italic pl-2">
+          En los desgloses, la notación <strong># · Monto</strong> significa cantidad de movimientos y suma en Ŧ (no es un rango). Ejemplo: <em>37 · 93 Ŧ</em> = 37 operaciones por un total de 93 Túmin.
+        </p>
       </section>
 
       <section className="space-y-6 pb-20">

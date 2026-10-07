@@ -20,12 +20,15 @@ import {
   normalizeResidenceFields,
   resolveEnrollmentRegionForStorage,
   formatPublicLocation,
-  isKnownEnrollmentRegion,
   isSystemUserRegion,
   ENROLLMENT_OTHER,
   type EnrollmentMethod,
 } from "../../lib/location";
 import { isSystemAccountId } from "../../lib/system-user";
+import {
+  excludeTechnicalAccountsCondition,
+  isTechnicalAccount,
+} from "../../lib/system-account-filters";
 import {
   buildJurisdictionCondition,
   assertCanUpdateUserRole,
@@ -357,24 +360,16 @@ export const userRouter = createTRPCRouter({
         residencePostalCode?: string | null;
       } = {};
 
-      const canEditEnrollment =
-        isSystemUserRegion(current.region) ||
-        !isKnownEnrollmentRegion(current.region) ||
-        current.region === ENROLLMENT_OTHER;
-
       if (input.region !== undefined || input.enrollmentMethod !== undefined) {
-        if (!canEditEnrollment) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "La región de inscripción no puede modificarse. Contacta a tu coordinador.",
-          });
-        }
-        const method = (input.enrollmentMethod ?? current.enrollmentMethod ?? "REGION") as EnrollmentMethod;
         const regionInput = input.region ?? current.region;
+        const method = (input.enrollmentMethod ??
+          (regionInput === ENROLLMENT_OTHER ? "OTHER" : "REGION")) as EnrollmentMethod;
         patch.enrollmentMethod = method;
         patch.region = resolveEnrollmentRegionForStorage(regionInput, method);
         patch.enrollmentMethodOther =
-          method === "OTHER" ? input.enrollmentMethodOther?.trim() || null : null;
+          method === "OTHER"
+            ? (input.enrollmentMethodOther?.trim() ?? current.enrollmentMethodOther) || null
+            : null;
       } else if (input.enrollmentMethodOther !== undefined && current.enrollmentMethod === "OTHER") {
         patch.enrollmentMethodOther = input.enrollmentMethodOther?.trim() || null;
       }
@@ -386,10 +381,22 @@ export const userRouter = createTRPCRouter({
         input.residencePostalCode !== undefined
       ) {
         const residence = normalizeResidenceFields({
-          residenceCountry: input.residenceCountry ?? current.residenceCountry,
-          residenceState: input.residenceState ?? current.residenceState,
-          residenceCity: input.residenceCity ?? current.residenceCity,
-          residencePostalCode: input.residencePostalCode ?? current.residencePostalCode,
+          residenceCountry:
+            input.residenceCountry !== undefined
+              ? input.residenceCountry
+              : current.residenceCountry,
+          residenceState:
+            input.residenceState !== undefined
+              ? input.residenceState
+              : current.residenceState,
+          residenceCity:
+            input.residenceCity !== undefined
+              ? input.residenceCity
+              : current.residenceCity,
+          residencePostalCode:
+            input.residencePostalCode !== undefined
+              ? input.residencePostalCode
+              : current.residencePostalCode,
         });
         patch.residenceCountry = residence.residenceCountry;
         patch.residenceState = residence.residenceState;
@@ -398,11 +405,27 @@ export const userRouter = createTRPCRouter({
       }
 
       if (Object.keys(patch).length === 0) {
-        return { success: true as const };
+        return {
+          success: true as const,
+          region: current.region,
+          residenceCountry: current.residenceCountry,
+          residenceState: current.residenceState,
+        };
       }
 
       await db.update(users).set(patch).where(eq(users.id, ctx.session.user.id));
-      return { success: true as const };
+      return {
+        success: true as const,
+        region: patch.region !== undefined ? patch.region : current.region,
+        residenceCountry:
+          patch.residenceCountry !== undefined
+            ? patch.residenceCountry
+            : current.residenceCountry,
+        residenceState:
+          patch.residenceState !== undefined
+            ? patch.residenceState
+            : current.residenceState,
+      };
     }),
 
   updatePrivacySettings: protectedProcedure
@@ -598,7 +621,11 @@ export const userRouter = createTRPCRouter({
 
       const jurisdiction = buildJurisdictionCondition({ role: callerRole, region: targetRegion ?? ctx.session.user.region });
 
-      const condition = and(eq(users.isVerified, false), jurisdiction);
+      const condition = and(
+        eq(users.isVerified, false),
+        jurisdiction,
+        excludeTechnicalAccountsCondition()
+      );
 
       return await db
         .select({
@@ -631,6 +658,13 @@ export const userRouter = createTRPCRouter({
 
       const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
       if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+
+      if (isTechnicalAccount(targetUser)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No se puede verificar una cuenta de sistema",
+        });
+      }
 
       if (!isInJurisdiction({ role: callerRole, region: ctx.session.user.region }, targetUser)) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Solo puedes verificar socios de tu jurisdicción" });
@@ -670,18 +704,17 @@ export const userRouter = createTRPCRouter({
           : null
         : ctx.session.user.region;
 
-      const conditions = [];
+      const conditions = [excludeTechnicalAccountsCondition()];
       if (!isGlobal && targetRegion) {
         conditions.push(buildJurisdictionCondition({ role: callerRole, region: targetRegion })!);
       }
       if (input.search) {
-        conditions.push(
-          or(
-            ilike(users.name, `%${input.search}%`),
-            ilike(users.phone, `%${input.search}%`),
-            ilike(users.email, `%${input.search}%`)
-          )
+        const searchCond = or(
+          ilike(users.name, `%${input.search}%`),
+          ilike(users.phone, `%${input.search}%`),
+          ilike(users.email, `%${input.search}%`)
         );
+        if (searchCond) conditions.push(searchCond);
       }
       if (input.roleFilter && input.roleFilter !== "Todos") {
         conditions.push(eq(users.role, input.roleFilter as UserRole));

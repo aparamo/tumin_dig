@@ -271,6 +271,7 @@ export function Bazar() {
                           displayName: item.seller.displayName,
                           contactMethods: item.seller.contactMethods ?? [],
                           messageText: `Hola ${item.seller.displayName}, me interesa tu producto: ${item.product.name}`,
+                          publicProfile: item.seller.publicProfile,
                         }}
                         iconOnly
                         label="Comunicarse"

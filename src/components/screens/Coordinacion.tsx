@@ -1,11 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, X, MapPin, UserCheck, ImageIcon, Briefcase, ThumbsUp, ThumbsDown, Megaphone, ShieldCheck } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Loader2,
+  Check,
+  X,
+  MapPin,
+  UserCheck,
+  ImageIcon,
+  Briefcase,
+  ThumbsUp,
+  ThumbsDown,
+  Megaphone,
+  ShieldCheck,
+  AlertTriangle,
+  MessageSquareWarning,
+} from "lucide-react";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
@@ -14,12 +30,24 @@ import { useFeedback } from "@/components/FeedbackProvider";
 import { useConfirm } from "@/hooks/use-confirm";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { SmartAdsPanel } from "@/components/SmartAdsPanel";
+import { JobDisputeDialog } from "@/components/jobs/JobDisputeDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function Coordinacion() {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
   const { confirm, ConfirmDialog } = useConfirm();
+  const [disputeJobId, setDisputeJobId] = useState<string | null>(null);
+  const [flagJobId, setFlagJobId] = useState<string | null>(null);
+  const [flagReason, setFlagReason] = useState("");
 
   const { data: jobs, isLoading: isLoadingJobs } = trpc.jobs.getPendingJobs.useQuery();
   const { data: unverifiedUsers, isLoading: isLoadingUsers } = trpc.user.getUnverifiedUsers.useQuery();
@@ -38,6 +66,29 @@ export function Coordinacion() {
   const verifyJobMutation = trpc.jobs.verifyJob.useMutation({
     onSuccess: (data) => {
       notifySuccess(data.status === "PAGADO" ? "Pago autorizado con éxito." : "Trabajo rechazado.");
+      utils.jobs.getPendingJobs.invalidate();
+      utils.jobs.getProposedJobs.invalidate();
+    },
+    onError: (error) => notifyError(parseErrorMessage(error)),
+  });
+
+  const flagDisputeMutation = trpc.jobs.flagJobDispute.useMutation({
+    onSuccess: (data) => {
+      notifySuccess(
+        data.paymentBlocked
+          ? "Controversia señalada. El pago quedó bloqueado hasta resolución."
+          : "Controversia señalada. Con un segundo señalamiento se bloquea el pago."
+      );
+      setFlagJobId(null);
+      setFlagReason("");
+      utils.jobs.getPendingJobs.invalidate();
+    },
+    onError: (error) => notifyError(parseErrorMessage(error)),
+  });
+
+  const withdrawFlagMutation = trpc.jobs.withdrawJobDisputeFlag.useMutation({
+    onSuccess: () => {
+      notifySuccess("Señalamiento retirado.");
       utils.jobs.getPendingJobs.invalidate();
     },
     onError: (error) => notifyError(parseErrorMessage(error)),
@@ -95,6 +146,51 @@ export function Coordinacion() {
   return (
     <div className="flex flex-col gap-6 p-4 max-w-5xl mx-auto w-full pb-20">
       <ConfirmDialog />
+      <JobDisputeDialog
+        jobId={disputeJobId}
+        open={Boolean(disputeJobId)}
+        onOpenChange={(o) => {
+          if (!o) setDisputeJobId(null);
+        }}
+      />
+      <Dialog
+        open={Boolean(flagJobId)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setFlagJobId(null);
+            setFlagReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black">Señalar controversia</DialogTitle>
+            <DialogDescription>
+              Describe el motivo. Con dos o más señalamientos de coordinación se bloquea el pago hasta resolución.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+            placeholder="Motivo de la controversia (mín. 10 caracteres)"
+            className="min-h-25"
+            maxLength={500}
+          />
+          <DialogFooter>
+            <Button
+              className="font-black uppercase"
+              disabled={flagReason.trim().length < 10 || flagDisputeMutation.isPending || !flagJobId}
+              onClick={() => {
+                if (!flagJobId) return;
+                flagDisputeMutation.mutate({ jobId: flagJobId, reason: flagReason.trim() });
+              }}
+            >
+              {flagDisputeMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : null}
+              Confirmar señalamiento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="space-y-1">
         <h1 className="text-3xl font-black uppercase tracking-tighter">Panel de Coordinación</h1>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -132,7 +228,7 @@ export function Coordinacion() {
                 <StaggerItem key={item.job.id}>
                   <Card className="h-full border-l-8 border-l-primary">
                     <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start gap-2">
                         <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> Adscripción: {item.requester.region}
                         </Badge>
@@ -144,17 +240,55 @@ export function Coordinacion() {
                       <CardDescription className="font-black text-foreground uppercase text-xs mt-1">
                         Socio: {item.requester.name}
                       </CardDescription>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase gap-1">
+                          <ThumbsUp className="w-3 h-3" /> {item.voteTally.acuerdo}
+                          <ThumbsDown className="w-3 h-3 ml-1" /> {item.voteTally.desacuerdo}
+                        </Badge>
+                        {item.communityVeto && (
+                          <Badge className="bg-red-100 text-red-700 text-[10px] font-black uppercase">
+                            Veto comunitario
+                          </Badge>
+                        )}
+                        {item.paymentBlocked && (
+                          <Badge className="bg-orange-100 text-orange-800 text-[10px] font-black uppercase">
+                            Controversia ({item.activeFlagCount})
+                          </Badge>
+                        )}
+                        {item.disputeStatus === "ABIERTA" && !item.paymentBlocked && item.activeFlagCount > 0 && (
+                          <Badge className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase">
+                            1 señalamiento
+                          </Badge>
+                        )}
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-black text-secondary mb-6 tracking-tighter">
+                    <CardContent className="space-y-3">
+                      <div className="text-2xl font-black text-secondary tracking-tighter">
                         {item.job.amount} Ŧ
                       </div>
+                      {item.approveBlockedReason && (
+                        <p className="text-xs font-bold text-destructive">{item.approveBlockedReason}</p>
+                      )}
+                      {item.voteComments.length > 0 && (
+                        <ul className="space-y-2 rounded-lg border bg-muted/30 p-3 max-h-40 overflow-y-auto">
+                          {item.voteComments.map((c) => (
+                            <li key={`${c.displayName}-${c.message}`} className="text-sm leading-snug">
+                              <span className="text-[10px] font-black uppercase">
+                                {c.displayName}
+                                {c.stance === "ACUERDO" ? " · de acuerdo" : " · no de acuerdo"}
+                              </span>
+                              <p className="text-muted-foreground">{c.message}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <div className="flex gap-3">
                         <Button
                           variant="default"
                           className="flex-1 h-12 shadow-neo-sm"
                           onClick={handleVerifyJob(item.job.id, "PAGADO")}
-                          disabled={verifyJobMutation.isPending}
+                          disabled={verifyJobMutation.isPending || !item.canApprove}
+                          title={item.approveBlockedReason ?? undefined}
                         >
                           <Check className="w-5 h-5 mr-2" /> Aprobar
                         </Button>
@@ -166,6 +300,37 @@ export function Coordinacion() {
                         >
                           <X className="w-5 h-5 mr-2" /> Rechazar
                         </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-black uppercase text-[10px]"
+                          onClick={() => setFlagJobId(item.job.id)}
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-1" /> Señalar controversia
+                        </Button>
+                        {item.disputeStatus && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-black uppercase text-[10px]"
+                            onClick={() => setDisputeJobId(item.job.id)}
+                          >
+                            <MessageSquareWarning className="w-4 h-4 mr-1" /> Ver hilo
+                          </Button>
+                        )}
+                        {item.myFlagActive && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-black uppercase text-[10px] text-muted-foreground"
+                            disabled={withdrawFlagMutation.isPending}
+                            onClick={() => withdrawFlagMutation.mutate({ jobId: item.job.id })}
+                          >
+                            Retirar mi señal
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

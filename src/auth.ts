@@ -155,7 +155,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id!;
         token.role = user.role;
@@ -164,6 +164,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.residenceCountry = user.residenceCountry ?? null;
         token.isVerified = user.isVerified;
         token.avatarUrl = user.avatarUrl ?? null;
+      }
+      if (trigger === "update" && session && typeof session === "object") {
+        const patch = session as {
+          region?: string;
+          isVerified?: boolean;
+          residenceState?: string | null;
+          residenceCountry?: string | null;
+        };
+        if (typeof patch.region === "string" && patch.region.length > 0) {
+          token.region = patch.region;
+        }
+        if (typeof patch.isVerified === "boolean") {
+          token.isVerified = patch.isVerified;
+        }
+        if ("residenceState" in patch) {
+          token.residenceState = patch.residenceState ?? null;
+        }
+        if ("residenceCountry" in patch) {
+          token.residenceCountry = patch.residenceCountry ?? null;
+        }
       }
       return token;
     },

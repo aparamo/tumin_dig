@@ -21,6 +21,7 @@ export type Screen =
   | "directorio"
   | "comunidad"
   | "coordinacion"
+  | "indicadores"
   | "perfil"
   | "historial"
   | "mis-compras"
@@ -35,6 +36,8 @@ export type Screen =
 export interface PendingConversationPeer {
   peerUserId: string;
   conversationId: string;
+  /** Prefill composer; not sent until the user taps Enviar */
+  draftBody?: string;
 }
 
 interface AppState {

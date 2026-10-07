@@ -18,6 +18,7 @@ import {
   type ContactChannelId,
   type PublicContactMethod,
 } from "@/lib/contact-links";
+import { SaveContactButton } from "@/components/directory/SaveContactButton";
 import { trpc } from "@/lib/trpc/react";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,8 @@ export interface CommunicateTarget {
   contactMethods: PublicContactMethod[];
   /** Prefill for WA/Telegram/SMS */
   messageText?: string;
+  /** When false, hide “guardar contacto” (perfil privado). Default: show if logged in. */
+  publicProfile?: boolean;
 }
 
 interface CommunicateButtonProps {
@@ -102,11 +105,24 @@ export function CommunicateDialog({
   const setCurrentScreen = useStore((s) => s.setCurrentScreen);
   const setPendingConversationPeer = useStore((s) => s.setPendingConversationPeer);
   const utils = trpc.useUtils();
+  const isSelf = !!session?.user?.id && session.user.id === target.userId;
+  const canSaveContact =
+    !!session?.user && !isSelf && target.publicProfile !== false;
+
+  const { data: savedContactsData } = trpc.directory.listSavedContacts.useQuery(
+    { cursor: 0, pageSize: 100 },
+    { enabled: open && canSaveContact }
+  );
+  const isSaved =
+    savedContactsData?.items.some((c) => c.contactUserId === target.userId) ?? false;
+
   const startConv = trpc.messaging.startOrGetConversation.useMutation({
     onSuccess: (data) => {
+      const draft = target.messageText?.trim();
       setPendingConversationPeer({
         peerUserId: target.userId,
         conversationId: data.conversationId,
+        ...(draft ? { draftBody: draft } : {}),
       });
       onOpenChange(false);
       setCurrentScreen("mensajes");
@@ -169,12 +185,11 @@ export function CommunicateDialog({
                 onClick={() =>
                   startConv.mutate({
                     peerUserId: target.userId,
-                    initialMessage: target.messageText,
                   })
                 }
               >
                 <Send className="mr-2 h-4 w-4" />
-                Mensaje en Túmin
+                Mensaje directo
               </Button>
             ) : (
               <Button
@@ -233,6 +248,16 @@ export function CommunicateDialog({
               <ChevronDown className="mr-1 h-4 w-4" />
               Mostrar más opciones
             </Button>
+          ) : null}
+
+          {canSaveContact ? (
+            <div className="mt-1 flex justify-center border-t border-border/60 pt-2">
+              <SaveContactButton
+                contactUserId={target.userId}
+                isSaved={isSaved}
+                subtle
+              />
+            </div>
           ) : null}
         </div>
       </DialogContent>

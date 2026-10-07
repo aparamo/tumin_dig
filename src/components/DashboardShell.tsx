@@ -21,6 +21,7 @@ import {
   MessagesSquare,
   Receipt,
   ChevronDown,
+  ChartColumn,
   type LucideIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -188,12 +189,13 @@ export function DashboardShell({
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
     { id: "directorio", label: "Directorio", icon: BookUser },
     { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
+    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
     { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "anuncios", label: "Mis Anuncios", icon: Megaphone },
     { id: "comunidad", label: "Comunidad", icon: Users },
     { id: "perfil", label: "Mi Perfil", icon: User },
     { id: "historial", label: "Historial", icon: History },
-    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
+    { id: "indicadores", label: "Indicadores", icon: ChartColumn, href: "/indicadores" },
   ];
 
   // Desktop sidebar: sin Comunidad/Perfil/Mensajes (van en header)
@@ -203,10 +205,11 @@ export function DashboardShell({
     { id: "bazar", label: "Bazar", icon: ShoppingBag },
     { id: "directorio", label: "Directorio", icon: BookUser },
     { id: "gestion-productos", label: "Mis Productos", icon: PackageSearch },
+    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
     { id: "medios", label: "Mis Archivos", icon: FolderOpen },
     { id: "anuncios", label: "Mis Anuncios", icon: Megaphone },
     { id: "historial", label: "Historial", icon: History },
-    { id: "mis-compras", label: "Mis Compras", icon: Receipt },
+    { id: "indicadores", label: "Indicadores", icon: ChartColumn, href: "/indicadores" },
   ];
 
   const messagesItem: MenuItem = {

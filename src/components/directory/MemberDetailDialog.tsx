@@ -138,6 +138,7 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
                     displayName: data.displayName,
                     contactMethods: data.contactMethods ?? [],
                     messageText: `Hola ${data.displayName}, te contacto desde Túmin digital.`,
+                    publicProfile: true,
                   }}
                   variant="default"
                   className="h-10 min-w-0 w-full flex-1 text-xs font-black uppercase shadow-neo-sm sm:h-11 sm:text-sm md:text-base"
@@ -146,7 +147,8 @@ export function MemberDetailDialog({ userId, open, onOpenChange }: MemberDetailD
                 <SaveContactButton
                   contactUserId={data.id}
                   isSaved={data.isSavedContact}
-                  className="h-10 min-w-0 w-full flex-1 sm:h-11"
+                  subtle
+                  className="h-10 min-w-0 w-full sm:h-11 sm:w-auto sm:flex-none"
                 />
               </div>
               <Button asChild variant="ghost" className="w-full text-sm font-black uppercase tracking-wide md:text-base">

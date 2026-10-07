@@ -129,7 +129,7 @@ export default function PrimerosPasosPage() {
           <Card className="p-5 space-y-2 border-2 border-primary/10">
             <h4 className="font-black uppercase text-sm tracking-widest text-primary">Dónde vives actualmente</h4>
             <p className="text-sm text-foreground/70 leading-relaxed">
-              Puedes elegir <strong>cualquier estado de México</strong> o indicar si vives en otro país. Solo sirve para el Bazar y tu perfil público; <strong>no limita</strong> tu participación en la red.
+              Puedes elegir <strong>cualquier estado de México</strong> o, si vives fuera, un <strong>país de la lista</strong> (Latinoamérica y otros frecuentes) o <strong>Otro</strong> para escribirlo. Solo sirve para el Bazar y tu perfil público; <strong>no limita</strong> tu participación en la red.
             </p>
           </Card>
         </div>
@@ -145,7 +145,7 @@ export default function PrimerosPasosPage() {
           </div>
         </div>
         <p className="text-sm text-foreground/60 italic pl-2">
-          Después del registro puedes actualizar tu ubicación en <strong>Perfil → Inscripción y ubicación</strong>. La región de inscripción queda fija para coordinación.
+          Después del registro puedes actualizar inscripción y ubicación en <strong>Perfil → Inscripción y ubicación</strong>. También puedes <strong>cambiar tu adscripción</strong> de inmediato; el cambio aplica ya y, más adelante, un coordinador puede confirmarlo.
         </p>
       </section>
 

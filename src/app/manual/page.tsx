@@ -108,7 +108,7 @@ export default function ManualPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-foreground/70 leading-relaxed">
-                Conoce la organización autónoma regional y el rol facilitador de los coordinadores o Bantúmin.
+                Organización regional, Bantúmin, e Indicadores (Sistema, Mis indicadores, Estado; Región para coordinación).
               </p>
               <Button variant="ghost" className="mt-4 p-0 font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
                 Leer más <ArrowRight className="ml-2 w-4 h-4" />

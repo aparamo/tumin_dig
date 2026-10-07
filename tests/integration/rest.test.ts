@@ -27,15 +27,16 @@ vi.mock("@/lib/otp", async (importOriginal) => {
 });
 
 describe("schema / ledger constraint", () => {
-  it("has all 17 TUMIN tables and chk_tumin_system_ledger", async () => {
+  it("has all 21 TUMIN tables and chk_tumin_system_ledger", async () => {
     const tables = await client.query(`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public' AND tablename LIKE 'TUMIN_%'
     `);
     // users, password_resets, transactions, products, product_comments, jobs,
     // ratings, daily_mining, media, ads, admin_actions_log, smart_ads,
-    // invite_tokens, contact_methods, conversations, messages, saved_contacts
-    expect(tables.rows.length).toBe(17);
+    // invite_tokens, contact_methods, conversations, messages, saved_contacts,
+    // job_votes, job_disputes, job_dispute_flags, job_dispute_messages
+    expect(tables.rows.length).toBe(21);
 
     const constraint = await client.query(`
       SELECT conname FROM pg_constraint WHERE conname = 'chk_tumin_system_ledger'

@@ -55,9 +55,10 @@ export default function MercadoInternoPage() {
               En las tarjetas del Bazar aparece solo como <strong>ícono</strong> (para no tapar Comprar). En el detalle del producto, el Directorio y el perfil público <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">/u/...</code> se muestra con texto.
             </p>
             <ul className="space-y-1.5 text-sm text-foreground/70">
-              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Si tienes sesión, la primera opción es <strong>Mensaje en Túmin</strong>.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Si tienes sesión, la primera opción es <strong>Mensaje directo</strong>: abre la bandeja de Mensajes con el texto <strong>prellenado</strong> (por ejemplo el producto que te interesa). <strong>No se envía solo</strong>: tú decides cuándo pulsar Enviar.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Canales frecuentes: WhatsApp, Llamar, SMS, Telegram.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span><strong>Mostrar más opciones</strong>: Signal, Instagram, Facebook, Mastodon, Google Meet, Zoom, Jitsi u Otro.</span></li>
+              <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Abajo del diálogo hay un botón sutil <strong>Guardar contacto</strong> (si la persona tiene perfil público). Queda en Directorio → <strong>Mis contactos</strong>.</span></li>
               <li className="flex gap-2"><span className="text-primary font-black">●</span> <span>Si la persona no publicó medios externos, verás: <em>«Esta persona no publicó formas de contacto externas»</em> — igual puedes escribirle en la plataforma.</span></li>
             </ul>
           </div>
@@ -86,7 +87,7 @@ export default function MercadoInternoPage() {
             <div className="space-y-1">
               <h4 className="font-black uppercase text-sm tracking-widest">Cómo iniciar</h4>
               <p className="text-sm text-foreground/70">
-                Usa <strong>Comunicarse → Mensaje en Túmin</strong> desde el Bazar, el Directorio o un perfil. Verás una bandeja de conversaciones y, al abrir una, el hilo completo.
+                Usa <strong>Comunicarse → Mensaje directo</strong> desde el Bazar, el Directorio, Mensajes (más formas de contacto) o un perfil. Se abre la conversación con el borrador listo; el mensaje solo se envía cuando tú lo confirmas.
               </p>
             </div>
           </div>
@@ -283,10 +284,10 @@ export default function MercadoInternoPage() {
           Directorio de miembros
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista, filtros por región de inscripción, ubicación y categoría, y ordenamiento (por defecto más recientes). Al tocar un miembro se abre un detalle con opción de <strong>Comunicarse</strong> (según los medios que haya publicado) y <strong>Guardar contacto</strong>.
+          En el menú <strong>Directorio</strong> puedes explorar a las y los socios con <strong>perfil público activo</strong>. Hay vista por tarjetas o lista. La búsqueda va a todo el ancho; debajo, filtros de <strong>región</strong>, <strong>ubicación</strong>, <strong>categoría</strong> y <strong>orden</strong> (por defecto más recientes), en una rejilla que deja leer los valores completos. Al tocar un miembro se abre un detalle con <strong>Comunicarse</strong> y <strong>Guardar contacto</strong>.
         </p>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Tus contactos guardados están en la pestaña <strong>Mis contactos</strong>, también desde Perfil y al enviar Túmin (chips que rellenan teléfono o correo públicos). Desde el Bazar también puedes guardar al vendedor.
+          Tus contactos guardados están en la pestaña <strong>Mis contactos</strong>, también desde Perfil y al enviar Túmin (chips que rellenan teléfono o correo públicos). Desde el Bazar (Comunicarse o detalle del producto) también puedes guardar al vendedor.
         </p>
       </section>
 
@@ -295,7 +296,7 @@ export default function MercadoInternoPage() {
           Comentarios y Preguntas
         </h2>
         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-          Dentro del diálogo de detalle de cada producto, cualquier socix puede dejar preguntas o comentarios directamente en la plataforma. Esto <strong>no es un mensaje privado</strong>: es público en el producto. Para hablar en privado usa <strong>Comunicarse → Mensaje en Túmin</strong>.
+          Dentro del diálogo de detalle de cada producto, cualquier socix puede dejar preguntas o comentarios directamente en la plataforma. Esto <strong>no es un mensaje privado</strong>: es público en el producto. Para hablar en privado usa <strong>Comunicarse → Mensaje directo</strong>.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex gap-4 p-4 border rounded-xl items-start bg-background/50">

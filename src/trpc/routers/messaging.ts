@@ -137,7 +137,6 @@ export const messagingRouter = createTRPCRouter({
     .input(
       z.object({
         peerUserId: z.string().min(1),
-        initialMessage: z.string().trim().min(1).max(MESSAGE_MAX).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -162,18 +161,6 @@ export const messagingRouter = createTRPCRouter({
           .insert(conversations)
           .values({ userAId, userBId })
           .returning();
-      }
-
-      if (input.initialMessage && conv) {
-        await db.insert(messages).values({
-          conversationId: conv.id,
-          senderId: me,
-          body: input.initialMessage,
-        });
-        await db
-          .update(conversations)
-          .set({ lastMessageAt: new Date() })
-          .where(eq(conversations.id, conv.id));
       }
 
       return { conversationId: conv!.id };

@@ -33,6 +33,8 @@ export function Inicio() {
   const { data: historyData, isLoading: isLoadingHistory } = trpc.wallet.getHistory.useQuery();
   const { data: miningStatus } = trpc.mining.getMiningStatus.useQuery();
   const { data: activeAd } = trpc.ads.getActiveAds.useQuery();
+  const { data: me } = trpc.user.fullMe.useQuery();
+  const isVerified = me?.isVerified ?? session?.user?.isVerified ?? false;
   const { data: rewardStatus } = trpc.audit.getAuditRewardStatus.useQuery(undefined, {
     enabled: isCoordinator,
   });
@@ -136,7 +138,7 @@ export function Inicio() {
               {isLoadingBalance ? <Loader2 className="animate-spin inline" /> : `${balanceData?.balance ?? 0} Ŧ`}
             </div>
             <div className="mb-6">
-              {session?.user?.isVerified && (
+              {isVerified && (
                 <Badge className="bg-green-100 text-green-700 border-green-200 font-black uppercase text-[10px]">
                   <ShieldCheck className="w-3 h-3 mr-1" /> Socio verificado
                 </Badge>
@@ -185,7 +187,7 @@ export function Inicio() {
 
         {/* Estado e información importante */}
         <div className="flex flex-col gap-3">
-          {!session?.user?.isVerified && (
+          {!isVerified && (
             <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-3">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>

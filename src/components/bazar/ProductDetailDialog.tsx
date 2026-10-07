@@ -220,6 +220,7 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                     displayName: seller.displayName,
                     contactMethods,
                     messageText: `Hola ${seller.displayName}, me interesa: ${product.name}`,
+                    publicProfile: seller.publicProfile,
                   }}
                   className="h-10 min-w-0 w-full flex-1 border-2 text-xs shadow-neo-sm sm:h-12 sm:text-sm"
                 />
@@ -244,14 +245,16 @@ export function ProductDetailDialog({ productId, open, onOpenChange, onBuy }: Pr
                 >
                   <ShoppingCart className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Comprar
                 </Button>
-                {seller.publicProfile && (
+              </div>
+              {seller.publicProfile ? (
+                <div className="mt-1 flex justify-center sm:justify-start">
                   <SaveContactButton
                     contactUserId={seller.id}
                     isSaved={isSellerSaved}
-                    className="h-10 min-w-0 w-full flex-1 text-xs sm:h-12 sm:text-sm"
+                    subtle
                   />
-                )}
-              </div>
+                </div>
+              ) : null}
 
               <ProductComments productId={product.id} />
             </div>

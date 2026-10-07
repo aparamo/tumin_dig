@@ -14,6 +14,8 @@ export interface SaveContactButtonProps {
   className?: string;
   size?: "default" | "sm" | "lg" | "icon" | "icon-sm" | "xs";
   variant?: "default" | "outline" | "secondary" | "ghost";
+  /** Compact ghost style for dialogs (Comunicarse, etc.) */
+  subtle?: boolean;
 }
 
 export function SaveContactButton({
@@ -23,13 +25,14 @@ export function SaveContactButton({
   className,
   size = "default",
   variant = "outline",
+  subtle = false,
 }: SaveContactButtonProps) {
   const utils = trpc.useUtils();
   const { notifySuccess, notifyError } = useFeedback();
 
   const saveMutation = trpc.directory.saveContact.useMutation({
     onSuccess: () => {
-      notifySuccess("Contacto guardado");
+      notifySuccess("Contacto guardado en Mis contactos");
       void utils.directory.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
@@ -44,15 +47,21 @@ export function SaveContactButton({
   });
 
   const pending = saveMutation.isPending || removeMutation.isPending;
+  const resolvedVariant = subtle ? "ghost" : variant;
+  const resolvedSize = subtle ? "sm" : size;
 
   return (
     <Button
       type="button"
-      variant={variant}
-      size={size}
+      variant={resolvedVariant}
+      size={resolvedSize}
       disabled={disabled || pending}
+      title={isSaved ? "Quitar de Mis contactos" : "Guardar en Mis contactos"}
       className={cn(
-        "min-w-0 text-xs font-black uppercase shadow-neo-sm sm:text-sm md:text-base",
+        "min-w-0 font-black uppercase",
+        subtle
+          ? "h-8 gap-1.5 px-2 text-[10px] tracking-wide text-muted-foreground hover:text-foreground shadow-none"
+          : "text-xs shadow-neo-sm sm:text-sm md:text-base",
         className
       )}
       onClick={() => {
@@ -64,14 +73,16 @@ export function SaveContactButton({
       }}
     >
       {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className={cn("animate-spin", subtle ? "h-3.5 w-3.5" : "h-4 w-4")} />
       ) : isSaved ? (
         <>
-          <BookmarkCheck className="h-4 w-4 mr-1.5" /> Quitar
+          <BookmarkCheck className={cn(subtle ? "h-3.5 w-3.5" : "h-4 w-4 mr-1.5")} />
+          {subtle ? "En contactos" : "Quitar"}
         </>
       ) : (
         <>
-          <BookmarkPlus className="h-4 w-4 mr-1.5" /> Guardar contacto
+          <BookmarkPlus className={cn(subtle ? "h-3.5 w-3.5" : "h-4 w-4 mr-1.5")} />
+          {subtle ? "Guardar contacto" : "Guardar contacto"}
         </>
       )}
     </Button>

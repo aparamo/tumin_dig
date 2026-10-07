@@ -112,6 +112,7 @@ export function ProfileProductsSection({
                       displayName: sellerName,
                       contactMethods,
                       messageText: `Hola ${sellerName}, me interesa: ${p.name}`,
+                      publicProfile: true,
                     }}
                     iconOnly
                     label="Comunicarse"

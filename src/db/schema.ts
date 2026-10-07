@@ -241,7 +241,77 @@ export const jobs = pgTable("TUMIN_jobs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const jobsRelations = relations(jobs, ({ one }) => ({
+export const jobVoteStanceEnum = pgEnum("job_vote_stance", ["ACUERDO", "DESACUERDO"]);
+
+export const jobDisputeStatusEnum = pgEnum("job_dispute_status", ["ABIERTA", "RESUELTA"]);
+
+export const jobVotes = pgTable(
+  "TUMIN_job_votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .references(() => jobs.id, { onDelete: "cascade" })
+      .notNull(),
+    voterId: text("voter_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    stance: jobVoteStanceEnum("stance").notNull(),
+    message: text("message"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [unique("job_votes_job_voter_uid").on(t.jobId, t.voterId)]
+);
+
+export const jobDisputes = pgTable(
+  "TUMIN_job_disputes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .references(() => jobs.id, { onDelete: "cascade" })
+      .notNull(),
+    status: jobDisputeStatusEnum("status").default("ABIERTA").notNull(),
+    openedById: text("opened_by_id")
+      .references(() => users.id)
+      .notNull(),
+    resolvedById: text("resolved_by_id").references(() => users.id),
+    resolutionNote: text("resolution_note"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (t) => [unique("job_disputes_job_uid").on(t.jobId)]
+);
+
+export const jobDisputeFlags = pgTable(
+  "TUMIN_job_dispute_flags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    disputeId: uuid("dispute_id")
+      .references(() => jobDisputes.id, { onDelete: "cascade" })
+      .notNull(),
+    coordinatorId: text("coordinator_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    withdrawnAt: timestamp("withdrawn_at"),
+  },
+  (t) => [unique("job_dispute_flags_dispute_coord_uid").on(t.disputeId, t.coordinatorId)]
+);
+
+export const jobDisputeMessages = pgTable("TUMIN_job_dispute_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  disputeId: uuid("dispute_id")
+    .references(() => jobDisputes.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: text("author_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const jobsRelations = relations(jobs, ({ one, many }) => ({
   requester: one(users, {
     fields: [jobs.requesterId],
     references: [users.id],
@@ -251,6 +321,60 @@ export const jobsRelations = relations(jobs, ({ one }) => ({
     fields: [jobs.verifierId],
     references: [users.id],
     relationName: "verifier",
+  }),
+  votes: many(jobVotes),
+  dispute: one(jobDisputes),
+}));
+
+export const jobVotesRelations = relations(jobVotes, ({ one }) => ({
+  job: one(jobs, {
+    fields: [jobVotes.jobId],
+    references: [jobs.id],
+  }),
+  voter: one(users, {
+    fields: [jobVotes.voterId],
+    references: [users.id],
+  }),
+}));
+
+export const jobDisputesRelations = relations(jobDisputes, ({ one, many }) => ({
+  job: one(jobs, {
+    fields: [jobDisputes.jobId],
+    references: [jobs.id],
+  }),
+  openedBy: one(users, {
+    fields: [jobDisputes.openedById],
+    references: [users.id],
+    relationName: "disputeOpenedBy",
+  }),
+  resolvedBy: one(users, {
+    fields: [jobDisputes.resolvedById],
+    references: [users.id],
+    relationName: "disputeResolvedBy",
+  }),
+  flags: many(jobDisputeFlags),
+  messages: many(jobDisputeMessages),
+}));
+
+export const jobDisputeFlagsRelations = relations(jobDisputeFlags, ({ one }) => ({
+  dispute: one(jobDisputes, {
+    fields: [jobDisputeFlags.disputeId],
+    references: [jobDisputes.id],
+  }),
+  coordinator: one(users, {
+    fields: [jobDisputeFlags.coordinatorId],
+    references: [users.id],
+  }),
+}));
+
+export const jobDisputeMessagesRelations = relations(jobDisputeMessages, ({ one }) => ({
+  dispute: one(jobDisputes, {
+    fields: [jobDisputeMessages.disputeId],
+    references: [jobDisputes.id],
+  }),
+  author: one(users, {
+    fields: [jobDisputeMessages.authorId],
+    references: [users.id],
   }),
 }));
 
@@ -354,6 +478,8 @@ export const adminActionEnum = pgEnum("admin_action", [
   "DEACTIVATE_PRODUCT",
   "CLAIM_AUDIT_REWARD",
   "VALIDATE_AUDITOR",
+  "FLAG_JOB_DISPUTE",
+  "RESOLVE_JOB_DISPUTE",
 ]);
 
 export const adminActionsLog = pgTable("TUMIN_admin_actions_log", {

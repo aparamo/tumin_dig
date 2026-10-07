@@ -14,7 +14,7 @@ import {
   Loader2, User, Key, Save, 
   ShieldCheck, Star, Zap, FolderOpen, LogOut, Copy, ExternalLink, MapPin, Network, BookUser, Bookmark, MessagesSquare, Bell
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useStore } from "@/lib/store";
 import { UploadButton, createUploadBeginHandlers, UPLOAD_LIMIT_BYTES, UPLOAD_LIMITS } from "@/lib/uploadthing";
@@ -27,8 +27,11 @@ import { ManageContactMethodsDialog } from "@/components/contact/ManageContactMe
 import { CHANNEL_LABELS, type ContactChannelId } from "@/lib/contact-links";
 import {
   ENROLLMENT_OTHER,
+  ENROLLMENT_REGIONS,
   MEXICO_STATES,
   MEXICO_COUNTRY,
+  RESIDENCE_COUNTRIES,
+  RESIDENCE_COUNTRY_OTHER,
   formatEnrollmentDisplay,
   formatPublicLocation,
   isKnownEnrollmentRegion,
@@ -98,6 +101,7 @@ export function Perfil() {
       ),
     [notifyError, notifySuccess],
   );
+  const { update: updateSession } = useSession();
   const { data: user, isLoading } = trpc.user.fullMe.useQuery();
   const { data: contactData } = trpc.contactMethods.listMine.useQuery();
   
@@ -118,8 +122,13 @@ export function Perfil() {
   });
 
   const updateLocation = trpc.user.updateLocation.useMutation({
-    onSuccess: () => {
-      notifySuccess("Ubicación actualizada correctamente");
+    onSuccess: async (data) => {
+      notifySuccess("Ubicación e inscripción actualizadas");
+      await updateSession({
+        region: data.region,
+        residenceCountry: data.residenceCountry,
+        residenceState: data.residenceState,
+      });
       void utils.user.fullMe.invalidate();
     },
     onError: (e) => notifyError(parseErrorMessage(e)),
@@ -162,6 +171,9 @@ export function Perfil() {
     residenceCity: "",
     residencePostalCode: "",
     residenceCountry: "",
+    countrySelect: "" as string,
+    region: "",
+    enrollmentMethodOther: "",
   });
   const [privacyHydrated, setPrivacyHydrated] = useState(false);
   const hydratedForUserId = useRef<string | null>(null);
@@ -188,12 +200,22 @@ export function Perfil() {
       transfer: user.autoMessageTransfer,
     });
     const intl = user.residenceCountry && !isMexicoCountry(user.residenceCountry);
+    const country = intl ? (user.residenceCountry ?? "") : "";
+    const listed = (RESIDENCE_COUNTRIES as readonly string[]).includes(country);
     setLocationData({
       residenceMode: intl ? "international" : "mexico",
       residenceState: user.residenceState ?? "",
       residenceCity: user.residenceCity ?? "",
       residencePostalCode: user.residencePostalCode ?? "",
-      residenceCountry: intl ? (user.residenceCountry ?? "") : "",
+      residenceCountry: intl && !listed ? country : "",
+      countrySelect: intl ? (listed ? country : RESIDENCE_COUNTRY_OTHER) : "",
+      region:
+        isKnownEnrollmentRegion(user.region) || user.region === ENROLLMENT_OTHER
+          ? user.region === ENROLLMENT_OTHER
+            ? ENROLLMENT_OTHER
+            : user.region
+          : ENROLLMENT_OTHER,
+      enrollmentMethodOther: user.enrollmentMethodOther ?? "",
     });
     setPrivacyHydrated(true);
   }, [user]);
@@ -441,17 +463,49 @@ export function Perfil() {
                 </div>
               )}
 
-              <div className="rounded-xl border-2 border-border bg-muted/20 p-4 space-y-2">
-                <Label className="text-[10px] font-black uppercase">Región de inscripción</Label>
-                <p className="text-sm font-bold">
+              <div className="space-y-3 rounded-xl border-2 border-border bg-muted/20 p-4">
+                <Label className="text-[10px] font-black uppercase">Región de inscripción (adscripción)</Label>
+                <Select
+                  value={locationData.region}
+                  onValueChange={(val) => {
+                    if (typeof val === "string") {
+                      setLocationData((l) => ({ ...l, region: val }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 border-2 bg-background sm:h-12">
+                    <SelectValue placeholder="Selecciona tu adscripción" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {ENROLLMENT_REGIONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {locationData.region === ENROLLMENT_OTHER && (
+                  <Input
+                    className="h-10 border-2 bg-background sm:h-12"
+                    value={locationData.enrollmentMethodOther}
+                    onChange={(e) =>
+                      setLocationData((l) => ({ ...l, enrollmentMethodOther: e.target.value }))
+                    }
+                    placeholder="Describe tu núcleo (mín. 5 caracteres)"
+                    maxLength={240}
+                  />
+                )}
+                <p className="text-[10px] font-medium text-muted-foreground">
+                  Define qué coordinación puede apoyarte. El cambio aplica de inmediato; más adelante un
+                  coordinador podrá confirmarlo.
+                </p>
+                <p className="text-[10px] font-bold text-muted-foreground">
+                  Actual:{" "}
                   {formatEnrollmentDisplay(
                     user.region,
                     user.enrollmentMethod,
                     user.enrollmentMethodOther
                   )}
-                </p>
-                <p className="text-[10px] font-medium text-muted-foreground">
-                  Define qué coordinación puede apoyarte. Para cambiarla contacta a tu coordinador.
                 </p>
               </div>
 
@@ -521,16 +575,48 @@ export function Perfil() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2 md:col-span-2">
-                      <Label className="text-[10px] font-black uppercase ml-1">País o región</Label>
-                      <Input
-                        className="h-10 border-2 bg-background sm:h-12"
-                        value={locationData.residenceCountry}
-                        onChange={(e) =>
-                          setLocationData((l) => ({ ...l, residenceCountry: e.target.value }))
-                        }
-                        placeholder="Ej. Colombia"
-                      />
+                      <Label className="text-[10px] font-black uppercase ml-1">País</Label>
+                      <Select
+                        value={locationData.countrySelect}
+                        onValueChange={(val) => {
+                          if (typeof val === "string") {
+                            setLocationData((l) => ({
+                              ...l,
+                              countrySelect: val,
+                              residenceCountry:
+                                val === RESIDENCE_COUNTRY_OTHER ? l.residenceCountry : "",
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10 border-2 bg-background sm:h-12">
+                          <SelectValue placeholder="Selecciona país" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {RESIDENCE_COUNTRIES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value={RESIDENCE_COUNTRY_OTHER}>Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                    {locationData.countrySelect === RESIDENCE_COUNTRY_OTHER && (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="text-[10px] font-black uppercase ml-1">
+                          Escribe el país
+                        </Label>
+                        <Input
+                          className="h-10 border-2 bg-background sm:h-12"
+                          value={locationData.residenceCountry}
+                          onChange={(e) =>
+                            setLocationData((l) => ({ ...l, residenceCountry: e.target.value }))
+                          }
+                          placeholder="Ej. Alemania"
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase ml-1">Ciudad (opcional)</Label>
                       <Input
@@ -559,7 +645,9 @@ export function Perfil() {
                   residenceCountry:
                     locationData.residenceMode === "mexico"
                       ? MEXICO_COUNTRY
-                      : locationData.residenceCountry || null,
+                      : locationData.countrySelect === RESIDENCE_COUNTRY_OTHER
+                        ? locationData.residenceCountry || null
+                        : locationData.countrySelect || null,
                   residenceState:
                     locationData.residenceMode === "mexico" ? locationData.residenceState : null,
                   residenceCity: locationData.residenceCity || null,
@@ -571,7 +659,9 @@ export function Perfil() {
                       residenceCountry:
                         locationData.residenceMode === "mexico"
                           ? MEXICO_COUNTRY
-                          : locationData.residenceCountry || null,
+                          : locationData.countrySelect === RESIDENCE_COUNTRY_OTHER
+                            ? locationData.residenceCountry || null
+                            : locationData.countrySelect || null,
                       residenceState:
                         locationData.residenceMode === "mexico" ? locationData.residenceState : null,
                       residenceCity: locationData.residenceCity || null,
@@ -584,20 +674,29 @@ export function Perfil() {
               <Button
                 className="h-10 w-full px-4 text-xs font-black uppercase sm:h-12 sm:px-8 sm:text-sm md:w-auto"
                 disabled={updateLocation.isPending}
-                onClick={() =>
+                onClick={() => {
+                  const intlCountry =
+                    locationData.countrySelect === RESIDENCE_COUNTRY_OTHER
+                      ? locationData.residenceCountry.trim() || null
+                      : locationData.countrySelect.trim() || null;
                   updateLocation.mutate({
+                    region: locationData.region || undefined,
+                    enrollmentMethod:
+                      locationData.region === ENROLLMENT_OTHER ? "OTHER" : "REGION",
+                    enrollmentMethodOther:
+                      locationData.region === ENROLLMENT_OTHER
+                        ? locationData.enrollmentMethodOther.trim() || null
+                        : null,
                     residenceCountry:
-                      locationData.residenceMode === "mexico"
-                        ? MEXICO_COUNTRY
-                        : locationData.residenceCountry.trim() || null,
+                      locationData.residenceMode === "mexico" ? MEXICO_COUNTRY : intlCountry,
                     residenceState:
                       locationData.residenceMode === "mexico"
                         ? locationData.residenceState || null
                         : null,
                     residenceCity: locationData.residenceCity.trim() || null,
                     residencePostalCode: locationData.residencePostalCode.trim() || null,
-                  })
-                }
+                  });
+                }}
               >
                 {updateLocation.isPending ? (
                   <Loader2 className="animate-spin mr-2" />

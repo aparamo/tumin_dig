@@ -114,6 +114,36 @@ export const MEXICO_STATES = [
 
 export type MexicoState = (typeof MEXICO_STATES)[number];
 
+/** Common residence countries for tumistas outside México (Spanish labels). */
+export const RESIDENCE_COUNTRIES = [
+  "Argentina",
+  "Bolivia",
+  "Brasil",
+  "Canadá",
+  "Chile",
+  "Colombia",
+  "Costa Rica",
+  "Cuba",
+  "Ecuador",
+  "El Salvador",
+  "España",
+  "Estados Unidos",
+  "Guatemala",
+  "Honduras",
+  "Nicaragua",
+  "Panamá",
+  "Paraguay",
+  "Perú",
+  "República Dominicana",
+  "Uruguay",
+  "Venezuela",
+] as const;
+
+export type ResidenceCountry = (typeof RESIDENCE_COUNTRIES)[number];
+
+/** Sentinel for free-text country in profile UI */
+export const RESIDENCE_COUNTRY_OTHER = "Otro" as const;
+
 export const MEXICO_STATE_LABELS: Record<string, string> = {
   "Aguascalientes": "Ags",
   "Baja California": "BC",

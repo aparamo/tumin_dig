@@ -9,6 +9,7 @@ import { Comunidad } from "./screens/Comunidad";
 import { Perfil } from "./screens/Perfil";
 import { Historial } from "./screens/Historial";
 import { Coordinacion } from "./screens/Coordinacion";
+import { Indicadores } from "./screens/Indicadores";
 import { Auditoria } from "./screens/Auditoria";
 import { GestionRoles } from "./screens/GestionRoles";
 import { GestionProductos } from "./screens/GestionProductos";
@@ -31,7 +32,7 @@ export function Dashboard() {
     if (pending) {
       sessionStorage.removeItem("tumin_pending_screen");
       const validScreens = [
-        "inicio", "pagar", "bazar", "directorio", "comunidad", "coordinacion", "perfil",
+        "inicio", "pagar", "bazar", "directorio", "comunidad", "coordinacion", "indicadores", "perfil",
         "historial", "mis-compras", "auditoria", "gestion-roles", "gestion-productos",
         "medios", "anuncios", "mi-red", "mensajes",
       ] as const;
@@ -52,6 +53,7 @@ export function Dashboard() {
       case "historial": return <Historial />;
       case "mis-compras": return <MisCompras />;
       case "coordinacion": return <Coordinacion />;
+      case "indicadores": return <Indicadores />;
       case "auditoria": return <Auditoria />;
       case "gestion-roles": return <GestionRoles />;
       case "gestion-productos": return <GestionProductos />;

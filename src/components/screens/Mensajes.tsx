@@ -63,7 +63,7 @@ export function Mensajes() {
             </div>
           ) : !conversations?.length ? (
             <p className="p-4 text-sm text-muted-foreground">
-              Aún no tienes conversaciones. Usa <strong>Comunicarse → Mensaje en Túmin</strong>{" "}
+              Aún no tienes conversaciones. Usa <strong>Comunicarse → Mensaje directo</strong>{" "}
               desde el bazar o el directorio.
             </p>
           ) : (
@@ -128,7 +128,11 @@ export function Mensajes() {
         )}
       >
         {activeId ? (
-          <ThreadView conversationId={activeId} onBack={() => selectConversation(null)} />
+          <ThreadView
+            key={activeId}
+            conversationId={activeId}
+            onBack={() => selectConversation(null)}
+          />
         ) : (
           <div className="hidden h-full flex-col items-center justify-center gap-2 p-8 text-center md:flex">
             <MessagesSquare className="h-10 w-10 text-muted-foreground/40" />
@@ -147,10 +151,26 @@ function ThreadView({
   conversationId: string;
   onBack: () => void;
 }) {
-  const [body, setBody] = useState("");
+  const pending = useStore((s) => s.pendingConversationPeer);
+  const setPending = useStore((s) => s.setPendingConversationPeer);
+  const incomingDraft =
+    pending?.conversationId === conversationId && pending.draftBody
+      ? pending.draftBody
+      : null;
+
+  const [body, setBody] = useState(() => incomingDraft ?? "");
+  const [seededDraft, setSeededDraft] = useState<string | null>(
+    () => incomingDraft
+  );
   const [communicateOpen, setCommunicateOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
+
+  // Apply a new handoff draft during render (React-approved prop→state adjust).
+  if (incomingDraft !== null && incomingDraft !== seededDraft) {
+    setSeededDraft(incomingDraft);
+    setBody(incomingDraft);
+  }
 
   const { data, isLoading } = trpc.messaging.getThread.useQuery(
     { conversationId, limit: 80 },
@@ -171,6 +191,21 @@ function ThreadView({
     markRead.mutate({ conversationId });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mark once when opening thread
   }, [conversationId]);
+
+  // Consume draft from the Zustand handoff (external store only — no React setState).
+  useEffect(() => {
+    if (!incomingDraft) return;
+    const current = useStore.getState().pendingConversationPeer;
+    if (
+      current?.conversationId === conversationId &&
+      current.draftBody
+    ) {
+      setPending({
+        peerUserId: current.peerUserId,
+        conversationId: current.conversationId,
+      });
+    }
+  }, [incomingDraft, conversationId, setPending]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -257,6 +292,7 @@ function ThreadView({
             userId: peer.id,
             displayName: peer.displayName,
             contactMethods,
+            publicProfile: peer.publicProfile,
           }}
           emptyHint={contactMethods.length === 0}
           hideInAppMessage
