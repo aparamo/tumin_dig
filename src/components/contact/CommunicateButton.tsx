@@ -85,6 +85,8 @@ interface CommunicateDialogProps {
   onOpenChange: (open: boolean) => void;
   target: CommunicateTarget;
   emptyHint?: boolean;
+  /** Hide in-app DM option (e.g. already inside that conversation) */
+  hideInAppMessage?: boolean;
 }
 
 export function CommunicateDialog({
@@ -92,6 +94,7 @@ export function CommunicateDialog({
   onOpenChange,
   target,
   emptyHint,
+  hideInAppMessage = false,
 }: CommunicateDialogProps) {
   const [showMore, setShowMore] = useState(false);
   const { data: session } = useSession();
@@ -156,43 +159,47 @@ export function CommunicateDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          {session?.user ? (
-            <Button
-              type="button"
-              variant="default"
-              className="justify-start font-bold"
-              disabled={startConv.isPending || session.user.id === target.userId}
-              onClick={() =>
-                startConv.mutate({
-                  peerUserId: target.userId,
-                  initialMessage: target.messageText,
-                })
-              }
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Mensaje en Túmin
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="default"
-              className="justify-start font-bold"
-              onClick={() => {
-                onOpenChange(false);
-                router.push("/login");
-              }}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Inicia sesión para mensajear
-            </Button>
-          )}
+          {!hideInAppMessage ? (
+            session?.user ? (
+              <Button
+                type="button"
+                variant="default"
+                className="justify-start font-bold"
+                disabled={startConv.isPending || session.user.id === target.userId}
+                onClick={() =>
+                  startConv.mutate({
+                    peerUserId: target.userId,
+                    initialMessage: target.messageText,
+                  })
+                }
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Mensaje en Túmin
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="default"
+                className="justify-start font-bold"
+                onClick={() => {
+                  onOpenChange(false);
+                  router.push("/login");
+                }}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Inicia sesión para mensajear
+              </Button>
+            )
+          ) : null}
 
           {emptyHint && primary.length === 0 && secondary.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">
               Esta persona no publicó formas de contacto externas.
-              {session?.user
-                ? " Puedes escribirle a través de esta plataforma."
-                : " Inicia sesión para enviarle un mensaje en la plataforma."}
+              {hideInAppMessage
+                ? " Puedes seguir escribiéndole en este chat."
+                : session?.user
+                  ? " Puedes escribirle a través de esta plataforma."
+                  : " Inicia sesión para enviarle un mensaje en la plataforma."}
             </p>
           ) : null}
 

@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft, Loader2, MessagesSquare, Plus, Send, User } from "lucide-react";
 import { toast } from "sonner";
+import { CommunicateDialog } from "@/components/contact/CommunicateButton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc/react";
@@ -92,6 +95,7 @@ function ThreadView({
   onBack: () => void;
 }) {
   const [body, setBody] = useState("");
+  const [communicateOpen, setCommunicateOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
 
@@ -99,6 +103,9 @@ function ThreadView({
     { conversationId, limit: 80 },
     { refetchInterval: 8_000 }
   );
+
+  const peer = data?.peer;
+  const contactMethods = peer?.contactMethods ?? [];
 
   const markRead = trpc.messaging.markRead.useMutation({
     onSuccess: () => {
@@ -128,11 +135,71 @@ function ThreadView({
   return (
     <div className="mx-auto flex h-[calc(100dvh-8rem)] w-full max-w-2xl flex-col md:h-[calc(100dvh-6rem)]">
       <div className="flex items-center gap-2 border-b px-3 py-2">
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onBack}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onBack} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h2 className="font-black truncate">{data?.peer.displayName ?? "…"}</h2>
+        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted">
+          {peer?.avatarUrl ? (
+            <Image
+              src={peer.avatarUrl}
+              alt=""
+              fill
+              sizes="32px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <User className="h-4 w-4 text-muted-foreground/50" />
+            </div>
+          )}
+        </div>
+        <h2 className="min-w-0 flex-1 truncate font-black">
+          {peer?.displayName ?? "…"}
+        </h2>
+        {peer?.publicProfile ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            asChild
+            className="shrink-0 px-2 text-[0.7rem]"
+          >
+            <Link
+              href={`/u/${peer.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver perfil
+            </Link>
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="shrink-0 gap-0.5 px-2"
+          aria-label="Más formas de contacto"
+          disabled={!peer}
+          onClick={() => setCommunicateOpen(true)}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <MessagesSquare className="h-3.5 w-3.5" />
+        </Button>
       </div>
+
+      {peer ? (
+        <CommunicateDialog
+          open={communicateOpen}
+          onOpenChange={setCommunicateOpen}
+          target={{
+            userId: peer.id,
+            displayName: peer.displayName,
+            contactMethods,
+          }}
+          emptyHint={contactMethods.length === 0}
+          hideInAppMessage
+        />
+      ) : null}
 
       <div className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
         {isLoading ? (

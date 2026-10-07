@@ -3,6 +3,7 @@ import { and, desc, eq, gt, inArray, isNull, ne, or, count } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { conversations, messages, users } from "@/db/schema";
+import { loadPublicContactMethods } from "@/lib/contact-methods-server";
 import { createTRPCRouter, protectedProcedure } from "@/lib/trpc/server";
 
 const MESSAGE_MAX = 2000;
@@ -19,6 +20,7 @@ async function assertPeerActive(peerUserId: string) {
       name: users.name,
       publicName: users.publicName,
       avatarUrl: users.avatarUrl,
+      publicProfile: users.publicProfile,
     })
     .from(users)
     .where(eq(users.id, peerUserId))
@@ -198,6 +200,8 @@ export const messagingRouter = createTRPCRouter({
 
       const peerId = conv.userAId === me ? conv.userBId : conv.userAId;
       const peer = await assertPeerActive(peerId);
+      const contactMethods =
+        (await loadPublicContactMethods([peer.id])).get(peer.id) ?? [];
 
       const conditions = [eq(messages.conversationId, conv.id)];
       if (input.cursor) {
@@ -227,6 +231,8 @@ export const messagingRouter = createTRPCRouter({
           id: peer.id,
           displayName: peer.publicName?.trim() || peer.name,
           avatarUrl: peer.avatarUrl,
+          publicProfile: peer.publicProfile,
+          contactMethods,
         },
         messages: items,
         nextCursor:
