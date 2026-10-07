@@ -5,7 +5,21 @@ import {
 } from "../../lib/trpc/server";
 import { db } from "../../db";
 import { users, transactions, products, type ProductPurchaseSnapshot } from "../../db/schema";
-import { eq, sql, and, desc, or, gte, lte, count, isNotNull } from "drizzle-orm";
+import {
+  eq,
+  sql,
+  and,
+  desc,
+  or,
+  gte,
+  lte,
+  count,
+  isNotNull,
+  isNull,
+  ilike,
+  type SQL,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { ensureSystemUser } from "../../lib/system-user";
@@ -17,6 +31,86 @@ import {
   buildTransferAutoMessage,
   sendAutomatedMessage,
 } from "../../lib/auto-messages";
+import {
+  buildHistoryProduct,
+  buildTransactionParty,
+  historyFlowSchema,
+  historyKindFilterSchema,
+  historyTimeRangeSchema,
+  resolveTransactionKind,
+  sanitizeHistorySearch,
+  type HistoryTransaction,
+  type TransactionLedgerType,
+} from "../../lib/transaction-presentation";
+
+const fromUser = alias(users, "tx_from");
+const toUser = alias(users, "tx_to");
+
+type HistoryRow = {
+  id: string;
+  amount: number;
+  concept: string;
+  type: TransactionLedgerType;
+  productId: string | null;
+  productSnapshot: ProductPurchaseSnapshot | null;
+  createdAt: Date;
+  fromId: string;
+  toId: string;
+  fromName: string;
+  fromPublicName: string | null;
+  fromPublicProfile: boolean;
+  toName: string;
+  toPublicName: string | null;
+  toPublicProfile: boolean;
+};
+
+function mapHistoryRow(row: HistoryRow, userId: string): HistoryTransaction {
+  const kind = resolveTransactionKind({
+    type: row.type,
+    productId: row.productId,
+    productSnapshot: row.productSnapshot,
+  });
+  return {
+    id: row.id,
+    amount: row.amount,
+    concept: row.concept,
+    createdAt: row.createdAt,
+    isIngreso: row.toId === userId,
+    type: row.type,
+    kind,
+    from: buildTransactionParty({
+      id: row.fromId,
+      name: row.fromName,
+      publicName: row.fromPublicName,
+      publicProfile: row.fromPublicProfile,
+    }),
+    to: buildTransactionParty({
+      id: row.toId,
+      name: row.toName,
+      publicName: row.toPublicName,
+      publicProfile: row.toPublicProfile,
+    }),
+    product: buildHistoryProduct(row.productId, row.productSnapshot, row.concept),
+  };
+}
+
+const historySelect = {
+  id: transactions.id,
+  amount: transactions.amount,
+  concept: transactions.concept,
+  type: transactions.type,
+  productId: transactions.productId,
+  productSnapshot: transactions.productSnapshot,
+  createdAt: transactions.createdAt,
+  fromId: transactions.fromId,
+  toId: transactions.toId,
+  fromName: fromUser.name,
+  fromPublicName: fromUser.publicName,
+  fromPublicProfile: fromUser.publicProfile,
+  toName: toUser.name,
+  toPublicName: toUser.publicName,
+  toPublicProfile: toUser.publicProfile,
+};
 
 function displayNameOf(u: { name: string; publicName: string | null }): string {
   return u.publicName?.trim() || u.name;
@@ -24,9 +118,12 @@ function displayNameOf(u: { name: string; publicName: string | null }): string {
 
 const salesTimeRangeSchema = z.enum(["7d", "30d", "90d", "all"]);
 
-function startDateForRange(range: z.infer<typeof salesTimeRangeSchema>): Date | null {
+function startDateForRange(
+  range: z.infer<typeof salesTimeRangeSchema> | "1y"
+): Date | null {
   if (range === "all") return null;
-  const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
+  const days =
+    range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : 365;
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
@@ -88,13 +185,96 @@ export const walletRouter = createTRPCRouter({
   getHistory: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const rows = await db
-      .select()
+      .select(historySelect)
       .from(transactions)
+      .innerJoin(fromUser, eq(transactions.fromId, fromUser.id))
+      .innerJoin(toUser, eq(transactions.toId, toUser.id))
       .where(or(eq(transactions.fromId, userId), eq(transactions.toId, userId)))
       .orderBy(desc(transactions.createdAt))
       .limit(15);
-    return rows.map((tx) => ({ ...tx, isIngreso: tx.toId === userId }));
+    return rows.map((row) => mapHistoryRow(row, userId));
   }),
+
+  listHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+        cursor: z.number().min(0).default(0),
+        search: z.string().max(80).optional(),
+        flow: historyFlowSchema.default("all"),
+        kind: historyKindFilterSchema.default("all"),
+        timeRange: historyTimeRangeSchema.default("all"),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const conditions: SQL[] = [];
+
+      if (input.flow === "in") {
+        conditions.push(eq(transactions.toId, userId));
+      } else if (input.flow === "out") {
+        conditions.push(eq(transactions.fromId, userId));
+      } else {
+        conditions.push(
+          or(eq(transactions.fromId, userId), eq(transactions.toId, userId))!
+        );
+      }
+
+      if (input.kind === "bazar") {
+        conditions.push(isNotNull(transactions.productId));
+      } else if (input.kind === "envio") {
+        conditions.push(eq(transactions.type, "TRANSFERENCIA"));
+        conditions.push(isNull(transactions.productId));
+      } else if (input.kind === "bono") {
+        conditions.push(eq(transactions.type, "BONO"));
+        conditions.push(isNull(transactions.productId));
+      } else if (input.kind === "minado") {
+        conditions.push(eq(transactions.type, "MINADO"));
+        conditions.push(isNull(transactions.productId));
+      } else if (input.kind === "pago_trabajo") {
+        conditions.push(eq(transactions.type, "PAGO_TRABAJO"));
+        conditions.push(isNull(transactions.productId));
+      }
+
+      const start = startDateForRange(input.timeRange);
+      if (start) {
+        conditions.push(gte(transactions.createdAt, start));
+      }
+
+      const search = input.search ? sanitizeHistorySearch(input.search) : "";
+      if (search.length > 0) {
+        const pattern = `%${search}%`;
+        conditions.push(
+          or(
+            ilike(transactions.concept, pattern),
+            ilike(fromUser.name, pattern),
+            ilike(fromUser.publicName, pattern),
+            ilike(toUser.name, pattern),
+            ilike(toUser.publicName, pattern),
+            sql`coalesce(${transactions.productSnapshot}->>'name', '') ILIKE ${pattern}`
+          )!
+        );
+      }
+
+      const rows = await db
+        .select(historySelect)
+        .from(transactions)
+        .innerJoin(fromUser, eq(transactions.fromId, fromUser.id))
+        .innerJoin(toUser, eq(transactions.toId, toUser.id))
+        .where(and(...conditions))
+        .orderBy(desc(transactions.createdAt))
+        .limit(input.limit + 1)
+        .offset(input.cursor);
+
+      const hasMore = rows.length > input.limit;
+      const page = hasMore ? rows.slice(0, input.limit) : rows;
+
+      return {
+        items: page.map((row) => mapHistoryRow(row, userId)),
+        nextCursor: hasMore ? input.cursor + input.limit : null,
+      };
+    }),
 
   getMyPurchases: protectedProcedure
     .input(

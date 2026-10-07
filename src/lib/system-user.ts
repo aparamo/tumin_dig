@@ -2,31 +2,17 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { SYSTEM_ACCOUNT_IDS, SYSTEM_USER_ID } from "@/lib/system-ids";
 
-/** Canonical ledger/bonus issuer used by the app */
-export const SYSTEM_USER_ID = "SYSTEM";
-
-/**
- * Legacy sheets-migration reserve account (`SISTEMA`) plus canonical `SYSTEM`.
- * Both must never authenticate, appear in directories, or receive peer transfers.
- */
-export const SYSTEM_ACCOUNT_IDS = [SYSTEM_USER_ID, "SISTEMA"] as const;
-
-export type SystemAccountId = (typeof SYSTEM_ACCOUNT_IDS)[number];
+export {
+  SYSTEM_USER_ID,
+  SYSTEM_ACCOUNT_IDS,
+  isSystemAccountId,
+  isSystemPhone,
+  type SystemAccountId,
+} from "@/lib/system-ids";
 
 type Tx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-export function isSystemAccountId(id: string | null | undefined): boolean {
-  if (!id) return false;
-  return (SYSTEM_ACCOUNT_IDS as readonly string[]).includes(id);
-}
-
-/** Phone markers used by internal system rows (never real members) */
-export function isSystemPhone(phone: string | null | undefined): boolean {
-  if (!phone) return false;
-  const p = phone.trim().toUpperCase();
-  return p === "SYSTEM_INTERNAL" || p === "SYSTEM_PHONE";
-}
 
 function requireSystemNipSecret(): string {
   const secret = process.env.SYSTEM_NIP_SECRET?.trim();

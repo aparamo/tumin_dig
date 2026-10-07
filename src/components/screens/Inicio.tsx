@@ -1,12 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { trpc } from "@/lib/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pickaxe, RefreshCw, ArrowUpRight, ArrowDownLeft, Send, ShoppingBag, BookOpen, ShieldCheck, ShieldAlert, UserCog, Search, AlertCircle } from "lucide-react";
+import { Loader2, Pickaxe, RefreshCw, Send, ShoppingBag, BookOpen, ShieldCheck, ShieldAlert, UserCog, Search, AlertCircle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { StaggerContainer, StaggerItem } from "@/components/ui/motion";
-import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { useFeedback } from "@/components/FeedbackProvider";
 import { parseErrorMessage } from "@/lib/parse-error";
 import { GamificationTips } from "@/components/GamificationTips";
+import { TransactionCard } from "@/components/wallet/TransactionCard";
+import { TransactionDetailDialog } from "@/components/wallet/TransactionDetailDialog";
+import type { HistoryTransaction } from "@/lib/transaction-presentation";
 
 export function Inicio() {
   const { setCurrentScreen } = useStore();
@@ -22,6 +25,7 @@ export function Inicio() {
   const { data: session } = useSession();
   const { notifySuccess, notifyError } = useFeedback();
   const utils = trpc.useUtils();
+  const [selectedTx, setSelectedTx] = useState<HistoryTransaction | null>(null);
 
   const isCoordinator = session?.user?.role === "COORDINADOR" || session?.user?.role === "COORDINADOR_LOCAL" || session?.user?.role === "COORDINADOR_GENERAL";
   
@@ -62,6 +66,7 @@ export function Inicio() {
       notifySuccess(`¡Felicidades! Ganaste ${data.reward} Ŧ — Racha: ${data.streak} días.`);
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
+      utils.wallet.listHistory.invalidate();
       utils.mining.getMiningStatus.invalidate();
     },
     onError: (error) => {
@@ -256,7 +261,7 @@ export function Inicio() {
           </Button>
         </div>
         
-        <StaggerContainer>
+        <StaggerContainer className="flex flex-col gap-3">
           {isLoadingHistory ? (
             <div className="flex justify-center p-8">
               <Loader2 className="animate-spin text-primary w-8 h-8" />
@@ -264,38 +269,11 @@ export function Inicio() {
           ) : historyData && historyData.length > 0 ? (
             historyData.slice(0, 6).map((item) => (
               <StaggerItem key={item.id}>
-                <div className="neo-card bg-card p-4 flex justify-between items-center group hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg border-2 border-border flex items-center justify-center shadow-neo-sm",
-                      !item.isIngreso ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
-                    )}>
-                      {!item.isIngreso ? 
-                        <ArrowUpRight className="w-6 h-6 text-red-600" /> : 
-                        <ArrowDownLeft className="w-6 h-6 text-green-600" />
-                      }
-                    </div>
-                    <div>
-                      <div className="font-black text-foreground text-lg line-clamp-1 uppercase tracking-tight">
-                        {item.concept}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        {new Intl.DateTimeFormat("es-MX", {
-                          timeZone: "America/Mexico_City",
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        }).format(new Date(item.createdAt))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    "font-black text-2xl tabular-nums tracking-tighter",
-                    !item.isIngreso ? "text-red-500" : "text-primary"
-                  )}>
-                    {!item.isIngreso ? "-" : "+"}{item.amount} Ŧ
-                  </div>
-                </div>
+                <TransactionCard
+                  transaction={item}
+                  onSelect={setSelectedTx}
+                  variant="home"
+                />
               </StaggerItem>
             ))
           ) : (
@@ -305,6 +283,14 @@ export function Inicio() {
           )}
         </StaggerContainer>
       </div>
+
+      <TransactionDetailDialog
+        transaction={selectedTx}
+        open={selectedTx != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedTx(null);
+        }}
+      />
     </div>
   );
 }

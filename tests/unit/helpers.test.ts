@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { assertPeerTransferParties } from "@/lib/system-ledger";
-import { isSystemAccountId, isSystemPhone } from "@/lib/system-user";
+import { isSystemAccountId, isSystemPhone } from "@/lib/system-ids";
 import {
   normalizeResidenceFields,
   formatPublicLocation,

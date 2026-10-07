@@ -164,6 +164,7 @@ export function Pagar() {
     onSuccess: () => {
       utils.wallet.getBalance.invalidate();
       utils.wallet.getHistory.invalidate();
+      utils.wallet.listHistory.invalidate();
       utils.wallet.getMyPurchases.invalidate();
       utils.messaging.listConversations.invalidate();
       utils.messaging.unreadCount.invalidate();
